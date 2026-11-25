@@ -1,0 +1,10 @@
+# Netlify deploys the site/ folder on every push to main. No build step.
+[build]
+  publish = "site"
+
+# Referral links: /invite/<code> lands on the home page with the code attached.
+# The page saves the code and sends it with the signup.
+[[redirects]]
+  from = "/invite/:code"
+  to = "/?ref=:code"
+  status = 302

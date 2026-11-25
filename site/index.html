@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StreamWing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: warm, confident, creator-first; talks to the streamer, not the fan
+   IDEA: a stream overlay: chat bubbles, the owl co-host in a headset
+   PICTURE: the owl on its stage with live chat around it
+   COLOUR and TYPE: night plum ground, pink headset accent, lavender support; Poppins (from the promo)
+   LAYOUT: hero, 30s promo video, six features, owl sign-off, lead form, pain-point survey, owner-only leads list */
+:root{color-scheme:dark;--bg:#160c26;--panel:#22143a;--panel2:#2f1d50;--line:#4a3470;--ink:#f4eefe;--soft:#d8cdf0;--mute:#b9a9d9;--pink:#e879f9;--pinkl:#f0abfc;--deep:#1a0f2e;--err:#fda4af}
+html{scroll-padding-top:16px}
+@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Poppins,system-ui,sans-serif;overflow-x:clip}
+a{color:var(--pinkl)}
+:focus-visible{outline:3px solid var(--pinkl);outline-offset:2px}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:max(5vw,16px)}
+header .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding-block:20px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:700;font-size:22px}
+nav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:15px}
+nav a.plain{color:var(--soft);text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 26px;border-radius:999px;border:0;background:var(--pink);color:var(--deep);font:600 17px Poppins,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.btn.ghost{background:none;color:var(--ink);border:2px solid var(--line)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:48px;padding-block:40px 72px}
+.hero .copy{flex:1 1 440px}
+.kicker{margin:0 0 16px;color:var(--pinkl);font-weight:600}
+h1{margin:0;font-size:clamp(34px,5vw,54px);line-height:1.08;font-weight:700;text-wrap:balance}
+.lead{margin:24px 0 0;font-size:18px;color:var(--soft);max-width:34em}
+.ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.stage{flex:1 1 420px;position:relative;height:480px;border-radius:32px;background:var(--panel);overflow:hidden}
+.stage .disc{position:absolute;left:50%;top:56%;width:380px;height:380px;margin:-190px 0 0 -190px;border-radius:50%;background:var(--panel2)}
+.stage svg{position:absolute;left:50%;bottom:24px;width:300px;height:315px;margin-left:-150px}
+.bub{position:absolute;background:var(--panel2);border:1px solid #5a4185;border-radius:18px;padding:10px 16px;font-size:15px;max-width:72%}
+.bub b{color:var(--pinkl)}
+@media(prefers-reduced-motion:no-preference){.bub{animation:pop .5s ease-out both}.bub:nth-of-type(2){animation-delay:.5s}.bub:nth-of-type(3){animation-delay:1s}@keyframes pop{from{opacity:0;transform:translateY(10px)}}}
+.light{background:#f7f2ff;color:var(--deep);padding-block:80px}
+h2{margin:0;font-size:clamp(28px,4vw,44px);line-height:1.1;font-weight:700;text-wrap:balance}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;margin-top:44px}
+.card{background:#fff;border:1px solid #e6dcf7;border-radius:24px;padding:28px}
+.card h3{margin:18px 0 8px;font-size:21px;font-weight:600}
+.card p{margin:0;color:#4a3a63}
+.promo{padding-block:8px 80px}
+.promo .wrap{max-width:1000px;text-align:center}
+.promo video{display:block;width:100%;height:auto;aspect-ratio:16/9;margin-top:28px;border-radius:24px;border:1px solid var(--line);background:#000}
+.signoff{background:var(--panel);padding-block:80px}
+.signoff .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:32px;text-align:center}
+.signoff p{margin:0;font-size:clamp(24px,3.4vw,38px);line-height:1.25;font-weight:600}
+.form-band{padding-block:88px}
+.form-band .wrap{max-width:640px}
+.sub{margin:16px 0 0;font-size:18px;color:var(--soft)}
+form{margin-top:32px;display:flex;flex-direction:column;gap:24px}
+label.f{display:flex;flex-direction:column;gap:8px;font-weight:500}
+input[type=text],textarea{font:16px Poppins,system-ui,sans-serif;padding:14px 16px;min-height:50px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--ink);width:100%}
+textarea{resize:vertical}
+.check{display:flex;gap:12px;align-items:flex-start;margin-top:14px;font-size:15px;cursor:pointer}
+.check input{width:22px;height:22px;margin:2px 0 0;accent-color:#e879f9;flex:none}
+.survey{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:clamp(20px,4vw,32px);margin-top:32px}
+.survey .kicker{margin:0 0 8px}
+.sv-title{margin:0;font-size:26px;line-height:1.2}
+.bar{height:6px;border-radius:99px;background:var(--panel2);margin:24px 0 8px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--pink);transition:width .25s}
+.sv-q{font-size:19px;font-weight:600;margin:12px 0 14px;line-height:1.35}
+#svStep{min-height:150px}
+.sv-nav{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;margin-top:20px}
+.linkbtn{background:none;border:0;color:var(--mute);font:500 15px Poppins,system-ui,sans-serif;text-decoration:underline;cursor:pointer;margin-top:16px;min-height:44px;padding:0}
+fieldset{border:0;margin:0;padding:0}
+legend{font-weight:500;margin-bottom:10px;padding:0}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip span{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:999px;border:2px solid var(--line);background:var(--panel);cursor:pointer;font-size:15px}
+.chip input:checked+span{background:var(--pink);border-color:var(--pink);color:var(--deep);font-weight:600}
+.chip input:focus-visible+span{outline:3px solid var(--pinkl);outline-offset:2px}
+.msg{min-height:1.5em;margin:0;font-size:15px}
+.msg.err{color:var(--err)}
+.done{background:var(--panel);border:2px solid var(--pink);border-radius:24px;padding:28px;margin-top:32px}
+.done h3{margin:0 0 6px;font-size:24px}
+.done p{margin:0 0 20px;color:var(--soft)}
+.leads{border-top:1px solid #33224f;padding-block:56px}
+.leads-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px}
+.leads h2{font-size:28px}
+.scroll{overflow-x:auto;margin-top:20px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #33224f;vertical-align:top}
+th{color:var(--mute);font-weight:500}
+td.t{white-space:nowrap;color:var(--mute)}
+.note{color:var(--mute);font-size:14px;margin:8px 0 0}
+footer{border-top:1px solid #33224f;padding-block:28px;font-size:14px;color:var(--mute)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+[hidden]{display:none!important}
+@media(max-width:600px){.stage{height:420px}.stage svg{width:240px;height:252px;margin-left:-120px}table{font-size:13px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<a class="brand" href="#top"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a>
+<nav><a class="plain" href="#watch">Watch</a><a class="plain" href="#features">Features</a><a class="btn" href="#join" style="min-height:44px;padding:10px 20px;font-size:15px">Get early access</a></nav>
+</div></header>
+
+<main id="top">
+<section class="wrap hero">
+<div class="copy">
+<p class="kicker">Your AI camming assistant</p>
+<h1>Regulars want to be remembered. New fans want a hello.</h1>
+<p class="lead">StreamWing sits beside you while you're live. It remembers your fans, helps you plan and run the stream, and flags accounts that look like trouble, so you can stay on camera and in the moment.</p>
+<div class="ctas"><a class="btn" href="#join">Get early access</a><a class="btn ghost" href="#features">See what it does</a></div>
+</div>
+<div class="stage">
+<div class="disc"></div>
+<div class="bub" style="left:20px;top:28px"><b>jules</b> remember me from tuesday?</div>
+<div class="bub" style="right:20px;top:92px"><b>mike_t</b> first time here, hi</div>
+<div class="bub" style="left:20px;top:156px"><b>ashh</b> you never answered my DM</div>
+<svg viewBox="0 0 400 420" role="img" aria-label="StreamWing owl wearing a headset">
+<ellipse cx="200" cy="405" rx="120" ry="12" fill="#0d0618" opacity=".6"/>
+<path d="M95 135 L78 58 L152 112Z M305 135 L322 58 L248 112Z" fill="#7c5cc4"/>
+<ellipse cx="200" cy="250" rx="132" ry="150" fill="#7c5cc4"/>
+<path d="M76 245 C38 300 58 362 112 374 C100 322 98 290 76 245Z M324 245 C362 300 342 362 288 374 C300 322 302 290 324 245Z" fill="#5b3fa0"/>
+<ellipse cx="200" cy="292" rx="86" ry="100" fill="#c4b5fd"/>
+<path d="M165 280 l10 10 l10 -10 M215 280 l10 10 l10 -10 M190 315 l10 10 l10 -10 M160 345 l10 10 l10 -10 M220 345 l10 10 l10 -10" stroke="#9b84e0" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="150" cy="190" r="58" fill="#f3eeff"/><circle cx="250" cy="190" r="58" fill="#f3eeff"/>
+<circle cx="155" cy="194" r="30" fill="#1a0f2e"/><circle cx="245" cy="194" r="30" fill="#1a0f2e"/>
+<circle cx="164" cy="183" r="9" fill="#fff"/><circle cx="254" cy="183" r="9" fill="#fff"/>
+<path d="M186 226 L214 226 L200 256Z" fill="#f5a524"/>
+<path d="M76 205 C76 48 324 48 324 205" stroke="#e879f9" stroke-width="14" fill="none" stroke-linecap="round"/>
+<rect x="58" y="182" width="34" height="62" rx="14" fill="#e879f9"/><rect x="308" y="182" width="34" height="62" rx="14" fill="#e879f9"/>
+<path d="M74 240 C78 292 116 304 148 298" stroke="#e879f9" stroke-width="6" fill="none" stroke-linecap="round"/>
+<circle cx="152" cy="297" r="10" fill="#f0abfc"/>
+<ellipse cx="172" cy="398" rx="16" ry="8" fill="#f5a524"/><ellipse cx="228" cy="398" rx="16" ry="8" fill="#f5a524"/>
+</svg>
+</div>
+</section>
+
+<section class="promo" id="watch"><div class="wrap">
+<h2>See StreamWing in 30 seconds</h2>
+<video controls playsinline preload="none" poster="promo-poster.jpg" width="1280" height="720"><source src="promo.mp4" type="video/mp4">Your browser can't play this video.</video>
+</div></section>
+
+<section class="light" id="features"><div class="wrap">
+<h2>What StreamWing handles while you're live</h2>
+<div class="grid" id="feats"></div>
+</div></section>
+
+<section class="signoff"><div class="wrap">
+<svg width="120" height="126" viewBox="0 0 400 420" aria-hidden="true"><path d="M95 135 L78 58 L152 112Z M305 135 L322 58 L248 112Z" fill="#7c5cc4"/><ellipse cx="200" cy="250" rx="132" ry="150" fill="#7c5cc4"/><ellipse cx="200" cy="292" rx="86" ry="100" fill="#c4b5fd"/><circle cx="150" cy="190" r="58" fill="#f3eeff"/><circle cx="250" cy="190" r="58" fill="#f3eeff"/><path d="M120 196 Q150 170 180 196 M220 196 Q250 170 280 196" stroke="#1a0f2e" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M186 226 L214 226 L200 256Z" fill="#f5a524"/><path d="M76 205 C76 48 324 48 324 205" stroke="#e879f9" stroke-width="14" fill="none" stroke-linecap="round"/><rect x="58" y="182" width="34" height="62" rx="14" fill="#e879f9"/><rect x="308" y="182" width="34" height="62" rx="14" fill="#e879f9"/></svg>
+<div><p>Have a good stream.<br>I'll meet some of your fans.</p>
+<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" style="margin-top:16px"><path d="M12 21C5 15.5 2 12 2 8a5 5 0 0 1 10-1 5 5 0 0 1 10 1c0 4-3 7.5-10 13z" fill="#e879f9"/></svg></div>
+</div></section>
+
+<section class="form-band" id="join"><div class="wrap">
+<h2>Get early access</h2>
+<p class="sub">Tell us who you are, where you stream and how to reach you. We'll get in touch when StreamWing is ready for your room.</p>
+
+<form id="leadForm" novalidate>
+<label class="f" for="sname">Streamer name
+<input id="sname" type="text" autocomplete="off" maxlength="60" placeholder="The name your fans know you by">
+</label>
+<fieldset>
+<legend>Which platforms do you stream on?</legend>
+<div class="chips" id="chips"></div>
+<label class="f" for="otherName" id="otherWrap" style="margin-top:14px" hidden>Other platform
+<input id="otherName" type="text" maxlength="60" placeholder="Platform name">
+</label>
+</fieldset>
+<fieldset>
+<legend>Where should we reach you?</legend>
+<div class="chips" id="reachChips">
+<label class="chip"><input type="radio" name="reachVia" value="Email" checked><span>Email</span></label>
+<label class="chip"><input type="radio" name="reachVia" value="Telegram"><span>Telegram</span></label>
+<label class="chip"><input type="radio" name="reachVia" value="WhatsApp"><span>WhatsApp</span></label>
+</div>
+<label class="f" for="reachVal" style="margin-top:14px"><span id="reachLabel">Email address</span>
+<input id="reachVal" type="text" maxlength="120" autocomplete="off" placeholder="you@example.com">
+</label>
+<label class="check" id="waWrap" hidden><input type="checkbox" id="waOk"><span>Yes, StreamWing can message me on WhatsApp about StreamWing. You can stop anytime. See our <a href="/privacy">privacy policy</a>.</span></label>
+</fieldset>
+<p class="note">We'll only use this to reach you about StreamWing.</p>
+<p class="msg" id="msg" role="status" aria-live="polite"></p>
+<button class="btn" type="submit" id="submitBtn">Get early access</button>
+</form>
+
+<div class="survey" id="survey" hidden>
+<p class="kicker" id="svThanks">You're on the list.</p>
+<h3 class="sv-title">Help us build it for your room</h3>
+<p class="sub" style="margin-top:8px">A few quick taps, about two minutes. Skip anything.</p>
+<div class="bar" aria-hidden="true"><span id="svBar"></span></div>
+<p class="note" id="svCount"></p>
+<div id="svStep" aria-live="polite"></div>
+<p class="msg" id="svMsg" role="status"></p>
+<div class="sv-nav">
+<button class="btn ghost" type="button" id="svBack">Back</button>
+<button class="btn" type="button" id="svNext">Next</button>
+</div>
+<button class="linkbtn" type="button" id="svLater">I'm done for now</button>
+</div>
+
+<div class="done" id="done" hidden>
+<h3 id="doneTitle">Thank you.</h3>
+<p>That helps a lot. We'll reach out when StreamWing is ready for your stream.</p>
+<button class="btn" type="button" id="againBtn">Add another creator</button>
+</div>
+</div></section>
+
+<section class="leads" id="leads" hidden><div class="wrap">
+<div class="leads-head"><h2>Leads <span id="leadCount" style="color:var(--mute);font-weight:500"></span></h2>
+<button class="btn ghost" type="button" id="copyBtn" style="min-height:44px;padding:10px 20px;font-size:15px">Copy as CSV</button></div>
+<p class="note">Only you can see this list.</p>
+<p class="msg" id="leadsMsg" role="status"></p>
+<div class="scroll"><table><thead><tr><th>Streamer name</th><th>Platforms</th><th>Reach</th><th>Survey</th><th>Added</th></tr></thead><tbody id="leadRows"></tbody></table></div>
+</div></section>
+</main>
+
+<form name="early-access" data-netlify="true" netlify-honeypot="bot-field" hidden>
+<input name="bot-field"><input name="lead-id"><input name="streamer-name"><input name="platforms"><input name="reach-via"><input name="reach"><input name="whatsapp-optin"><input name="referral-code">
+</form>
+<form name="pain-survey" data-netlify="true" netlify-honeypot="bot-field" hidden>
+<input name="bot-field"><input name="lead-id"><input name="streamer-name"><input name="hours"><input name="audience"><input name="setup"><input name="hardest"><input name="growth"><input name="most-wanted"><input name="tools"><input name="pay-model"><input name="country"><input name="next-stream"><input name="referral"><input name="wish"><input name="completed">
+</form>
+
+<footer><div class="wrap"><span style="font-weight:600;color:var(--ink)">StreamWing</span><span>Your AI camming assistant.</span><span><a href="/privacy">Privacy</a> &nbsp;·&nbsp; <a href="/terms">Terms</a></span></div></footer>
+
+<script>
+{
+const REF=(()=>{try{const q=new URLSearchParams(location.search).get('ref');if(q){const c=q.replace(/[^\w-]/g,'').slice(0,40);if(c){localStorage.setItem('sw_ref',c);return c}}return localStorage.getItem('sw_ref')||''}catch(e){return ''}})();
+const FEATS=[
+["Fan Management","Remembers your fans and preferences",'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M18 11.5c-1.2-1-2.5-2-2.5-3.3a1.5 1.5 0 0 1 2.5-1.1 1.5 1.5 0 0 1 2.5 1.1c0 1.3-1.3 2.3-2.5 3.3z"/>'],
+["Stream Preparation","Plan sessions, goals and announcements",'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 15h3"/>'],
+["Chat Assistance","Suggests responses and helps moderate",'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'],
+["Business Intelligence","Customers, revenue and engagement insights",'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'],
+["Creator Protection","Flags suspicious accounts and potential scams",'<path d="M12 3l8 3v6c0 4.5-3.4 7.8-8 9-4.6-1.2-8-4.5-8-9V6z"/><path d="M12 8v5M12 16v.5"/>'],
+["Retention","Keep fans engaged between streams",'<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/>']];
+document.getElementById('feats').innerHTML=FEATS.map(([t,s,i])=>`<div class="card"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a21caf" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${i}</svg><h3>${t}</h3><p>${s}</p></div>`).join('');
+
+const PLATFORMS=["Chaturbate","Stripchat","MyFreeCams","CamSoda","BongaCams","LiveJasmin","OnlyFans","Fansly","Other"];
+const SURVEY=[
+{id:'hours',q:'How many hours a week do you stream?',type:'one',opts:['Under 10','10 to 20','20 to 40','40 or more']},
+{id:'audience',q:'How many viewers are in your room on a typical night?',type:'one',opts:['Under 100','100 to 1,000','1,000 to 5,000','5,000 or more']},
+{id:'setup',q:'How do you work?',type:'one',opts:['Solo','With a studio','With a manager or assistant']},
+{id:'hardest',q:"What's hardest while you're live? Pick all that apply.",type:'many',other:true,opts:['A few viewers and a few tippers','Keeping up with chat','Remembering regulars','Turning grays into tippers','Spotting scammers and cappers','Planning the show','Tracking what I earn','Keeping fans coming back between streams']},
+{id:'growth',q:'Where do you most want to grow? Pick all that apply.',type:'many',other:true,opts:['More viewers','More tippers','Bigger tips from the tippers I have','More regulars coming back','Better rank on the platform']},
+{id:'most-wanted',q:'If StreamWing did one thing for you, what should it be?',type:'one',other:true,opts:FEATS.map(f=>f[0])},
+{id:'tools',q:'What do you use today? Pick all that apply.',type:'many',other:true,opts:['Chaturbate apps and bots','OBS','StreamerSuite','Notes or spreadsheets','A person who helps me or mods','Nothing yet']},
+{id:'pay-model',q:'How would you rather pay for a tool like this?',type:'one',opts:['A flat monthly fee','A share of the tips it helped me earn','Per hour I stream','Depends on the price']},
+{id:'country',q:'Where are you based?',type:'text',ph:'Country'},
+{id:'next-stream',q:'Want to try StreamWing on one of your next streams?',type:'one',opts:["Yes, I'm in",'Maybe, tell me more','Not yet']},
+{id:'referral',q:'Do you know other creators who would want this?',type:'one',opts:['Yes','Maybe','No']},
+{id:'wish',q:"What's the one thing you wish your stream had?",type:'text',ph:'Anything at all',long:true}];
+
+const $=id=>document.getElementById(id);
+const chips=$('chips');
+chips.innerHTML=PLATFORMS.map((p,i)=>`<label class="chip"><input type="checkbox" value="${p}" id="pl${i}"><span>${p}</span></label>`).join('');
+chips.addEventListener('change',()=>{const o=chips.querySelector('input[value="Other"]');$('otherWrap').hidden=!o.checked;if(!o.checked)$('otherName').value=''});
+
+const REACH={Email:['Email address','you@example.com'],Telegram:['Telegram username','@yourname'],WhatsApp:['WhatsApp number, with country code','+1 312 555 0100']};
+const reachVia=()=>document.querySelector('input[name="reachVia"]:checked').value;
+$('reachChips').addEventListener('change',()=>{const v=reachVia();$('reachLabel').textContent=REACH[v][0];$('reachVal').placeholder=REACH[v][1];$('waWrap').hidden=v!=='WhatsApp';$('reachVal').value=''});
+
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const setMsg=(el,t,err)=>{el.textContent=t;el.className='msg'+(err?' err':'')};
+const newId=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2);
+
+/* Storage: the claude.ai page saves to its private list; anywhere else posts to Netlify Forms. */
+let db=null,mode=typeof claude!=='undefined'&&claude&&claude.use?'claude':'netlify';
+const netlifyPost=async(formName,fields)=>{const b=new URLSearchParams({'form-name':formName,...fields});const r=await fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b.toString()});if(!r.ok)throw new Error(r.status)};
+let lead=null,ref=null,answers={},step=0,surveySent=false;
+
+$('leadForm').addEventListener('submit',async e=>{
+e.preventDefault();
+const msg=$('msg'),name=$('sname').value.trim(),picked=[...chips.querySelectorAll('input:checked')].map(x=>x.value),other=$('otherName').value.trim();
+const via=reachVia(),reach=$('reachVal').value.trim(),waOk=$('waOk').checked;
+if(!name){setMsg(msg,'Add your streamer name.',true);$('sname').focus();return}
+if(!picked.length){setMsg(msg,'Pick at least one platform.',true);return}
+if(picked.includes('Other')&&!other){setMsg(msg,'Name the other platform.',true);$('otherName').focus();return}
+if(!reach){setMsg(msg,'Add your '+REACH[via][0].toLowerCase().split(',')[0]+'.',true);$('reachVal').focus();return}
+if(via==='Email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reach)){setMsg(msg,'That email address looks incomplete.',true);$('reachVal').focus();return}
+if(via==='WhatsApp'&&reach.replace(/\D/g,'').length<8){setMsg(msg,'Add your full WhatsApp number, with country code.',true);$('reachVal').focus();return}
+if(via==='WhatsApp'&&!waOk){setMsg(msg,'Tick the box so we can message you on WhatsApp, or choose another way to reach you.',true);return}
+if(mode==='claude'&&!db){setMsg(msg,"Signups can't be saved on this view, so nothing was recorded.",true);return}
+lead={id:newId(),streamerName:name,platforms:picked.map(p=>p==='Other'?'Other: '+other:p),reachVia:via,reach,whatsappOptIn:via==='WhatsApp'?waOk:false,referralCode:REF,createdAt:new Date().toISOString()};
+$('submitBtn').disabled=true;setMsg(msg,'Saving…');
+try{
+if(mode==='claude'){ref=db.collection('leads').doc(lead.id);await ref.set(lead)}
+else await netlifyPost('early-access',{'lead-id':lead.id,'streamer-name':name,platforms:lead.platforms.join(', '),'reach-via':via,reach,'whatsapp-optin':lead.whatsappOptIn?'yes':'no','referral-code':REF});
+setMsg(msg,'');$('leadForm').hidden=true;$('svThanks').textContent="You're on the list, "+name+'.';answers={};step=0;surveySent=false;$('survey').hidden=false;renderStep();$('survey').scrollIntoView({behavior:'smooth',block:'start'});
+}catch(err){setMsg(msg,err&&err.code==='quota_exceeded'?"The lead list is full, so this one wasn't saved.":"That didn't save. Try again.",true)}
+finally{$('submitBtn').disabled=false}
+});
+
+function renderStep(){
+const s=SURVEY[step],val=answers[s.id];
+$('svCount').textContent='Question '+(step+1)+' of '+SURVEY.length;
+$('svBar').style.width=Math.round(step/SURVEY.length*100)+'%';
+let h=`<fieldset><legend class="sv-q">${s.q}</legend>`;
+if(s.type==='text')h+=s.long?`<textarea id="svText" maxlength="500" rows="3" placeholder="${s.ph}" aria-label="${s.q}"></textarea>`:`<input id="svText" type="text" maxlength="80" placeholder="${s.ph}" aria-label="${s.q}">`;
+else{const opts=s.other?[...s.opts,'Other']:s.opts;h+='<div class="chips">'+opts.map((o,i)=>`<label class="chip"><input type="${s.type==='one'?'radio':'checkbox'}" name="sv" value="${esc(o)}" id="sv${i}"><span>${esc(o)}</span></label>`).join('')+'</div>';if(s.other)h+='<label class="f" for="svOther" id="svOtherWrap" style="margin-top:14px" hidden>Tell us more<input id="svOther" type="text" maxlength="120" placeholder="Type your answer"></label>'}
+$('svStep').innerHTML=h+'</fieldset>';
+if(s.type==='text'){$('svText').value=val||''}
+else{const vals=val===undefined?[]:Array.isArray(val)?val:[val];const oth=vals.find(v=>v.startsWith('Other: '));for(const inp of $('svStep').querySelectorAll('input[name="sv"]')){inp.checked=vals.includes(inp.value)||(inp.value==='Other'&&!!oth)}if(s.other){$('svOtherWrap').hidden=!oth&&!vals.includes('Other');if(oth)$('svOther').value=oth.slice(7)}}
+$('svBack').hidden=step===0;$('svNext').textContent=step===SURVEY.length-1?'Finish':'Next';setMsg($('svMsg'),'');
+}
+function readStep(){
+const s=SURVEY[step];
+if(s.type==='text'){const v=$('svText').value.trim();if(v)answers[s.id]=v;else delete answers[s.id];return}
+const ot=s.other?$('svOther').value.trim():'';const v=[...$('svStep').querySelectorAll('input[name="sv"]:checked')].map(x=>x.value==='Other'?(ot?'Other: '+ot:'Other'):x.value);
+if(!v.length)delete answers[s.id];else answers[s.id]=s.type==='one'?v[0]:v;
+}
+$('svStep').addEventListener('change',e=>{const s=SURVEY[step];if(s.other&&e.target.name==='sv'){const o=$('svStep').querySelector('input[name="sv"][value="Other"]');$('svOtherWrap').hidden=!o.checked;if(o.checked&&e.target===o){$('svOther').focus();return}}if(s.type==='one'&&e.target.type==='radio'&&e.target.value!=='Other'){readStep();setTimeout(()=>{if(step<SURVEY.length-1){step++;renderStep()}},180)}});
+$('svBack').addEventListener('click',()=>{readStep();if(step>0){step--;renderStep()}});
+$('svNext').addEventListener('click',()=>{readStep();if(step<SURVEY.length-1){step++;renderStep()}else finish(true)});
+$('svLater').addEventListener('click',()=>{readStep();finish(false)});
+
+async function finish(complete){
+if(surveySent)return;
+const btns=[$('svNext'),$('svLater'),$('svBack')];btns.forEach(b=>b.disabled=true);setMsg($('svMsg'),'Saving…');
+const flat={};for(const s of SURVEY)if(answers[s.id]!==undefined)flat[s.id]=Array.isArray(answers[s.id])?answers[s.id].join('; '):answers[s.id];
+try{
+if(Object.keys(flat).length){
+if(mode==='claude')await ref.update({survey:{...flat,completed:complete,answeredAt:new Date().toISOString()}});
+else await netlifyPost('pain-survey',{'lead-id':lead.id,'streamer-name':lead.streamerName,...flat,completed:complete?'yes':'no'});
+}
+surveySent=true;$('survey').hidden=true;$('doneTitle').textContent='Thank you, '+lead.streamerName+'.';$('done').hidden=false;
+}catch(err){setMsg($('svMsg'),"That didn't save. Try again.",true)}
+finally{btns.forEach(b=>b.disabled=false)}
+}
+let lastPartial='';
+function sendPartial(){
+if(!lead||surveySent||$('survey').hidden)return;
+try{readStep()}catch(e){}
+const flat={};for(const s of SURVEY)if(answers[s.id]!==undefined)flat[s.id]=Array.isArray(answers[s.id])?answers[s.id].join('; '):answers[s.id];
+const key=JSON.stringify(flat);if(!Object.keys(flat).length||key===lastPartial)return;lastPartial=key;
+if(mode==='claude'){if(ref)ref.update({survey:{...flat,completed:false,answeredAt:new Date().toISOString()}}).catch(()=>{});return}
+const b=new URLSearchParams({'form-name':'pain-survey','lead-id':lead.id,'streamer-name':lead.streamerName,...flat,completed:'no'});
+if(!(navigator.sendBeacon&&navigator.sendBeacon('/',b)))fetch('/',{method:'POST',keepalive:true,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b.toString()}).catch(()=>{});
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')sendPartial()});
+window.addEventListener('pagehide',sendPartial);
+$('againBtn').addEventListener('click',()=>{$('leadForm').reset();$('otherWrap').hidden=true;$('waWrap').hidden=true;$('reachLabel').textContent=REACH.Email[0];$('reachVal').placeholder=REACH.Email[1];$('done').hidden=true;$('leadForm').hidden=false;lead=null;ref=null;setMsg($('msg'),'');$('sname').focus()});
+
+/* Owner-only list, claude.ai page only */
+let current=[];
+function renderLeads(docs){
+current=docs.map(d=>d.data()).filter(Boolean);
+$('leadCount').textContent='('+current.length+')';
+$('leadRows').innerHTML=current.length?current.map(l=>`<tr><td>${esc(l.streamerName||'')}</td><td>${esc((l.platforms||[]).join(', '))}</td><td>${esc((l.reachVia||'')+(l.reach?': '+l.reach:''))}</td><td>${l.survey?(l.survey.completed?'Done':'Partial'):'None'}</td><td class="t">${esc(l.createdAt?new Date(l.createdAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')}</td></tr>`).join(''):'<tr><td colspan="5" style="color:var(--mute)">No leads yet. The first creator who signs up shows here.</td></tr>';
+}
+$('copyBtn').addEventListener('click',async()=>{
+const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+const cols=SURVEY.map(s=>s.id);
+const head=['Streamer name','Platforms','Reach via','Reach','WhatsApp opt-in','Added',...cols,'Survey completed'];
+const rows=current.map(l=>[l.streamerName,(l.platforms||[]).join('; '),l.reachVia,l.reach,l.whatsappOptIn?'yes':'no',l.createdAt,...cols.map(c=>l.survey&&l.survey[c]),l.survey?(l.survey.completed?'yes':'no'):''].map(q).join(','));
+try{await navigator.clipboard.writeText([head.map(q).join(','),...rows].join('\n'));$('leadsMsg').textContent='Copied '+current.length+' leads.'}catch(e){$('leadsMsg').textContent="Couldn't copy here."}
+});
+
+if(mode==='claude')(async()=>{
+try{db=await claude.use('db')}catch(e){db=null}
+if(!db){$('submitBtn').disabled=true;setMsg($('msg'),"Signups aren't open on this view yet.",true);return}
+let owner=false;
+try{const u=await claude.use('user');owner=!!(u&&await u.isOwner())}catch(e){}
+if(!owner)return;
+$('leads').hidden=false;
+const timer=setTimeout(()=>{$('leadsMsg').textContent="The lead list can't be reached yet."},10000);
+db.collection('leads').orderBy('createdAt','desc').onSnapshot(s=>{if(!s.metadata.fromCache){clearTimeout(timer);$('leadsMsg').textContent=''}renderLeads(s.docs)},()=>{clearTimeout(timer);$('leadsMsg').textContent="The lead list couldn't load."});
+})();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open StreamWing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#160c26;--panel:#22143a;--line:#4a3470;--ink:#f4eefe;--soft:#d8cdf0;--mute:#b9a9d9;--pink:#e879f9;--pinkl:#f0abfc;--deep:#1a0f2e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Poppins,system-ui,sans-serif}
+a{color:var(--pinkl)}
+:focus-visible{outline:3px solid var(--pinkl);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto;padding-inline:max(5vw,16px)}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:20px;max-width:1200px}
+.brand{color:var(--ink);text-decoration:none;font-weight:700;font-size:22px}
+main{padding-block:40px 80px}
+h1{font-size:clamp(32px,5vw,48px);line-height:1.1;margin:0 0 16px}
+h2{font-size:22px;margin:40px 0 8px}
+p,li{color:var(--soft)}
+.note{color:var(--mute);font-size:14px}
+.btn{display:inline-flex;align-items:center;min-height:48px;padding:12px 26px;border-radius:999px;background:var(--pink);color:var(--deep);font-weight:600;font-size:17px;text-decoration:none;margin-top:24px}
+footer{border-top:1px solid #33224f;padding-block:28px;font-size:14px;color:var(--mute)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;max-width:1200px}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a class="brand" href="/">StreamWing</a><a href="/#join">Get early access</a></div></header>
+<main><div class="wrap">
+<h1>The StreamWing bot opens here.</h1>
+<p>We're testing it with a small group of creators right now. Get early access and we'll send you your invite when your spot opens.</p>
+<a class="btn" href="/#join">Get early access</a>
+</div></main>
+<footer><div class="wrap"><span style="font-weight:600;color:var(--ink)">StreamWing</span><span><a href="/privacy">Privacy</a> &nbsp;·&nbsp; <a href="/terms">Terms</a></span></div></footer>
+</body>
+</html>

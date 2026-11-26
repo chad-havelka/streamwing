@@ -157,7 +157,7 @@ function noKey(msg) {
 
 function connectScreen(me) {
   setStatus('Not connected');
-  const ta = h('textarea', { id: 'eventsUrl', placeholder: 'Paste your token here', 'aria-label': 'Your token or Events API link', autocomplete: 'off', spellcheck: 'false' });
+  const ta = h('textarea', { id: 'eventsUrl', placeholder: 'Paste the link from Chaturbate here', 'aria-label': 'The link from Chaturbate', autocomplete: 'off', spellcheck: 'false' });
   const msg = h('p', { class: 'msg', 'aria-live': 'polite' });
   const btn = h('button', { class: 'btn', type: 'button', onclick: async () => {
     msg.className = 'msg'; msg.textContent = 'Checking with Chaturbate…'; btn.disabled = true;
@@ -169,9 +169,10 @@ function connectScreen(me) {
     h('h1', {}, 'Hi ' + me.displayName + '. One setup step.'),
     h('p', {}, 'StreamWing reads your room through Chaturbate’s Events API. It only reads. It never posts in your room or touches your account.'),
     h('ol', {},
-      h('li', {}, 'Open ', h('a', { href: 'https://chaturbate.com/statsapi/authtoken/', target: '_blank', rel: 'noopener' }, 'your Chaturbate token page'), ' (you need to be logged in).'),
-      h('li', {}, 'Create a token and tick ', h('b', {}, 'Events API'), '.'),
-      h('li', {}, 'Copy the token (or the Events API link, either works) and paste it here.')),
+      h('li', {}, 'Open ', h('a', { href: 'https://chaturbate.com/statsapi/authtoken/', target: '_blank', rel: 'noopener' }, 'your Chaturbate token page'), ', logged in as ' + me.username + '.'),
+      h('li', {}, 'Name the token StreamWing and tick ', h('b', {}, 'Events API'), '.'),
+      h('li', {}, 'Click ', h('b', {}, 'Generate auth token'), '.'),
+      h('li', {}, 'Copy the whole link that appears on the page and paste it here.')),
     ta, h('div', { style: 'margin-top:14px' }, btn), msg,
     h('p', { class: 'note', style: 'margin-top:14px' }, 'You can disconnect at any time, and deleting the token on Chaturbate cuts StreamWing off straight away.')));
 }

@@ -159,3 +159,11 @@ test('a bare token is turned into her Events API link', async () => {
   assert.equal(parseEventsUrl('https://eventsapi.chaturbate.com/events/Jhessi_kissie/AbC123xyz456/?timeout=10', 'Jhessi_kissie'), 'https://eventsapi.chaturbate.com/events/Jhessi_kissie/AbC123xyz456/');
   assert.throws(() => parseEventsUrl('short', 'Jhessi_kissie'));
 });
+
+test('the token page link, in any shape Chaturbate shows it, becomes her Events API link', async () => {
+  const { parseEventsUrl } = await import('../src/cb.js');
+  const want = 'https://eventsapi.chaturbate.com/events/Jhessi_kissie/AbC123xyz456/';
+  assert.equal(parseEventsUrl('https://chaturbate.com/statsapi/?username=Jhessi_kissie&token=AbC123xyz456', 'Jhessi_kissie'), want);
+  assert.throws(() => parseEventsUrl('https://chaturbate.com/statsapi/?username=someone&token=AbC123xyz456', 'Jhessi_kissie'), /not Jhessi_kissie/);
+  assert.throws(() => parseEventsUrl('https://chaturbate.com/statsapi/authtoken/', 'Jhessi_kissie'), /Generate auth token/);
+});

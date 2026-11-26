@@ -16,7 +16,22 @@ export function parseEventsUrl(input, expectedUsername) {
   if (u.protocol !== 'https:' && !(u.protocol === 'http:' && process.env.ALLOW_HTTP_EVENTS === '1')) throw new Error('The link has to start with https://');
   const parts = u.pathname.split('/').filter(Boolean);
   const i = parts.indexOf('events');
-  if (i < 0 || parts.length < i + 3) throw new Error("That doesn't look like an Events API link. It should end with /events/your-username/your-token/");
+  if (i < 0 || parts.length < i + 3) {
+    // Chaturbate's token page can also show a Stats API style link that carries the token
+    // as ?token=... Pull the token out of that and build her Events API link from it.
+    const token = u.searchParams.get('token');
+    const who = u.searchParams.get('username') || expectedUsername;
+    if (token && /^[A-Za-z0-9_-]{8,}$/.test(token) && who) {
+      if (expectedUsername && who.toLowerCase() !== expectedUsername.toLowerCase()) {
+        throw new Error(`That link is for ${who}, not ${expectedUsername}.`);
+      }
+      return `https://eventsapi.chaturbate.com/events/${encodeURIComponent(expectedUsername || who)}/${token}/`;
+    }
+    if (/\/statsapi\/authtoken/.test(u.pathname)) {
+      throw new Error("That's the address of the token page itself. Click \"Generate auth token\" there, then copy the link that appears on the page.");
+    }
+    throw new Error("That doesn't look like the link from Chaturbate's token page. Copy the whole link that appears after you click \"Generate auth token\".");
+  }
   const username = parts[i + 1];
   if (expectedUsername && username.toLowerCase() !== expectedUsername.toLowerCase()) {
     throw new Error(`That link is for ${username}, not ${expectedUsername}.`);

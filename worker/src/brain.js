@@ -68,10 +68,14 @@ export async function processEvent(c, performer, ev) {
   const pid = performer.id;
   const uname = ev.user?.username || null;
 
+  // Private messages are hers. We keep that one happened, never what it said.
+  const payload = ev.method === 'privateMessage'
+    ? { method: ev.method, id: ev.raw.id, object: { broadcaster: ev.broadcaster, user: ev.raw.object?.user, message: '[not stored]' } }
+    : ev.raw;
   const ins = await c.query(
     `insert into events (performer_id, cb_event_id, method, username, payload)
      values ($1,$2,$3,$4,$5) on conflict (performer_id, cb_event_id) do nothing returning id`,
-    [pid, ev.id, ev.method, uname, ev.raw]);
+    [pid, ev.id, ev.method, uname, payload]);
   if (!ins.rows[0]) return { duplicate: true };
 
   const items = [];

@@ -69,6 +69,7 @@ test('connect, then stream 1: grays, light blues, a conversion, a recap', async 
     ev('userEnter', { user: dave }),
     ev('userLeave', { user: dave }),
     ev('chatMessage', { user: user('sim_room', { isOwner: true }), message: { message: 'thanks luna!' } }),
+    ev('privateMessage', { user: luna, message: { message: 'secret pm text', fromUser: 'luna_92', toUser: 'sim_room' } }),
     ev('broadcastStop', { user: user('sim_room', { isOwner: true }) }),
   ]);
   await settle();
@@ -88,6 +89,10 @@ test('connect, then stream 1: grays, light blues, a conversion, a recap', async 
   assert.equal(lunaCard.total_tips, 25);
   assert.equal(lunaCard.last_message, 'hiii first time here');
   assert.equal(lunaCard.visits, 1);
+  // Private message text is never stored.
+  const pm = (await q(`select payload::text p from events where method='privateMessage'`)).rows;
+  assert.equal(pm.length, 1);
+  assert.ok(!pm[0].p.includes('secret pm text'));
   // The performer's own chat never becomes a fan.
   assert.equal((await call('/api/fans/sim_room')).status, 404);
 });

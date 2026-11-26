@@ -8,6 +8,7 @@ import { parseEventsUrl, poll, CbError } from './cb.js';
 import { subscribe } from './bus.js';
 import { startLoop, stopLoop, isPolling } from './poller.js';
 import { buildRecap } from './brain.js';
+import { recoverLink } from './recover.js';
 
 const send = (res, status, body, headers = {}) => {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers });
@@ -73,6 +74,11 @@ export function startHttp() {
 
     try {
       if (path === '/health') return send(res, 200, { ok: true, ai: !!config.aiKey, keySource: config.keySource, monitor: !!config.healthcheckUrl });
+
+      if (req.method === 'POST' && path === '/api/recover-link') {
+        const { eventsUrl } = await readJson(req);
+        return send(res, 200, await recoverLink(eventsUrl, req.socket.remoteAddress));
+      }
 
       const p = await auth(req, url);
       if (!p) return send(res, 401, { error: 'This link is not valid. Ask StreamWing for a new one.' });

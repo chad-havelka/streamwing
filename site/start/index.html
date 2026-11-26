@@ -38,7 +38,43 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 .stat b{display:block;font-size:22px;line-height:1.1}
 .stat span{font-size:12px;color:var(--mute)}
 .tabs{display:flex;gap:8px;margin:6px 0 12px}
-.tabs button{flex:1;min-height:44px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--soft);font-weight:600;cursor:pointer}
+.tabs button{flex:1;min-height:44px;padding:0 6px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--soft);font-weight:600;font-size:15px;cursor:pointer}
+[data-user]:not([data-user='']){cursor:pointer}
+.sec{margin:18px 0 8px;font-size:13px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--mute)}
+.sec:first-child{margin-top:4px}
+.fanrow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--panel)}
+.fanrow .who{flex:1}
+.fanrow .who b{display:block;font-size:17px;word-break:break-word}
+.fanrow .who span{font-size:14px;color:var(--mute)}
+.fanrow .amt{font-weight:700;font-size:17px;text-align:right}
+.fanrow .amt span{display:block;font-size:12px;font-weight:400;color:var(--mute)}
+.fanrow.slip{border-left:6px solid var(--gold)}
+.search{width:100%;font:16px Poppins,system-ui,sans-serif;padding:12px 16px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);min-height:48px}
+.streamcard{background:var(--panel);border-radius:18px;padding:14px 16px}
+.streamcard h3{margin:0 0 10px;font-size:16px;font-weight:600}
+.streamcard .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.streamcard .grid div{background:var(--bg);border-radius:12px;padding:8px;text-align:center}
+.streamcard .grid b{display:block;font-size:19px}
+.streamcard .grid span{font-size:11px;color:var(--mute)}
+.d{display:block;font-size:12px;font-weight:600;margin-top:2px}
+.d.up{color:var(--green)} .d.down{color:var(--err)} .d.same{color:var(--mute)}
+.vs{margin:12px 0 0;font-size:14px;color:var(--soft)}
+.prof .in{max-height:88vh;overflow:auto}
+.prof .pname{font-size:28px;font-weight:700;line-height:1.15;margin:0 0 6px;word-break:break-word}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.badge{font-size:13px;padding:4px 10px;border-radius:999px;background:var(--panel2);color:var(--soft)}
+.badge.lb{background:#12324a;color:var(--blue)} .badge.gold{background:#3a2a0c;color:var(--gold)}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pgrid div{background:var(--bg);border-radius:12px;padding:10px 6px;text-align:center}
+.pgrid b{display:block;font-size:20px}
+.pgrid span{font-size:12px;color:var(--mute)}
+.seen{margin:10px 0 0;font-size:14px;color:var(--mute)}
+.notebox textarea{font:15px/1.45 Poppins,system-ui,sans-serif;min-height:80px}
+.notebox .btnrow{display:flex;align-items:center;gap:12px;margin-top:10px}
+.notebox .btnrow .btn{min-height:44px;padding:10px 20px}
+.plist{display:flex;flex-direction:column;gap:6px}
+.plist div{display:flex;gap:10px;padding:8px 12px;border-radius:12px;background:var(--bg);font-size:15px;color:var(--soft)}
+.plist div .t{margin-left:auto;flex:none;font-size:12px;color:var(--mute)}
 .tabs button[aria-selected=true]{background:var(--pink);border-color:var(--pink);color:var(--deep)}
 .list{display:flex;flex-direction:column;gap:10px}
 .card{background:var(--panel);border-radius:18px;padding:14px 16px;border-left:6px solid var(--line)}
@@ -98,6 +134,8 @@ textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:12px 14px
 
 <main class="wrap" id="app"></main>
 
+<div class="sheet prof" id="fanSheet" hidden><div class="in" role="dialog" aria-modal="true" aria-label="Fan profile" id="fanSheetIn"></div></div>
+
 <div class="sheet" id="sheet" hidden><div class="in" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
   <h2 id="sheetTitle">Settings</h2>
   <p class="note" id="sheetInfo"></p>
@@ -130,6 +168,9 @@ else try {
   if (key && !m) history.replaceState(null, '', location.pathname + '#k=' + key);
 } catch (e) {}
 
+// Fill an element, skipping pieces that are switched off (false, null).
+const put = (el, ...kids) => el.replaceChildren(...kids.flat().filter(k => k != null && k !== false));
+
 // Safe DOM building. Usernames and chat come from strangers, so nothing is ever set as HTML.
 function h(tag, attrs, ...kids) {
   const el = document.createElement(tag);
@@ -148,13 +189,24 @@ const demo = {
 };
 const daysAgo = d => new Date(Date.now() - d * 86400000).toISOString();
 const DEMO_FANS = {
-  velvet_rob: { username: 'velvet_rob', total_tips: 1240, visit_days: 14, last_tip_at: daysAgo(3), in_fanclub: true, is_follower: true, has_tokens: true, last_message: 'made it just in time' },
+  velvet_rob: { username: 'velvet_rob', total_tips: 1240, tip_count: 22, biggest_tip: 200, visit_days: 14, last_tip_at: daysAgo(3), in_fanclub: true, is_follower: true, has_tokens: true, last_message: 'made it just in time' },
   curious_k:  { username: 'curious_k', total_tips: 0, visit_days: 1, has_tokens: false },
   mike_t:     { username: 'mike_t', total_tips: 0, visit_days: 3, is_follower: true, has_tokens: true, last_message: 'your laugh is the best part of my night' },
   sam_vee:    { username: 'sam_vee', total_tips: 0, visit_days: 6, is_follower: true, has_tokens: false, last_message: 'hi again' },
   kat_x:      { username: 'kat_x', total_tips: 0, visit_days: 1, has_tokens: true },
-  dave_r:     { username: 'dave_r', total_tips: 85, visit_days: 4, last_tip_at: daysAgo(1), is_follower: true, has_tokens: true, last_message: 'how did the new song go?' },
+  dave_r:     { username: 'dave_r', total_tips: 85, tip_count: 3, biggest_tip: 50, visit_days: 4, last_tip_at: daysAgo(1), is_follower: true, has_tokens: true, last_message: 'how did the new song go?' },
 };
+// Fans from earlier streams, for the Fans tab and the slipping-away list.
+const DEMO_PAST = {
+  old_rick: { username: 'old_rick', total_tips: 860, tip_count: 14, biggest_tip: 200, visit_days: 19, missed_streams: 5, last_seen: daysAgo(9), is_follower: true, has_tokens: true, last_message: 'see you friday!', tipsList: [{ at: daysAgo(9), tokens: 100, message: '' }, { at: daysAgo(12), tokens: 200, message: 'happy anniversary stream' }] },
+  nora_b:   { username: 'nora_b', total_tips: 0, visit_days: 8, missed_streams: 3, last_seen: daysAgo(5), is_follower: true, has_tokens: false, last_message: 'night all' },
+};
+const DEMO_ALL = () => ({ ...DEMO_PAST, ...DEMO_FANS });
+const DEMO_SESSIONS = [
+  { id: 'd1', started_at: daysAgo(1), ended_at: new Date(Date.now() - 86400000 + 3 * 3600000).toISOString(), tokens: 120, tippers: 2, unique_visitors: 5, returning_visitors: 3, light_blues_converted: 0, new_followers: 0 },
+  { id: 'd2', started_at: daysAgo(2), ended_at: new Date(Date.now() - 2 * 86400000 + 2.5 * 3600000).toISOString(), tokens: 95, tippers: 2, unique_visitors: 4, returning_visitors: 2, light_blues_converted: 1, new_followers: 1 },
+  { id: 'd3', started_at: daysAgo(3), ended_at: new Date(Date.now() - 3 * 86400000 + 3.2 * 3600000).toISOString(), tokens: 60, tippers: 1, unique_visitors: 4, returning_visitors: 1, light_blues_converted: 0, new_followers: 0 },
+];
 const DEMO_SCRIPT = [
   ['live', null],
   ['big_tipper_back', 'velvet_rob'],
@@ -180,7 +232,8 @@ function demoStep([kind, username, extra = {}]) {
       minutes: 187, tokens: s.tokens, tippers: s.tippers, uniqueVisitors: s.unique_visitors, newVisitors: 2, returningVisitors: s.unique_visitors - 2,
       lightBluesSeen: s.light_blues_seen, lightBluesConverted: s.light_blues_converted, newFollowers: 1, fanclubJoins: 0,
       topTippers: [{ username: 'velvet_rob', tipped: 100 }, { username: 'dave_r', tipped: 50 }, { username: 'mike_t', tipped: 25 }],
-      convertedFans: ['mike_t'], lightBluesNotYet: ['kat_x'] } };
+      convertedFans: ['mike_t'], lightBluesNotYet: ['kat_x'],
+      previous: { tokens: 120, tippers: 2, uniqueVisitors: 5, returningVisitors: 3, lightBluesConverted: 0, newFollowers: 0 } } };
     demo.items.unshift(item); return item;
   }
   if (kind === 'live') demo.live = true;
@@ -214,6 +267,25 @@ async function demoApi(path, opts) {
   }
   if (path === '/api/disconnect') { demo.connected = false; demo.live = false; clearInterval(demo.script); return { ok: true }; }
   if (path.startsWith('/api/feed')) return { items: demo.items.slice() };
+  const noteM = path.match(/^\/api\/fans\/([^/]+)\/note$/);
+  if (noteM) { const u = decodeURIComponent(noteM[1]); const f = DEMO_ALL()[u]; if (!f) throw Object.assign(new Error('not found'), { status: 404 }); f.owner_note = JSON.parse(opts.body).note.trim() || null; f.owner_note_at = new Date().toISOString(); return { owner_note: f.owner_note }; }
+  if (path.startsWith('/api/fans/')) {
+    const f = DEMO_ALL()[decodeURIComponent(path.slice(10))];
+    if (!f) throw Object.assign(new Error('not found'), { status: 404 });
+    return { biggest_tip: 0, tip_count: 0, visits: f.visit_days, first_seen: daysAgo(f.visit_days * 3 + 2), last_seen: f.last_seen || new Date().toISOString(),
+      streams_attended: f.visit_days, recent_messages: f.last_message ? [{ t: f.last_seen || new Date().toISOString(), m: f.last_message }] : [],
+      tips: f.tipsList || [], ...f };
+  }
+  if (path.startsWith('/api/fans')) {
+    const q = decodeURIComponent((path.split('q=')[1] || '')).toLowerCase();
+    return { fans: Object.values(DEMO_ALL()).filter(f => !q || f.username.toLowerCase().startsWith(q)).sort((a, b) => b.total_tips - a.total_tips || b.visit_days - a.visit_days) };
+  }
+  if (path === '/api/slipping') return { fans: [DEMO_PAST.old_rick, DEMO_PAST.nora_b] };
+  if (path === '/api/sessions') {
+    const s = demo.session;
+    const cur = demo.live || s.ended_at ? [{ ...s }] : [];
+    return { sessions: [...cur, ...DEMO_SESSIONS] };
+  }
   if (path === '/api/room') return { fans: [...demo.room].sort((a, b) => b.total_tips - a.total_tips || b.visit_days - a.visit_days) };
   return {};
 }
@@ -268,7 +340,7 @@ function connectScreen(me) {
     catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
     finally { btn.disabled = false; }
   } }, 'Connect');
-  app.replaceChildren(DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo. Paste anything to see what happens next.'), h('div', { class: 'box' },
+  put(app, DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo. Paste anything to see what happens next.'), h('div', { class: 'box' },
     h('h1', {}, 'Hi ' + me.displayName + '. One setup step.'),
     h('p', {}, 'StreamWing reads your room through Chaturbate’s Events API. It only reads. It never posts in your room or touches your account.'),
     h('ol', {},
@@ -334,8 +406,125 @@ function recapCard(r) {
       [[n(r.tokens), 'tokens'], [n(r.tippers), 'tippers'], [n(r.uniqueVisitors), 'visitors'],
        [n(r.returningVisitors), 'came back'], [`${n(r.lightBluesConverted)} of ${n(r.lightBluesSeen)}`, 'light blues tipped'], [n(r.newFollowers), 'new followers']]
         .map(([b, s]) => h('div', {}, h('b', {}, b), h('span', {}, s)))),
-    parts.map(p => h('p', {}, p)));
+    parts.map(p => h('p', {}, p)),
+    r.previous && h('p', { class: 'vs' }, 'Compared with your last stream: ' + [
+      ['tokens', r.tokens, r.previous.tokens], ['came back', r.returningVisitors, r.previous.returningVisitors],
+      ['visitors', r.uniqueVisitors, r.previous.uniqueVisitors], ['light blues tipped', r.lightBluesConverted, r.previous.lightBluesConverted],
+    ].map(([label, a, b]) => `${label} ${deltaText(a, b)}`).join(' · ') + '.'));
 }
+
+// "+3", "−2" or "same", for comparing a stream with the one before.
+function deltaText(a, b) { const d = Number(a || 0) - Number(b || 0); return d > 0 ? `+${n(d)}` : d < 0 ? `\u2212${n(-d)}` : 'same'; }
+function deltaEl(a, b) {
+  if (b == null) return null;
+  const d = Number(a || 0) - Number(b || 0);
+  return h('span', { class: 'd ' + (d > 0 ? 'up' : d < 0 ? 'down' : 'same') }, deltaText(a, b));
+}
+const when = t => new Date(t).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const dur = (a, b) => { const m = Math.round((new Date(b || Date.now()) - new Date(a)) / 60000); return `${Math.floor(m / 60)}h ${m % 60}m`; };
+
+// ---------- Streams tab ----------
+async function renderStreams() {
+  const list = $('list');
+  try {
+    const { sessions } = await api('/api/sessions');
+    if (tab !== 'streams') return;
+    if (!sessions.length) return list.replaceChildren(h('p', { class: 'empty' }, 'Your streams show up here, each compared with the one before it.'));
+    list.replaceChildren(...sessions.map((s, i) => {
+      const p = sessions[i + 1] || null;
+      const cell = (val, prevVal, label) => h('div', {}, h('b', {}, n(val)), h('span', {}, label), p && deltaEl(val, prevVal));
+      return h('div', { class: 'streamcard' },
+        h('h3', {}, s.ended_at ? `${when(s.started_at)} · ${dur(s.started_at, s.ended_at)}` : `Live now · ${dur(s.started_at)}`),
+        h('div', { class: 'grid' },
+          cell(s.tokens, p?.tokens, 'tokens'), cell(s.tippers, p?.tippers, 'tippers'), cell(s.unique_visitors, p?.unique_visitors, 'visitors'),
+          cell(s.returning_visitors, p?.returning_visitors, 'came back'), cell(s.light_blues_converted, p?.light_blues_converted, 'blues tipped'), cell(s.new_followers, p?.new_followers, 'new followers')));
+    }), h('p', { class: 'note', style: 'text-align:center' }, 'Green and red show the change from the stream before.'));
+  } catch (e) { list.replaceChildren(h('p', { class: 'empty' }, e.message)); }
+}
+
+// ---------- Fans tab: slipping away, then everyone ----------
+let fanQuery = '', fanTimer = null;
+function fanRow(f, slip) {
+  const sub = slip
+    ? `missed your last ${f.missed_streams} streams · ${f.visit_days} ${f.visit_days === 1 ? 'day' : 'days'} here`
+    : `${f.visit_days > 1 ? nth(f.visit_days) + ' day' : 'first day'} · last here ${ago(f.last_seen)}${f.owner_note ? ' · has a note' : ''}`;
+  return h('div', { class: 'fanrow' + (slip ? ' slip' : ''), 'data-user': f.username },
+    h('div', { class: 'who' }, h('b', {}, f.username), h('span', {}, sub)),
+    h('div', { class: 'amt' }, Number(f.total_tips) ? n(f.total_tips) : '\u2013', h('span', {}, 'tipped')));
+}
+async function renderFans() {
+  const list = $('list');
+  const input = h('input', { class: 'search', type: 'search', placeholder: 'Find a fan by name', value: fanQuery, 'aria-label': 'Find a fan by name', autocomplete: 'off', spellcheck: 'false' });
+  input.addEventListener('input', () => { fanQuery = input.value; clearTimeout(fanTimer); fanTimer = setTimeout(() => fillFans(body), 250); });
+  const body = h('div', { class: 'list' });
+  list.replaceChildren(input, body);
+  fillFans(body);
+}
+async function fillFans(body) {
+  try {
+    const [{ fans }, slip] = await Promise.all([
+      api('/api/fans' + (fanQuery ? '?q=' + encodeURIComponent(fanQuery) : '')),
+      fanQuery ? Promise.resolve({ fans: [] }) : api('/api/slipping'),
+    ]);
+    if (tab !== 'fans') return;
+    const els = [];
+    if (slip.fans.length) {
+      els.push(h('p', { class: 'sec' }, 'Slipping away'), h('p', { class: 'note', style: 'margin:-4px 0 4px' }, 'They used to come or tip, and missed your last 3 streams or more. Worth a hello on your socials.'));
+      els.push(...slip.fans.map(f => fanRow(f, true)));
+    }
+    els.push(h('p', { class: 'sec' }, fanQuery ? 'Matches' : 'Everyone, top tippers first'));
+    els.push(...(fans.length ? fans.map(f => fanRow(f, false)) : [h('p', { class: 'empty' }, fanQuery ? 'Nobody by that name yet.' : 'Fans show up here after your first stream with StreamWing.')]));
+    body.replaceChildren(...els);
+  } catch (e) { body.replaceChildren(h('p', { class: 'empty' }, e.message)); }
+}
+
+// ---------- Fan profile ----------
+async function openProfile(username) {
+  const box = $('fanSheetIn');
+  box.replaceChildren(h('p', { class: 'note' }, 'Loading ' + username + '\u2026'));
+  $('fanSheet').hidden = false;
+  let f;
+  try { f = await api('/api/fans/' + encodeURIComponent(username)); }
+  catch (e) { box.replaceChildren(h('p', { class: 'msg err' }, e.status === 404 ? 'StreamWing hasn\u2019t seen ' + username + ' in your room yet.' : e.message), closeBtn()); return; }
+  const badges = [];
+  if (f.in_fanclub) badges.push(h('span', { class: 'badge gold' }, 'Fan club'));
+  if (f.is_follower) badges.push(h('span', { class: 'badge' }, 'Follows you'));
+  if (f.has_tokens && !Number(f.total_tips)) badges.push(h('span', { class: 'badge lb' }, 'Has tokens, never tipped you'));
+  if (f.is_mod) badges.push(h('span', { class: 'badge' }, 'Moderator'));
+  const ta = h('textarea', { 'aria-label': 'Your note about ' + f.username, maxlength: '500', placeholder: 'Only you see this. Their birthday, what they like, what you talked about.' });
+  ta.value = f.owner_note || '';
+  const saved = h('span', { class: 'note', 'aria-live': 'polite' }, f.owner_note_at ? 'Saved ' + ago(f.owner_note_at) + ' ago' : '');
+  const save = h('button', { class: 'btn', type: 'button', onclick: async () => {
+    save.disabled = true; saved.textContent = 'Saving\u2026';
+    try { await api('/api/fans/' + encodeURIComponent(f.username) + '/note', { method: 'POST', body: JSON.stringify({ note: ta.value }) }); saved.textContent = 'Saved'; }
+    catch (e) { saved.textContent = e.message; }
+    finally { save.disabled = false; }
+  } }, 'Save note');
+  const msgs = (f.recent_messages || []);
+  const tips = (f.tips || []);
+  put(box,
+    h('p', { class: 'pname' }, f.username),
+    badges.length ? h('div', { class: 'badges' }, badges) : null,
+    h('div', { class: 'pgrid' },
+      [[n(f.total_tips), 'tipped you'], [n(f.biggest_tip), 'biggest tip'], [n(f.tip_count), 'tips'],
+       [n(f.visit_days), 'days here'], [n(f.visits), 'visits'], [n(f.streams_attended), 'streams']]
+        .map(([b, l]) => h('div', {}, h('b', {}, b), h('span', {}, l)))),
+    h('p', { class: 'seen' }, `First seen ${when(f.first_seen)} · last here ${ago(f.last_seen)} ago`),
+    h('p', { class: 'sec' }, 'Your note'),
+    h('div', { class: 'notebox' }, ta, h('div', { class: 'btnrow' }, save, saved)),
+    h('p', { class: 'sec' }, 'What they said lately'),
+    msgs.length ? h('div', { class: 'plist' }, msgs.map(m => h('div', {}, `\u201C${m.m}\u201D`, h('span', { class: 't' }, ago(m.t))))) : h('p', { class: 'note' }, 'Nothing in chat yet.'),
+    h('p', { class: 'sec' }, 'Tips'),
+    tips.length ? h('div', { class: 'plist' }, tips.map(t => h('div', {}, h('b', {}, n(t.tokens)), t.message ? ` \u201C${t.message}\u201D` : '', h('span', { class: 't' }, ago(t.at))))) : h('p', { class: 'note' }, 'No tips to you yet.'),
+    closeBtn());
+}
+function closeBtn() { return h('div', { style: 'margin-top:18px' }, h('button', { class: 'btn ghost', type: 'button', onclick: () => { $('fanSheet').hidden = true; } }, 'Close')); }
+$('fanSheet').addEventListener('click', e => { if (e.target.id === 'fanSheet') $('fanSheet').hidden = true; });
+app.addEventListener('click', e => {
+  const el = e.target.closest('[data-user]');
+  if (!el || !el.dataset.user || e.target.closest('button, a, input, textarea')) return;
+  openProfile(el.dataset.user);
+});
 
 function renderItem(f) {
   if (KIND[f.kind]) return card(f);
@@ -361,7 +550,7 @@ async function renderRoom() {
     if (!fans.length) return list.replaceChildren(h('p', { class: 'empty' }, me.live ? "Nobody's in the room right now." : "You're offline. When you go live, the people in your room show up here."));
     list.replaceChildren(...fans.map(fan => {
       const kind = Number(fan.total_tips) >= 100 ? 'big_tipper_back' : Number(fan.total_tips) > 0 ? 'tipper_back' : fan.visit_days >= 3 ? 'regular_back' : fan.has_tokens ? 'light_blue_back' : null;
-      if (!kind) return h('div', { class: 'row' }, h('b', {}, fan.username), fan.visit_days > 1 ? ` · ${nth(fan.visit_days)} day` : ' · new');
+      if (!kind) return h('div', { class: 'row', 'data-user': fan.username }, h('b', {}, fan.username), fan.visit_days > 1 ? ` · ${nth(fan.visit_days)} day` : ' · new');
       return card({ kind, username: fan.username, created_at: fan.last_seen, data: { fan } });
     }));
   } catch (e) { list.replaceChildren(h('p', { class: 'empty' }, e.message)); }
@@ -370,6 +559,8 @@ async function renderRoom() {
 function renderList() {
   const list = $('list'); if (!list) return;
   if (tab === 'room') return renderRoom();
+  if (tab === 'fans') return renderFans();
+  if (tab === 'streams') return renderStreams();
   const els = feedItems.map(renderItem).filter(Boolean);
   list.replaceChildren(...(els.length ? els : [h('p', { class: 'empty' }, "You're connected. When you go live, your callouts land here: regulars arriving, big tippers coming back, and viewers who have tokens but haven't tipped you yet.")]));
 }
@@ -377,11 +568,11 @@ function renderList() {
 function panel() {
   $('menuBtn').hidden = false;
   const tabBtn = (id, label) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(tab === id), onclick: () => { tab = id; panel(); } }, label);
-  app.replaceChildren(
+  put(app,
     DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo with sample fans. Not a real room.'),
     h('div', { class: 'banner', id: 'banner', hidden: !me.lastError }, h('span', { id: 'bannerText' }, me.lastError || ''), ' ', h('button', { class: 'linkbtn', type: 'button', onclick: () => connectScreen(me) }, 'Reconnect Chaturbate')),
     h('div', { class: 'stats', id: 'stats' }),
-    h('div', { class: 'tabs', role: 'tablist' }, tabBtn('callouts', 'Callouts'), tabBtn('room', 'In the room')),
+    h('div', { class: 'tabs', role: 'tablist' }, tabBtn('callouts', 'Callouts'), tabBtn('room', 'Room'), tabBtn('fans', 'Fans'), tabBtn('streams', 'Streams')),
     h('div', { class: 'list', id: 'list', 'aria-live': 'polite' }),
     !(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) &&
       h('p', { class: 'tip' }, 'Tip: add this page to your home screen so StreamWing is one tap away when you go live.'));

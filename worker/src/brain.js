@@ -209,7 +209,11 @@ export async function processEvent(c, performer, ev) {
     case 'chatMessage': {
       const text = (ev.message?.message || '').slice(0, 500);
       const r = await c.query(
-        `update fans set last_message = $3, last_message_at = now(), messages_count = messages_count + 1, last_seen = now()
+        `update fans set last_message = $3, last_message_at = now(), messages_count = messages_count + 1, last_seen = now(),
+           recent_messages = (
+             select coalesce(jsonb_agg(m order by i), '[]'::jsonb) from (
+               select m, i from jsonb_array_elements(jsonb_build_array(jsonb_build_object('t', now(), 'm', $3::text)) || recent_messages)
+               with ordinality as x(m, i) order by i limit 5) keep)
          where performer_id=$1 and username=$2 returning ${FAN_COLS}`, [pid, uname, text]);
       fan = r.rows[0];
       await seen(isLightBlue(fan));
@@ -234,7 +238,17 @@ export async function buildRecap(c, s) {
   const missed = await c.query(
     `select sf.username from session_fans sf where sf.session_id=$1 and sf.was_light_blue and sf.tipped = 0 limit 10`, [s.id]);
   const mins = Math.round((new Date(s.ended_at || Date.now()) - new Date(s.started_at)) / 60000);
+  // The stream before this one, so she can see whether things moved.
+  const prev = await c.query(
+    `select * from sessions where performer_id=$1 and started_at < $2 and ended_at is not null order by started_at desc limit 1`,
+    [s.performer_id, s.started_at]);
+  const p = prev.rows[0];
   return {
+    previous: p ? {
+      startedAt: p.started_at, tokens: p.tokens, tippers: p.tippers, uniqueVisitors: p.unique_visitors,
+      returningVisitors: p.returning_visitors, lightBluesSeen: p.light_blues_seen, lightBluesConverted: p.light_blues_converted,
+      newFollowers: p.new_followers,
+    } : null,
     minutes: mins,
     tokens: s.tokens, tippers: s.tippers,
     uniqueVisitors: s.unique_visitors, newVisitors: s.new_visitors, returningVisitors: s.returning_visitors,

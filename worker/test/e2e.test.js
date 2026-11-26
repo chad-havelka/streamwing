@@ -150,6 +150,58 @@ test('worker restart resumes from the saved cursor without double counting', asy
   assert.equal(luna.total_tips, 125);
 });
 
+test('fan profile: last 5 things said, tips, streams, and her private note', async () => {
+  const { ev, user } = sim;
+  const luna = user('luna_92', { hasTokens: true });
+  sim.push(['one', 'two', 'three', 'four', 'five', 'six'].map(m => ev('chatMessage', { user: luna, message: { message: m } })));
+  await settle();
+  let prof = (await call('/api/fans/luna_92')).body;
+  assert.deepEqual(prof.recent_messages.map(x => x.m), ['six', 'five', 'four', 'three', 'two']);
+  assert.deepEqual(prof.tips.map(t => t.tokens), [100, 25]);
+  assert.equal(prof.streams_attended, 2);
+  const saved = await call('/api/fans/luna_92/note', { method: 'POST', body: JSON.stringify({ note: '  Birthday in March. Loves the cat.  ' }) });
+  assert.equal(saved.status, 200);
+  prof = (await call('/api/fans/luna_92')).body;
+  assert.equal(prof.owner_note, 'Birthday in March. Loves the cat.');
+  await call('/api/fans/luna_92/note', { method: 'POST', body: JSON.stringify({ note: '' }) });
+  assert.equal((await call('/api/fans/luna_92')).body.owner_note, null);
+  assert.equal((await call('/api/fans/nobody_here/note', { method: 'POST', body: JSON.stringify({ note: 'x' }) })).status, 404);
+  const list = (await call('/api/fans?q=LU')).body.fans.map(f => f.username);
+  assert.deepEqual(list, ['luna_92']);
+  const all = (await call('/api/fans')).body.fans.map(f => f.username);
+  assert.equal(all[0], 'luna_92', 'biggest tipper first');
+});
+
+test('stream history: each recap compares with the stream before it', async () => {
+  const { ev, user } = sim;
+  sim.push([ev('broadcastStop', { user: user('sim_room', { isOwner: true }) })]);
+  await settle();
+  const recap = (await call('/api/feed?limit=1')).body.items[0];
+  assert.equal(recap.kind, 'recap');
+  assert.equal(recap.data.tokens, 110);
+  assert.equal(recap.data.previous.tokens, 25);
+  assert.equal(recap.data.previous.uniqueVisitors, 3);
+  const sessions = (await call('/api/sessions')).body.sessions;
+  assert.equal(sessions.length, 2);
+  assert.equal(sessions[0].tokens, 110);
+  assert.equal(sessions[1].tokens, 25);
+});
+
+test('slipping away: tippers and regulars who missed her last 3 streams', async () => {
+  const { ev, user } = sim;
+  const owner = user('sim_room', { isOwner: true });
+  assert.deepEqual((await call('/api/slipping')).body.fans, []);
+  for (let i = 0; i < 3; i++) {
+    await wait(50);
+    sim.push([ev('broadcastStart', { user: owner }), ev('userEnter', { user: user('kat_x', { hasTokens: true }) }), ev('broadcastStop', { user: owner })]);
+    await settle();
+  }
+  const slipping = (await call('/api/slipping')).body.fans;
+  assert.deepEqual(slipping.map(f => f.username), ['luna_92', 'dave_r'], 'tippers who stopped coming, biggest first');
+  assert.equal(slipping[0].missed_streams, 3);
+  assert.ok(!slipping.some(f => f.username === 'kat_x'), 'someone still coming is not slipping');
+});
+
 test('disconnect with delete wipes her data', async () => {
   const r = await call('/api/disconnect', { method: 'POST', body: JSON.stringify({ deleteData: true }) });
   assert.equal(r.status, 200);

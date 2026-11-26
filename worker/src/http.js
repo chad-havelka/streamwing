@@ -43,7 +43,7 @@ async function auth(req, url) {
 
 const FAN_FIELDS = `username, first_seen, last_seen, visits, visit_days, total_tips, tip_count, biggest_tip,
   first_tip_at, last_tip_at, color_group, recent_tips, has_tokens, is_follower, in_fanclub, is_mod,
-  language, last_message, last_message_at, messages_count, note`;
+  language, last_message, last_message_at, messages_count, note, recent_messages, owner_note, owner_note_at`;
 
 async function status(p) {
   const s = await q(`select * from sessions where performer_id=$1 order by started_at desc limit 1`, [p.id]);
@@ -125,10 +125,57 @@ export function startHttp() {
         return send(res, 200, { fans: r.rows });
       }
 
+      // Everyone she's met, best first, with an optional name search.
+      if (req.method === 'GET' && path === '/api/fans') {
+        const term = (url.searchParams.get('q') || '').trim().toLowerCase().slice(0, 40);
+        const r = await q(
+          `select ${FAN_FIELDS} from fans where performer_id=$1 and ($2 = '' or lower(username) like $2 || '%')
+           order by total_tips desc, visit_days desc, last_seen desc limit 100`, [p.id, term]);
+        return send(res, 200, { fans: r.rows });
+      }
+
+      // Regulars and tippers who've missed her last 3 or more streams.
+      if (req.method === 'GET' && path === '/api/slipping') {
+        const r = await q(
+          `select * from (
+             select ${FAN_FIELDS.split(',').map(f => 'f.' + f.trim()).join(', ')},
+               (select count(*)::int from sessions s where s.performer_id = f.performer_id and s.started_at > f.last_seen) as missed_streams
+             from fans f where f.performer_id=$1 and (f.total_tips > 0 or f.visit_days >= $2)) x
+           where missed_streams >= 3
+           order by total_tips desc, visit_days desc limit 30`, [p.id, config.regularDays]);
+        return send(res, 200, { fans: r.rows });
+      }
+
+      // Every stream, newest first, so the panel can compare each with the one before.
+      if (req.method === 'GET' && path === '/api/sessions') {
+        const r = await q(`select * from sessions where performer_id=$1 order by started_at desc limit 30`, [p.id]);
+        return send(res, 200, { sessions: r.rows });
+      }
+
+      const noteMatch = path.match(/^\/api\/fans\/([^/]+)\/note$/);
+      if (req.method === 'POST' && noteMatch) {
+        const { note } = await readJson(req);
+        const text = String(note ?? '').trim().slice(0, 500);
+        const r = await q(
+          `update fans set owner_note = nullif($3, ''), owner_note_at = now() where performer_id=$1 and username=$2 returning owner_note, owner_note_at`,
+          [p.id, decodeURIComponent(noteMatch[1]), text]);
+        return r.rows[0] ? send(res, 200, r.rows[0]) : send(res, 404, { error: 'not found' });
+      }
+
       const fanMatch = path.match(/^\/api\/fans\/([^/]+)$/);
       if (req.method === 'GET' && fanMatch) {
-        const r = await q(`select ${FAN_FIELDS} from fans where performer_id=$1 and username=$2`, [p.id, decodeURIComponent(fanMatch[1])]);
-        return r.rows[0] ? send(res, 200, r.rows[0]) : send(res, 404, { error: 'not found' });
+        const uname = decodeURIComponent(fanMatch[1]);
+        const r = await q(`select ${FAN_FIELDS} from fans where performer_id=$1 and username=$2`, [p.id, uname]);
+        if (!r.rows[0]) return send(res, 404, { error: 'not found' });
+        const tips = await q(
+          `select received_at as at, (payload->'object'->'tip'->>'tokens')::int as tokens, payload->'object'->'tip'->>'message' as message
+           from events where performer_id=$1 and username=$2 and method='tip' order by received_at desc limit 10`, [p.id, uname]);
+        const streams = await q(
+          `select s.id, s.started_at, s.ended_at, sf.tipped from session_fans sf join sessions s on s.id = sf.session_id
+           where s.performer_id=$1 and sf.username=$2 order by s.started_at desc limit 10`, [p.id, uname]);
+        const count = await q(
+          `select count(*)::int n from session_fans sf join sessions s on s.id = sf.session_id where s.performer_id=$1 and sf.username=$2`, [p.id, uname]);
+        return send(res, 200, { ...r.rows[0], tips: tips.rows, streams: streams.rows, streams_attended: count.rows[0].n });
       }
 
       if (req.method === 'GET' && path === '/api/recap') {

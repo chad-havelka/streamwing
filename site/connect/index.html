@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connect your Chaturbate room to StreamWing</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/site.css">
+<style>
+/* Standalone connect page. Only what this page needs; shared rules live in /site.css. */
+[hidden]{display:none !important}
+.hleft{display:flex;align-items:center;gap:14px}
+.hright{display:flex;align-items:center;gap:12px}
+.status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute)}
+.dot{width:10px;height:10px;border-radius:50%;background:#6b5a8a;flex:none}
+.dot.ok{background:var(--green);box-shadow:0 0 0 4px rgba(134,239,172,.2)}
+.pair{display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:start;margin-top:32px}
+.steps{display:flex;flex-direction:column;gap:32px}
+.step{display:flex;gap:16px;align-items:flex-start}
+.n{flex:none;width:36px;height:36px;border-radius:50%;background:var(--pink);color:var(--deep);font-weight:700;display:grid;place-items:center}
+.step .body{flex:1;min-width:0}
+.step p{color:var(--soft);margin:0 0 14px}
+.frame{border:3px solid var(--pink);border-radius:18px;overflow:hidden;background:#fff}
+.frame img{display:block;width:100%;height:auto}
+.cap{color:var(--soft);font-size:15px;margin:14px 0 0}
+.paste{margin-top:16px;background:var(--panel);border-radius:18px;padding:18px}
+textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:14px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);min-height:96px;resize:vertical}
+.row{display:flex;justify-content:flex-end;gap:12px;margin-top:12px;flex-wrap:wrap}
+.msg{min-height:1.4em;margin:10px 0 0;font-size:15px;color:var(--soft)}
+.msg.err{color:var(--err)}
+.btn[disabled]{opacity:.6;cursor:default}
+@media (max-width:820px){.pair{grid-template-columns:1fr;gap:28px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="hleft">
+    <a class="brand" href="/" aria-label="StreamWing home"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg></a>
+    <span class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></span>
+  </div>
+  <div class="hright"><a class="btn ghost" id="dashLink" href="/connect-to-chaturbate/" hidden>Open dashboard</a></div>
+</div></header>
+
+<main class="wrap">
+  <div class="pair">
+    <div class="steps">
+      <div class="step">
+        <div class="n">1</div>
+        <div class="body">
+          <h2>Open your Chaturbate token page</h2>
+          <p>Log in to the Chaturbate account you stream from.</p>
+          <a class="btn" href="https://chaturbate.com/statsapi/authtoken/" target="_blank" rel="noopener">Open Chaturbate token page</a>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <div class="body">
+          <h2>Make a token</h2>
+          <p>Type <b>StreamWing</b> as the name. Chaturbate ticks <b>Stats API</b> for you, so untick it. Tick only <b>Events API (public)</b>. Then click <b>Generate Auth Token</b>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <div class="body">
+          <h2>Copy your link and paste it here</h2>
+          <p><b>Right-click the long link</b>. You do not need to highlight it.</p>
+          <div class="paste">
+            <textarea id="eventsUrl" placeholder="Paste the link from Chaturbate here" aria-label="The link from Chaturbate" autocomplete="off" spellcheck="false"></textarea>
+            <div class="row">
+              <button class="btn ghost" type="button" id="cancelBtn">Cancel</button>
+              <button class="btn" type="button" id="connectBtn">Connect</button>
+            </div>
+            <p class="msg" id="msg" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="frame"><img src="/connect/token-page.jpg" alt="The Chaturbate token page with the Token Name, Scopes and Generate Auth Token button"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = 'https://streamwing-production.up.railway.app';
+const LINK_OK = /^https:\/\/eventsapi\.chaturbate\.com\/events\//;
+let key = '';
+try {
+  const m = location.hash.match(/k=([\w-]{20,})/);
+  if (m) localStorage.setItem('sw_k', m[1]);
+  key = (m && m[1]) || localStorage.getItem('sw_k') || '';
+} catch (e) {}
+
+const $ = id => document.getElementById(id);
+const ta = $('eventsUrl'), msg = $('msg'), btn = $('connectBtn');
+let busy = false;
+
+function setStatus(text, ok) {
+  $('statusText').textContent = text;
+  $('dot').className = 'dot' + (ok ? ' ok' : '');
+}
+function say(text, isErr) {
+  msg.className = 'msg' + (isErr ? ' err' : '');
+  msg.textContent = text;
+}
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, { ...opts, headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' } });
+  let body = {}; try { body = await r.json(); } catch (e) {}
+  if (!r.ok) throw Object.assign(new Error(body.error || 'Something went wrong.'), { status: r.status });
+  return body;
+}
+function goDashboard() {
+  location.href = '/connect-to-chaturbate/#k=' + key;
+}
+
+// Connected light: on open, check whether this room is already connected.
+(async () => {
+  if (!key) {
+    setStatus('Not connected');
+    say('Open this page from your private StreamWing link.', true);
+    btn.disabled = true;
+    return;
+  }
+  try {
+    const me = await api('/api/me');
+    if (me.connected) {
+      setStatus('Connected', true);
+      $('dashLink').hidden = false;
+      $('dashLink').href = '/connect-to-chaturbate/#k=' + key;
+    }
+  } catch (e) {
+    if (e.status === 401) {
+      try { localStorage.removeItem('sw_k'); } catch (x) {}
+      key = '';
+      btn.disabled = true;
+      say("This link isn't working anymore. Ask StreamWing for a new one.", true);
+    }
+  }
+})();
+
+async function connect() {
+  if (busy) return;
+  const link = ta.value.trim();
+  if (!link) return;
+  if (!key) return say('Open this page from your private StreamWing link.', true);
+  if (!LINK_OK.test(link)) {
+    ta.value = '';
+    return say('That is not the StreamWing link. Right-click the long link on the StreamWing row and paste it here. It starts with https://eventsapi.chaturbate.com/events/', true);
+  }
+  busy = true; btn.disabled = true; say('Checking with Chaturbate…');
+  try {
+    await api('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: link }) });
+    setStatus('Connected', true);
+    say('Connected. Opening your dashboard…');
+    goDashboard();
+  } catch (e) {
+    say(e.message, true);
+  } finally {
+    busy = false; btn.disabled = false;
+  }
+}
+
+btn.addEventListener('click', connect);
+ta.addEventListener('paste', () => setTimeout(connect, 80));
+$('cancelBtn').addEventListener('click', () => { ta.value = ''; say(''); });
+</script>
+</body>
+</html>

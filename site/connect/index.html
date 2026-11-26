@@ -8,35 +8,37 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="/site.css">
 <style>
-/* Standalone connect page. Only what this page needs; shared rules live in /site.css. */
+/* Standalone connect page. Shared rules live in /site.css. */
 [hidden]{display:none !important}
-.hleft{display:flex;align-items:center;gap:14px}
+.hleft{display:flex;align-items:center;gap:12px}
 .hright{display:flex;align-items:center;gap:12px}
 .status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute)}
 .dot{width:10px;height:10px;border-radius:50%;background:#6b5a8a;flex:none}
 .dot.ok{background:var(--green);box-shadow:0 0 0 4px rgba(134,239,172,.2)}
-.pair{display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:start;margin-top:32px}
-.steps{display:flex;flex-direction:column;gap:32px}
-.step{display:flex;gap:16px;align-items:flex-start}
-.n{flex:none;width:36px;height:36px;border-radius:50%;background:var(--pink);color:var(--deep);font-weight:700;display:grid;place-items:center}
+main.wrap{padding-top:8px;padding-bottom:32px}
+.pair{display:grid;grid-template-columns:minmax(340px,.85fr) 1.35fr;gap:32px;align-items:start}
+.steps{display:flex;flex-direction:column;gap:18px}
+.step{display:flex;gap:14px;align-items:flex-start}
+.n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--pink);color:var(--deep);font-weight:700;font-size:15px;display:grid;place-items:center;margin-top:2px}
 .step .body{flex:1;min-width:0}
-.step p{color:var(--soft);margin:0 0 14px}
-.frame{border:3px solid var(--pink);border-radius:18px;overflow:hidden;background:#fff}
+.step h2{font-size:22px;line-height:1.25;margin:0 0 6px}
+.step p{color:var(--soft);font-size:16px;line-height:1.45;margin:0 0 10px}
+.step .btn{min-height:42px;padding:9px 20px;font-size:15px}
+.frame{position:sticky;top:16px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
 .frame img{display:block;width:100%;height:auto}
-.cap{color:var(--soft);font-size:15px;margin:14px 0 0}
-.paste{margin-top:16px;background:var(--panel);border-radius:18px;padding:18px}
-textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:14px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);min-height:96px;resize:vertical}
-.row{display:flex;justify-content:flex-end;gap:12px;margin-top:12px;flex-wrap:wrap}
-.msg{min-height:1.4em;margin:10px 0 0;font-size:15px;color:var(--soft)}
+.paste textarea{width:100%;font:14px/1.4 ui-monospace,Menlo,monospace;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);min-height:64px;resize:vertical}
+.row{display:flex;justify-content:flex-end;margin-top:8px}
+.row .btn{min-height:42px;padding:9px 24px;font-size:15px}
+.msg{min-height:1.4em;margin:8px 0 0;font-size:15px;color:var(--soft)}
 .msg.err{color:var(--err)}
-.btn[disabled]{opacity:.6;cursor:default}
-@media (max-width:820px){.pair{grid-template-columns:1fr;gap:28px}}
+.btn[disabled]{opacity:.5;cursor:default}
+@media (max-width:820px){.pair{grid-template-columns:1fr;gap:20px}.frame{position:static}}
 </style>
 </head>
 <body>
 <header><div class="wrap">
   <div class="hleft">
-    <a class="brand" href="/" aria-label="StreamWing home"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg></a>
+    <a class="brand" href="/" aria-label="StreamWing home"><svg width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg></a>
     <span class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></span>
   </div>
   <div class="hright"><a class="btn ghost" id="dashLink" href="/connect-to-chaturbate/" hidden>Open dashboard</a></div>
@@ -67,18 +69,15 @@ textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:14px;bord
           <p><b>Right-click the long link</b>. You do not need to highlight it.</p>
           <div class="paste">
             <textarea id="eventsUrl" placeholder="Paste the link from Chaturbate here" aria-label="The link from Chaturbate" autocomplete="off" spellcheck="false"></textarea>
-            <div class="row">
-              <button class="btn" type="button" id="connectBtn">Connect</button>
-            </div>
+            <div class="row"><button class="btn" type="button" id="connectBtn">Connect</button></div>
             <p class="msg" id="msg" aria-live="polite"></p>
+            <p class="msg"><a href="/connect/lost/">Lost your link? Get it again.</a></p>
           </div>
         </div>
       </div>
     </div>
 
-    <div>
-      <div class="frame"><img src="/connect/token-page.jpg" alt="The Chaturbate token page with the Token Name, Scopes and Generate Auth Token button"></div>
-    </div>
+    <div class="frame"><img src="/connect/token-page-crop.jpg" alt="The Chaturbate token page as it opens. Token Name is empty, Stats API is already ticked, and Generate Auth Token is below the scopes"></div>
   </div>
 </main>
 
@@ -118,7 +117,7 @@ function goDashboard() {
 (async () => {
   if (!key) {
     setStatus('Not connected');
-    say('Open this page from your private StreamWing link.', true);
+    say('Open this page from the private link StreamWing sent you. That link tells this page which StreamWing account to connect.');
     btn.disabled = true;
     return;
   }
@@ -143,7 +142,7 @@ async function connect() {
   if (busy) return;
   const link = ta.value.trim();
   if (!link) return;
-  if (!key) return say('Open this page from your private StreamWing link.', true);
+  if (!key) return say('Open this page from the private link StreamWing sent you.', true);
   if (!LINK_OK.test(link)) {
     ta.value = '';
     return say('That is not the StreamWing link. Right-click the long link on the StreamWing row and paste it here. It starts with https://eventsapi.chaturbate.com/events/', true);

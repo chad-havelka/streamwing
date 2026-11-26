@@ -38,7 +38,7 @@ header .btn{min-height:44px;padding:10px 20px;font-size:15px}
 .dot{width:10px;height:10px;border-radius:50%;background:#6b5a8a;flex:none}
 .dot.live{background:#f43f5e;box-shadow:0 0 0 4px rgba(244,63,94,.25)}
 .dot.ok{background:var(--green)}
-.menu{background:none;border:0;color:var(--soft);font-size:22px;line-height:1;padding:6px 8px;cursor:pointer;border-radius:10px}
+.menu{background:none;border:2px solid var(--line);color:var(--ink);font:600 15px Poppins,system-ui,sans-serif;line-height:1;padding:9px 16px;cursor:pointer;border-radius:999px;min-height:40px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
 .stat{background:var(--panel);border-radius:16px;padding:10px 8px;text-align:center}
 .stat b{display:block;font-size:22px;line-height:1.1}
@@ -221,7 +221,7 @@ details.stuck p{margin:8px 0 0;font-size:15px}
 <body>
 <header><div class="wrap">
   <div class="hleft"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg></a><span class="status"><span class="dot" id="dot"></span><span id="statusText">Loading</span></span></div>
-  <div class="hright"><nav id="pubNav" hidden><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/pricing/">Pricing</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" href="/#join">Get early access</a></nav><button class="menu" id="menuBtn" type="button" aria-label="Settings" hidden>⋯</button></div>
+  <div class="hright"><nav id="pubNav" hidden><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/pricing/">Pricing</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" href="/#join">Get early access</a></nav><button class="menu" id="menuBtn" type="button" hidden>Settings</button></div>
 </div></header>
 
 <main class="wrap" id="app"></main>

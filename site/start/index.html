@@ -369,7 +369,7 @@ const KIND = {
 const ROW = {
   new_viewer: f => ['New viewer ', h('b', {}, f.username)],
   returning:  f => ['Back again ', h('b', {}, f.username), ` · ${nth(f.data.fan?.visit_days || 2)} day`],
-  tip:        f => [h('b', {}, f.username), ` tipped ${n(f.data.tokens)}`, f.data.fan ? ` · ${n(f.data.fan.total_tips)} total` : ''],
+  tip:        f => [h('b', {}, f.username), ` tipped ${n(f.data.tokens)}`, f.data.isAnon ? ' anonymously' : '', f.data.fan ? ` · ${n(f.data.fan.total_tips)} total` : ''],
   follow:     f => [h('b', {}, f.username), ' followed you'],
   fanclub:    f => [h('b', {}, f.username), ' joined your fan club'],
   media:      f => [h('b', {}, f.username), ` bought ${f.data.name || 'media'} for ${n(f.data.tokens)}`],
@@ -391,7 +391,7 @@ function card(f) {
   const [cls, label] = KIND[f.kind];
   const fan = f.data.fan || {};
   let headline = label, extra = '';
-  if (f.kind === 'first_tip') { extra = `${n(f.data.tokens)} tokens` + (f.data.converted ? ' · light blue converted' : ''); }
+  if (f.kind === 'first_tip') { extra = `${n(f.data.tokens)} tokens` + (f.data.converted ? ' · light blue converted' : '') + (f.data.isAnon ? ' · tipped anonymously' : ''); }
   return h('div', { class: 'card ' + cls, 'data-user': f.username, 'data-session': f.session_id || '' },
     h('div', { class: 'top' }, h('span', { class: 'label' }, headline), h('span', { class: 'when' }, ago(f.created_at))),
     h('div', { class: 'name' }, f.username),

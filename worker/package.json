@@ -1,0 +1,18 @@
+{
+  "name": "streamwing-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stays connected to each performer's Chaturbate Events API, remembers fans, and feeds the StreamWing panel.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/index.js",
+    "migrate": "node src/migrate.js",
+    "add-performer": "node src/admin.js add",
+    "sim": "node test/sim-server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}

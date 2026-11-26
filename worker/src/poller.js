@@ -2,7 +2,7 @@
 import { config } from './config.js';
 import { q, tx } from './db.js';
 import { decrypt, encrypt } from './crypto.js';
-import { poll, normalizeEvent, restartFor } from './cb.js';
+import { poll, normalizeEvent, restartFor, sameHost } from './cb.js';
 import { processEvent } from './brain.js';
 import { publish } from './bus.js';
 import { writeNotesForSession } from './ai.js';
@@ -41,7 +41,7 @@ async function runLoop(performerId, state) {
       await q(
         `update performers set next_url_enc = coalesce($2, next_url_enc), last_poll_at=now(), last_error=null,
            last_event_at = case when $3 then now() else last_event_at end where id=$1`,
-        [performerId, nextUrl ? encrypt(nextUrl, config.tokenKey) : null, events.length > 0]);
+        [performerId, nextUrl && sameHost(nextUrl, url) ? encrypt(nextUrl, config.tokenKey) : null, events.length > 0]);
       publish(performerId, { kind: 'heartbeat', transient: true, data: { at: new Date().toISOString() } });
       backoff = 1000;
       restarts = 0;

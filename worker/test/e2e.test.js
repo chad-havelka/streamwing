@@ -470,6 +470,20 @@ test('a leave that arrives after she stopped does not open a phantom stream', as
   assert.equal(live, 0, 'nothing left open');
 });
 
+test('a link that does not go to Chaturbate is refused, and a feed cannot send us to another host', async () => {
+  const { parseEventsUrl, isChaturbateHost, sameHost } = await import('../src/cb.js');
+  const saved = process.env.ALLOW_HTTP_EVENTS; delete process.env.ALLOW_HTTP_EVENTS;
+  try {
+    for (const bad of ['https://evil.example.com/events/jhessi_kissie/abcdefgh12345/', 'https://169.254.169.254/events/jhessi_kissie/abcdefgh12345/', 'https://eventsapi.chaturbate.com.evil.io/events/jhessi_kissie/abcdefgh12345/', 'http://eventsapi.chaturbate.com/events/jhessi_kissie/abcdefgh12345/'])
+      assert.throws(() => parseEventsUrl(bad, 'jhessi_kissie'), undefined, bad);
+    assert.ok(parseEventsUrl('https://eventsapi.chaturbate.com/events/jhessi_kissie/abcdefgh12345/', 'jhessi_kissie'));
+    assert.ok(parseEventsUrl('https://events.testbed.cb.dev/events/jhessi_kissie/abcdefgh12345/', 'jhessi_kissie'));
+    assert.ok(parseEventsUrl('abcdefgh12345', 'jhessi_kissie'), 'bare token still works');
+  } finally { if (saved !== undefined) process.env.ALLOW_HTTP_EVENTS = saved; }
+  assert.equal(sameHost('https://evil.io/events/x/y/?i=1', 'https://eventsapi.chaturbate.com/events/x/y/'), false);
+  assert.equal(sameHost('https://eventsapi.chaturbate.com/events/x/y/?i=1', 'https://eventsapi.chaturbate.com/events/x/y/'), true);
+});
+
 let otherId, otherKey;
 test("one performer never sees another's fans, feed or streams", async () => {
   const { newAccessKey, hashKey } = await import('../src/crypto.js');

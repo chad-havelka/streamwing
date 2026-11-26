@@ -36,10 +36,23 @@ export function parseEventsUrl(input, expectedUsername) {
   if (expectedUsername && username.toLowerCase() !== expectedUsername.toLowerCase()) {
     throw new Error(`That link is for ${username}, not ${expectedUsername}.`);
   }
+  if (!isChaturbateHost(u)) throw new Error("That link doesn't go to Chaturbate. Copy it again from Chaturbate's token page.");
   u.search = '';
   u.hash = '';
   if (!u.pathname.endsWith('/')) u.pathname += '/';
   return u.toString();
+}
+
+// Only Chaturbate's own Events hosts (live and testbed). Anything else could point us at someone else's server.
+export const CB_EVENT_HOSTS = ['eventsapi.chaturbate.com', 'events.testbed.cb.dev'];
+export function isChaturbateHost(u) {
+  if (process.env.ALLOW_HTTP_EVENTS === '1') return true; // local test server only
+  return u.protocol === 'https:' && CB_EVENT_HOSTS.includes(u.hostname.toLowerCase());
+}
+
+// A nextUrl is only followed when it stays on the same host as the link we called.
+export function sameHost(nextUrl, currentUrl) {
+  try { return new URL(nextUrl).origin === new URL(currentUrl).origin; } catch { return false; }
 }
 
 export function withTimeout(url, timeoutSec) {

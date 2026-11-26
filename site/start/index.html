@@ -86,6 +86,8 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 .card .said{margin-top:6px;font-size:15px;color:var(--ink);font-style:italic}
 .card .said:empty{display:none}
 .card.gone{opacity:.45}
+.ainote{margin-top:6px;font-size:15px;color:var(--pinkl)}
+.ainote b{font-weight:600;color:var(--mute);margin-right:4px}
 .k-big{border-left-color:var(--gold)} .k-big .label{color:var(--gold)}
 .k-tipper{border-left-color:var(--pink)} .k-tipper .label{color:var(--pinkl)}
 .k-regular{border-left-color:var(--green)} .k-regular .label{color:var(--green)}
@@ -189,16 +191,16 @@ const demo = {
 };
 const daysAgo = d => new Date(Date.now() - d * 86400000).toISOString();
 const DEMO_FANS = {
-  velvet_rob: { username: 'velvet_rob', total_tips: 1240, tip_count: 22, biggest_tip: 200, visit_days: 14, last_tip_at: daysAgo(3), in_fanclub: true, is_follower: true, has_tokens: true, last_message: 'made it just in time' },
+  velvet_rob: { username: 'velvet_rob', note: 'Your biggest fan. Mentioned his daughter starts college this week.', total_tips: 1240, tip_count: 22, biggest_tip: 200, visit_days: 14, last_tip_at: daysAgo(3), in_fanclub: true, is_follower: true, has_tokens: true, last_message: 'made it just in time' },
   curious_k:  { username: 'curious_k', total_tips: 0, visit_days: 1, has_tokens: false },
-  mike_t:     { username: 'mike_t', total_tips: 0, visit_days: 3, is_follower: true, has_tokens: true, last_message: 'your laugh is the best part of my night' },
+  mike_t:     { username: 'mike_t', note: 'Loves your laugh. Has tokens but always holds back; a hello by name helps.', total_tips: 0, visit_days: 3, is_follower: true, has_tokens: true, last_message: 'your laugh is the best part of my night' },
   sam_vee:    { username: 'sam_vee', total_tips: 0, visit_days: 6, is_follower: true, has_tokens: false, last_message: 'hi again' },
   kat_x:      { username: 'kat_x', total_tips: 0, visit_days: 1, has_tokens: true },
-  dave_r:     { username: 'dave_r', total_tips: 85, tip_count: 3, biggest_tip: 50, visit_days: 4, last_tip_at: daysAgo(1), is_follower: true, has_tokens: true, last_message: 'how did the new song go?' },
+  dave_r:     { username: 'dave_r', note: 'Follows your music. Ask how the new song is coming along.', total_tips: 85, tip_count: 3, biggest_tip: 50, visit_days: 4, last_tip_at: daysAgo(1), is_follower: true, has_tokens: true, last_message: 'how did the new song go?' },
 };
 // Fans from earlier streams, for the Fans tab and the slipping-away list.
 const DEMO_PAST = {
-  old_rick: { username: 'old_rick', total_tips: 860, tip_count: 14, biggest_tip: 200, visit_days: 19, missed_streams: 5, last_seen: daysAgo(9), is_follower: true, has_tokens: true, last_message: 'see you friday!', tipsList: [{ at: daysAgo(9), tokens: 100, message: '' }, { at: daysAgo(12), tokens: 200, message: 'happy anniversary stream' }] },
+  old_rick: { username: 'old_rick', note: 'Tipped 200 on your anniversary stream. Hasn\u2019t been back in 9 days.', total_tips: 860, tip_count: 14, biggest_tip: 200, visit_days: 19, missed_streams: 5, last_seen: daysAgo(9), is_follower: true, has_tokens: true, last_message: 'see you friday!', tipsList: [{ at: daysAgo(9), tokens: 100, message: '' }, { at: daysAgo(12), tokens: 200, message: 'happy anniversary stream' }] },
   nora_b:   { username: 'nora_b', total_tips: 0, visit_days: 8, missed_streams: 3, last_seen: daysAgo(5), is_follower: true, has_tokens: false, last_message: 'night all' },
 };
 const DEMO_ALL = () => ({ ...DEMO_PAST, ...DEMO_FANS });
@@ -392,6 +394,7 @@ function card(f) {
     h('div', { class: 'top' }, h('span', { class: 'label' }, headline), h('span', { class: 'when' }, ago(f.created_at))),
     h('div', { class: 'name' }, f.username),
     h('div', { class: 'facts' }, extra || facts(fan)),
+    fan.note ? h('div', { class: 'ainote' }, h('b', {}, 'Remember'), fan.note) : null,
     h('div', { class: 'said' }, fan.last_message ? `“${fan.last_message}”` : ''));
 }
 
@@ -505,6 +508,7 @@ async function openProfile(username) {
   put(box,
     h('p', { class: 'pname' }, f.username),
     badges.length ? h('div', { class: 'badges' }, badges) : null,
+    f.note ? h('p', { class: 'ainote', style: 'margin:0 0 14px' }, h('b', {}, 'Remember'), f.note) : null,
     h('div', { class: 'pgrid' },
       [[n(f.total_tips), 'tipped you'], [n(f.biggest_tip), 'biggest tip'], [n(f.tip_count), 'tips'],
        [n(f.visit_days), 'days here'], [n(f.visits), 'visits'], [n(f.streams_attended), 'streams']]

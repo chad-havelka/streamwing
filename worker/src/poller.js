@@ -5,6 +5,7 @@ import { decrypt, encrypt } from './crypto.js';
 import { poll, normalizeEvent } from './cb.js';
 import { processEvent } from './brain.js';
 import { publish } from './bus.js';
+import { writeNotesForSession } from './ai.js';
 
 const loops = new Map(); // performerId -> { stop }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -30,7 +31,11 @@ async function runLoop(performerId, state) {
         const ev = normalizeEvent(raw);
         if (!ev.id || !ev.method) continue;
         const out = await tx(c => processEvent(c, performer, ev));
-        if (!out.duplicate) for (const item of out.items) publish(performerId, item);
+        if (!out.duplicate) for (const item of out.items) {
+          publish(performerId, item);
+          // When a stream ends, write the AI notes in the background. It never holds up the feed.
+          if (item.kind === 'recap' && item.session_id) writeNotesForSession(performerId, item.session_id);
+        }
       }
       await q(
         `update performers set next_url_enc = coalesce($2, next_url_enc), last_poll_at=now(), last_error=null,

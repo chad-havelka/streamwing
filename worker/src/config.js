@@ -33,6 +33,12 @@ export const config = {
   // Re-entering the room within this many minutes doesn't count as a new visit.
   revisitMinutes: Number(env.REVISIT_MINUTES || 30),
   // Railway's private network doesn't use SSL; anything else does unless told otherwise.
+  // The one-line AI note per fan. Off until ANTHROPIC_API_KEY is set.
+  aiKey: env.ANTHROPIC_API_KEY || '',
+  aiModel: env.AI_MODEL || 'claude-haiku-5-5',
+  aiVersion: env.ANTHROPIC_VERSION || '2026-10-21',
+  aiBaseUrl: env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com',
+  aiNotesPerStream: Number(env.AI_NOTES_PER_STREAM || 40),
   dbSsl: env.DB_SSL === 'false' || /\.railway\.internal[:/]/.test(dbUrl) ? false : { rejectUnauthorized: false },
 };
 

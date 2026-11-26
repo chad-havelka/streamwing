@@ -4,7 +4,7 @@ import { config } from './config.js';
 
 const FAN_COLS = `username, first_seen, last_seen, visits, visit_days, total_tips, tip_count, biggest_tip,
   first_tip_at, last_tip_at, color_group, recent_tips, has_tokens, is_follower, in_fanclub, is_mod,
-  language, last_message, last_message_at, messages_count, note`;
+  language, last_message, last_message_at, messages_count, note, note_at`;
 
 export const isLightBlue = fan => !!fan && fan.has_tokens === true && Number(fan.total_tips) === 0;
 

@@ -12,6 +12,21 @@ process.env.TOKEN_KEY = crypto.randomBytes(32).toString('base64');
 process.env.PORT = '8799';
 process.env.ALLOW_HTTP_EVENTS = '1';
 process.env.POLL_TIMEOUT_SEC = '1';
+process.env.ANTHROPIC_API_KEY = 'test-key';
+process.env.ANTHROPIC_BASE_URL = 'http://127.0.0.1:8797';
+
+// A stand-in for Claude's Messages API that records what StreamWing sends.
+import http from 'node:http';
+const aiCalls = [];
+const aiServer = http.createServer(async (req, res) => {
+  let b = ''; for await (const c of req) b += c;
+  const body = JSON.parse(b);
+  aiCalls.push({ path: req.url, headers: req.headers, body });
+  const facts = JSON.parse(body.messages[0].content);
+  const text = facts.fan === 'luna_92' ? '"Asked how your trip was; tipped 25 on her first visit."' : 'SKIP';
+  res.writeHead(200, { 'content-type': 'application/json' });
+  res.end(JSON.stringify({ type: 'message', content: [{ type: 'text', text }] }));
+}).listen(8797);
 
 let sim, q, pool, server, timer, key;
 const API = 'http://127.0.0.1:8799';
@@ -37,7 +52,7 @@ before(async () => {
   await wait(300);
 });
 
-after(async () => { clearInterval(timer); server.close(); sim.close(); setTimeout(() => process.exit(0), 200); });
+after(async () => { aiServer.close(); clearInterval(timer); server.close(); sim.close(); setTimeout(() => process.exit(0), 200); });
 
 test('bad link and bad key are refused', async () => {
   const r = await fetch(API + '/api/me', { headers: { authorization: 'Bearer nope-nope-nope-nope-nope' } });
@@ -95,6 +110,22 @@ test('connect, then stream 1: grays, light blues, a conversion, a recap', async 
   assert.ok(!pm[0].p.includes('secret pm text'));
   // The performer's own chat never becomes a fan.
   assert.equal((await call('/api/fans/sim_room')).status, 404);
+});
+
+test('after the stream, Claude writes a one-line note for fans who chatted or tipped', async () => {
+  await wait(1500);
+  assert.equal(aiCalls.length, 1, 'only luna chatted or tipped in stream 1');
+  const call0 = aiCalls[0];
+  assert.equal(call0.path, '/v1/messages');
+  assert.equal(call0.headers['x-api-key'], 'test-key');
+  assert.equal(call0.headers['anthropic-version'], '2026-10-21');
+  assert.equal(call0.body.model, 'claude-haiku-5-5');
+  const sent = call0.body.messages[0].content;
+  assert.match(sent, /hiii first time here/, 'her public chat is used');
+  assert.doesNotMatch(sent, /secret pm text/, 'private messages are never sent');
+  const luna = (await call('/api/fans/luna_92')).body;
+  assert.equal(luna.note, 'Asked how your trip was; tipped 25 on her first visit.', 'quotes stripped');
+  assert.ok(luna.note_at);
 });
 
 test('stream 2, next day: she sees who is back and who they are', async () => {

@@ -107,9 +107,13 @@ const API = (location.hostname === 'localhost' && localStorage.getItem('sw_api')
 const $ = id => document.getElementById(id);
 const app = $('app');
 
+// /start/#demo plays a sample stream with made-up fans. Nothing is sent anywhere.
+const DEMO = location.hash === '#demo';
+
 // The access key arrives in the link's #k=... and is kept on this device only.
 let key = '';
-try {
+if (DEMO) key = 'demo';
+else try {
   const m = location.hash.match(/k=([\w-]{20,})/);
   if (m) { localStorage.setItem('sw_k', m[1]); history.replaceState(null, '', location.pathname); }
   key = localStorage.getItem('sw_k') || '';
@@ -126,7 +130,95 @@ function h(tag, attrs, ...kids) {
   return el;
 }
 
+// ---------- demo mode: a scripted sample stream ----------
+const demo = {
+  connected: false, live: false, items: [], room: [], script: null,
+  session: { id: 'demo-s', started_at: new Date().toISOString(), ended_at: null, tokens: 0, tippers: 0, unique_visitors: 0, light_blues_seen: 0, light_blues_converted: 0 },
+};
+const daysAgo = d => new Date(Date.now() - d * 86400000).toISOString();
+const DEMO_FANS = {
+  velvet_rob: { username: 'velvet_rob', total_tips: 1240, visit_days: 14, last_tip_at: daysAgo(3), in_fanclub: true, is_follower: true, has_tokens: true, last_message: 'made it just in time' },
+  curious_k:  { username: 'curious_k', total_tips: 0, visit_days: 1, has_tokens: false },
+  mike_t:     { username: 'mike_t', total_tips: 0, visit_days: 3, is_follower: true, has_tokens: true, last_message: 'your laugh is the best part of my night' },
+  sam_vee:    { username: 'sam_vee', total_tips: 0, visit_days: 6, is_follower: true, has_tokens: false, last_message: 'hi again' },
+  kat_x:      { username: 'kat_x', total_tips: 0, visit_days: 1, has_tokens: true },
+  dave_r:     { username: 'dave_r', total_tips: 85, visit_days: 4, last_tip_at: daysAgo(1), is_follower: true, has_tokens: true, last_message: 'how did the new song go?' },
+};
+const DEMO_SCRIPT = [
+  ['live', null],
+  ['big_tipper_back', 'velvet_rob'],
+  ['new_viewer', 'curious_k'],
+  ['light_blue_back', 'mike_t'],
+  ['regular_back', 'sam_vee'],
+  ['new_with_tokens', 'kat_x'],
+  ['chat', 'mike_t', { message: "what's the goal tonight?" }],
+  ['tip', 'velvet_rob', { tokens: 100 }],
+  ['first_tip', 'mike_t', { tokens: 25, converted: true }],
+  ['follow', 'kat_x'],
+  ['tipper_back', 'dave_r'],
+  ['tip', 'dave_r', { tokens: 50 }],
+  ['pause'], ['pause'],
+  ['recap'],
+];
+function demoStep([kind, username, extra = {}]) {
+  const s = demo.session, fan = username ? DEMO_FANS[username] : null;
+  if (kind === 'pause') return null;
+  if (kind === 'recap') {
+    demo.live = false; s.ended_at = new Date().toISOString(); demo.room = [];
+    const item = { id: Date.now(), session_id: 'demo-s', kind: 'recap', username: null, created_at: s.ended_at, data: {
+      minutes: 187, tokens: s.tokens, tippers: s.tippers, uniqueVisitors: s.unique_visitors, newVisitors: 2, returningVisitors: s.unique_visitors - 2,
+      lightBluesSeen: s.light_blues_seen, lightBluesConverted: s.light_blues_converted, newFollowers: 1, fanclubJoins: 0,
+      topTippers: [{ username: 'velvet_rob', tipped: 100 }, { username: 'dave_r', tipped: 50 }, { username: 'mike_t', tipped: 25 }],
+      convertedFans: ['mike_t'], lightBluesNotYet: ['kat_x'] } };
+    demo.items.unshift(item); return item;
+  }
+  if (kind === 'live') demo.live = true;
+  if (kind === 'chat') { fan.last_message = extra.message; return { kind, username, data: { fan, message: extra.message } }; }
+  if (/_back$|^new_/.test(kind)) {
+    s.unique_visitors++;
+    if (fan.has_tokens && !fan.total_tips) s.light_blues_seen++;
+    demo.room.push(fan);
+  }
+  if (kind === 'tip' || kind === 'first_tip') {
+    if (!fan._tipped) { fan._tipped = true; s.tippers++; }
+    fan.total_tips += extra.tokens; fan.last_tip_at = new Date().toISOString(); s.tokens += extra.tokens;
+    if (extra.converted) s.light_blues_converted++;
+  }
+  const item = { id: Date.now() + Math.random(), session_id: 'demo-s', kind, username, created_at: new Date().toISOString(),
+    data: { fan: fan ? { ...fan } : undefined, lightBlue: fan && fan.has_tokens && !fan.total_tips, ...extra } };
+  demo.items.unshift(item);
+  return item;
+}
+function demoMe() {
+  return { username: 'yourname', displayName: 'there', connected: demo.connected, polling: true, lastError: null,
+    live: demo.live, session: demo.live ? demo.session : null, totals: { fans: 214, tippers: 37, light_blues: 58 } };
+}
+async function demoApi(path, opts) {
+  await new Promise(r => setTimeout(r, path === '/api/connect' ? 900 : 60));
+  if (path === '/api/me') return demoMe();
+  if (path === '/api/connect') {
+    const v = JSON.parse(opts.body || '{}').eventsUrl || '';
+    if (!v.trim()) throw new Error('Paste the link from Chaturbate here.');
+    demo.connected = true; return { ok: true };
+  }
+  if (path === '/api/disconnect') { demo.connected = false; demo.live = false; clearInterval(demo.script); return { ok: true }; }
+  if (path.startsWith('/api/feed')) return { items: demo.items.slice() };
+  if (path === '/api/room') return { fans: [...demo.room].sort((a, b) => b.total_tips - a.total_tips || b.visit_days - a.visit_days) };
+  return {};
+}
+function demoStream() {
+  clearInterval(demo.script);
+  let i = 0;
+  setStatus('Connected', 'ok');
+  demo.script = setInterval(() => {
+    if (i >= DEMO_SCRIPT.length) return clearInterval(demo.script);
+    const item = demoStep(DEMO_SCRIPT[i++]);
+    if (item) onItem(item);
+  }, 2600);
+}
+
 async function api(path, opts = {}) {
+  if (DEMO) return demoApi(path, opts);
   const r = await fetch(API + path, { ...opts, headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' } });
   let body = {}; try { body = await r.json(); } catch (e) {}
   if (!r.ok) throw Object.assign(new Error(body.error || 'Something went wrong.'), { status: r.status });
@@ -165,7 +257,7 @@ function connectScreen(me) {
     catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
     finally { btn.disabled = false; }
   } }, 'Connect');
-  app.replaceChildren(h('div', { class: 'box' },
+  app.replaceChildren(DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo. Paste anything to see what happens next.'), h('div', { class: 'box' },
     h('h1', {}, 'Hi ' + me.displayName + '. One setup step.'),
     h('p', {}, 'StreamWing reads your room through Chaturbate’s Events API. It only reads. It never posts in your room or touches your account.'),
     h('ol', {},
@@ -275,6 +367,7 @@ function panel() {
   $('menuBtn').hidden = false;
   const tabBtn = (id, label) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(tab === id), onclick: () => { tab = id; panel(); } }, label);
   app.replaceChildren(
+    DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo with sample fans. Not a real room.'),
     h('div', { class: 'banner', id: 'banner', hidden: !me.lastError }, me.lastError || ''),
     h('div', { class: 'stats', id: 'stats' }),
     h('div', { class: 'tabs', role: 'tablist' }, tabBtn('callouts', 'Callouts'), tabBtn('room', 'In the room')),
@@ -319,6 +412,7 @@ function onItem(item) {
 }
 
 function stream() {
+  if (DEMO) return demoStream();
   if (es) es.close();
   es = new EventSource(API + '/api/stream?k=' + encodeURIComponent(key));
   es.onmessage = ev => { try { onItem(JSON.parse(ev.data)); } catch (e) {} };

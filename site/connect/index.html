@@ -117,8 +117,7 @@ function goDashboard() {
 (async () => {
   if (!key) {
     setStatus('Not connected');
-    say('Open this page from the private link StreamWing sent you. That link tells this page which StreamWing account to connect.');
-    btn.disabled = true;
+    say('Paste the long link from Chaturbate to connect your room. If you already have a StreamWing link, open that instead.');
     return;
   }
   try {
@@ -142,14 +141,22 @@ async function connect() {
   if (busy) return;
   const link = ta.value.trim();
   if (!link) return;
-  if (!key) return say('Open this page from the private link StreamWing sent you.', true);
   if (!LINK_OK.test(link)) {
     ta.value = '';
     return say('That is not the StreamWing link. Right-click the long link on the StreamWing row and paste it here. It starts with https://eventsapi.chaturbate.com/events/', true);
   }
   busy = true; btn.disabled = true; say('Checking with Chaturbate…');
   try {
-    await api('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: link }) });
+    if (key) {
+      await api('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: link }) });
+    } else {
+      // No private link yet: the Chaturbate link creates the account and gives us our key.
+      const r = await fetch(API + '/api/open-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventsUrl: link }) });
+      let body = {}; try { body = await r.json(); } catch (e) {}
+      if (!r.ok) throw new Error(body.error || 'Something went wrong.');
+      key = body.link.split('#k=')[1];
+      try { localStorage.setItem('sw_k', key); } catch (e) {}
+    }
     setStatus('Connected', true);
     say('Connected. Opening your dashboard…');
     goDashboard();

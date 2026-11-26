@@ -8,7 +8,7 @@ import { parseEventsUrl, poll, CbError } from './cb.js';
 import { subscribe } from './bus.js';
 import { startLoop, stopLoop, isPolling } from './poller.js';
 import { buildRecap } from './brain.js';
-import { recoverLink } from './recover.js';
+import { recoverLink, openAccount } from './recover.js';
 
 const send = (res, status, body, headers = {}) => {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers });
@@ -78,6 +78,11 @@ export function startHttp() {
       if (req.method === 'POST' && path === '/api/recover-link') {
         const { eventsUrl } = await readJson(req);
         return send(res, 200, await recoverLink(eventsUrl, req.socket.remoteAddress));
+      }
+
+      if (req.method === 'POST' && path === '/api/open-account') {
+        const { eventsUrl } = await readJson(req);
+        return send(res, 200, await openAccount(eventsUrl, req.socket.remoteAddress));
       }
 
       const p = await auth(req, url);

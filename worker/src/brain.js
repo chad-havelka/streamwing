@@ -96,6 +96,13 @@ export async function processEvent(c, performer, ev) {
 
   if (ev.method === 'roomSubjectChange' || isOwner) return { items };
 
+  // A leave on its own never means she's live: it can arrive after she stopped.
+  // With no open stream there's nothing to update, so don't open one or add a fan.
+  if (ev.method === 'userLeave') {
+    const open = await c.query(`select 1 from sessions where performer_id=$1 and ended_at is null limit 1`, [pid]);
+    if (!open.rows[0]) return { items };
+  }
+
   // Any viewer activity means she's live, even if we connected mid-stream.
   const { session, opened } = await openSession(c, pid);
   if (opened) items.push(await addFeed(c, pid, session.id, 'live', null, { joinedMidStream: true }));

@@ -457,6 +457,19 @@ test('a real session captured from the Chaturbate testbed (Nov 2026) is understo
   await settle();
 });
 
+test('a leave that arrives after she stopped does not open a phantom stream', async () => {
+  // Real testbed behaviour: a lone userLeave from streamwingtester arrived with no stream running.
+  const { ev, user } = sim;
+  const streamsBefore = (await call('/api/streams')).body;
+  const count = a => (Array.isArray(a) ? a : (a.streams || [])).length;
+  sim.push([ev('userLeave', { user: user('late_leaver') })]);
+  await settle();
+  assert.equal(count((await call('/api/streams')).body), count(streamsBefore), 'no new stream');
+  assert.equal((await call('/api/fans/late_leaver')).status, 404, 'no fan row from a lone leave');
+  const live = (await q(`select count(*)::int n from sessions where ended_at is null`)).rows[0].n;
+  assert.equal(live, 0, 'nothing left open');
+});
+
 let otherId, otherKey;
 test("one performer never sees another's fans, feed or streams", async () => {
   const { newAccessKey, hashKey } = await import('../src/crypto.js');

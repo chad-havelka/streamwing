@@ -185,3 +185,19 @@ test('events shaped exactly like Chaturbate\'s docs (name in `user`) are underst
   assert.equal(e.tip.tokens, 25);
   assert.equal(e.user.isFollower, null, 'not in the docs, so unknown rather than false');
 });
+
+test("Chaturbate's own tip example (docs/methods/tip.html) is understood exactly", async () => {
+  const { normalizeEvent } = await import('../src/cb.js');
+  const object = {
+    broadcaster: 'testuser',
+    tip: { tokens: 25, isAnon: false, message: '' },
+    user: { username: 'testuser1', inFanclub: false, gender: 'f', hasTokens: true, recentTips: 'some', isMod: false },
+  };
+  const e = normalizeEvent({ method: 'tip', id: '1775683684418-0', object });
+  assert.equal(e.broadcaster, 'testuser');
+  assert.equal(e.user.username, 'testuser1');
+  assert.equal(e.user.hasTokens, true);
+  assert.equal(e.user.inFanclub, false);
+  assert.equal(e.tip.tokens, 25);
+  assert.equal(e.tip.isAnon, false);
+});

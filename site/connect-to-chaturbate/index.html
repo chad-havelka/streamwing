@@ -688,7 +688,7 @@ async function renderGrowth() {
         <text x="${W - pad}" y="${H - 4}" fill="#b9a9d9" font-size="12" text-anchor="end">${d1}</text>
         <text x="${pad}" y="12" fill="#b9a9d9" font-size="12">${n(max)}${m.suffix || ''}</text></svg>`;
       const chips = h('div', { class: 'tabs', role: 'tablist' }, ...Object.keys(METRICS).map(k => h('button', { type: 'button', role: 'tab', 'aria-selected': String(k === metric), onclick: () => { metric = k; drawChart(); } }, METRICS[k].label)));
-      chartBox.replaceChildren(h('h3', {}, `${m.label}, last ${pts.length} streams`), chips, rawHtml(svg), h('p', { class: 'note' }, 'One point per stream, oldest on the left.'));
+      chartBox.replaceChildren(h('h3', {}, `${m.label}, last ${pts.length} ${pts.length === 1 ? 'stream' : 'streams'}`), chips, rawHtml(svg), h('p', { class: 'note' }, 'One point per stream, oldest on the left.'));
     };
     drawChart();
 

@@ -16,5 +16,5 @@ await q(
    on conflict (cb_username) do update set access_key_hash = excluded.access_key_hash, display_name = coalesce(excluded.display_name, performers.display_name)`,
   [username, rest.join(' ') || null, hashKey(key)]);
 console.log(`${username}'s private link (anyone with it can open her panel):`);
-console.log(`https://streamwing.studio/start/#k=${key}`);
+console.log(`https://streamwing.studio/connect/#k=${key}`);
 await pool.end();

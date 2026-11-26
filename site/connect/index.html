@@ -68,7 +68,6 @@ textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:14px;bord
           <div class="paste">
             <textarea id="eventsUrl" placeholder="Paste the link from Chaturbate here" aria-label="The link from Chaturbate" autocomplete="off" spellcheck="false"></textarea>
             <div class="row">
-              <button class="btn ghost" type="button" id="cancelBtn">Cancel</button>
               <button class="btn" type="button" id="connectBtn">Connect</button>
             </div>
             <p class="msg" id="msg" aria-live="polite"></p>
@@ -164,7 +163,6 @@ async function connect() {
 
 btn.addEventListener('click', connect);
 ta.addEventListener('paste', () => setTimeout(connect, 80));
-$('cancelBtn').addEventListener('click', () => { ta.value = ''; say(''); });
 </script>
 </body>
 </html>

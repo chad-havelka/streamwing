@@ -109,7 +109,7 @@ export function startHttp() {
 
       if (req.method === 'GET' && path === '/api/feed') {
         const limit = Math.min(Number(url.searchParams.get('limit') || 60), 200);
-        const r = await q(`select id, kind, username, data, created_at from feed where performer_id=$1 order by id desc limit $2`, [p.id, limit]);
+        const r = await q(`select id, session_id, kind, username, data, created_at from feed where performer_id=$1 order by id desc limit $2`, [p.id, limit]);
         return send(res, 200, { items: r.rows });
       }
 

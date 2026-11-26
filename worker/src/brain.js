@@ -47,7 +47,7 @@ async function getFan(c, performerId, username) {
 
 async function addFeed(c, performerId, sessionId, kind, username, data) {
   const r = await c.query(
-    `insert into feed (performer_id, session_id, kind, username, data) values ($1,$2,$3,$4,$5) returning id, kind, username, data, created_at`,
+    `insert into feed (performer_id, session_id, kind, username, data) values ($1,$2,$3,$4,$5) returning id, session_id, kind, username, data, created_at`,
     [performerId, sessionId, kind, username, data]);
   return r.rows[0];
 }

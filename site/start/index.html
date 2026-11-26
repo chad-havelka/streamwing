@@ -2,36 +2,360 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Open StreamWing</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#160c26">
+<title>StreamWing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark;--bg:#160c26;--panel:#22143a;--line:#4a3470;--ink:#f4eefe;--soft:#d8cdf0;--mute:#b9a9d9;--pink:#e879f9;--pinkl:#f0abfc;--deep:#1a0f2e}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Poppins,system-ui,sans-serif}
+/* The StreamWing panel. Built to be read at a glance from a phone or second screen while she's live.
+   She never has to type anything during a stream. */
+:root{color-scheme:dark;--bg:#160c26;--panel:#22143a;--panel2:#2f1d50;--line:#4a3470;--ink:#f4eefe;--soft:#d8cdf0;--mute:#b9a9d9;--pink:#e879f9;--pinkl:#f0abfc;--deep:#1a0f2e;
+  --gold:#fbbf24;--blue:#7dd3fc;--green:#86efac;--err:#fda4af}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Poppins,system-ui,sans-serif}
 a{color:var(--pinkl)}
+button{font:inherit}
 :focus-visible{outline:3px solid var(--pinkl);outline-offset:2px}
-.wrap{max-width:760px;margin:0 auto;padding-inline:max(5vw,16px)}
-header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:20px;max-width:1200px}
-.brand{color:var(--ink);text-decoration:none;font-weight:700;font-size:22px}
-main{padding-block:40px 80px}
-h1{font-size:clamp(32px,5vw,48px);line-height:1.1;margin:0 0 16px}
-h2{font-size:22px;margin:40px 0 8px}
-p,li{color:var(--soft)}
-.note{color:var(--mute);font-size:14px}
-.btn{display:inline-flex;align-items:center;min-height:48px;padding:12px 26px;border-radius:999px;background:var(--pink);color:var(--deep);font-weight:600;font-size:17px;text-decoration:none;margin-top:24px}
-footer{border-top:1px solid #33224f;padding-block:28px;font-size:14px;color:var(--mute)}
-footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;max-width:1200px}
+.wrap{max-width:720px;margin:0 auto;padding:0 max(4vw,14px) 40px}
+header{position:sticky;top:0;z-index:5;background:rgba(22,12,38,.94);backdrop-filter:blur(8px);border-bottom:1px solid #33224f}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:12px}
+.brand{font-weight:700;font-size:19px}
+.status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute)}
+.dot{width:10px;height:10px;border-radius:50%;background:#6b5a8a;flex:none}
+.dot.live{background:#f43f5e;box-shadow:0 0 0 4px rgba(244,63,94,.25)}
+.dot.ok{background:var(--green)}
+.menu{background:none;border:0;color:var(--soft);font-size:22px;line-height:1;padding:6px 8px;cursor:pointer;border-radius:10px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.stat{background:var(--panel);border-radius:16px;padding:10px 8px;text-align:center}
+.stat b{display:block;font-size:22px;line-height:1.1}
+.stat span{font-size:12px;color:var(--mute)}
+.tabs{display:flex;gap:8px;margin:6px 0 12px}
+.tabs button{flex:1;min-height:44px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--soft);font-weight:600;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--pink);border-color:var(--pink);color:var(--deep)}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--panel);border-radius:18px;padding:14px 16px;border-left:6px solid var(--line)}
+.card .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.card .label{font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+.card .when{font-size:12px;color:var(--mute);flex:none}
+.card .name{font-size:24px;font-weight:700;line-height:1.15;margin:2px 0 4px;word-break:break-word}
+.card .facts{font-size:15px;color:var(--soft)}
+.card .said{margin-top:6px;font-size:15px;color:var(--ink);font-style:italic}
+.card .said:empty{display:none}
+.card.gone{opacity:.45}
+.k-big{border-left-color:var(--gold)} .k-big .label{color:var(--gold)}
+.k-tipper{border-left-color:var(--pink)} .k-tipper .label{color:var(--pinkl)}
+.k-regular{border-left-color:var(--green)} .k-regular .label{color:var(--green)}
+.k-lb{border-left-color:var(--blue)} .k-lb .label{color:var(--blue)}
+.k-win{border-left-color:var(--gold);background:linear-gradient(90deg,rgba(251,191,36,.16),var(--panel) 60%)} .k-win .label{color:var(--gold)}
+.row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:14px;background:rgba(34,20,58,.55);font-size:15px;color:var(--soft)}
+.row b{color:var(--ink);font-weight:600}
+.row .when{margin-left:auto;font-size:12px;color:var(--mute)}
+.recap{background:var(--panel2);border-radius:20px;padding:18px}
+.recap h3{margin:0 0 10px;font-size:20px}
+.recap .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.recap .grid div{background:var(--panel);border-radius:14px;padding:10px;text-align:center}
+.recap .grid b{display:block;font-size:22px}
+.recap .grid span{font-size:12px;color:var(--mute)}
+.recap p{margin:12px 0 0;color:var(--soft)}
+.empty{color:var(--mute);text-align:center;padding:36px 10px}
+.box{background:var(--panel);border-radius:22px;padding:22px;margin-top:22px}
+h1{font-size:clamp(26px,6vw,34px);line-height:1.15;margin:0 0 10px}
+.box p{color:var(--soft);margin:0 0 14px}
+ol{padding-left:22px;color:var(--soft);margin:0 0 16px}
+ol li{margin-bottom:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 22px;border-radius:999px;border:0;background:var(--pink);color:var(--deep);font-weight:600;font-size:16px;text-decoration:none;cursor:pointer}
+.btn.ghost{background:none;color:var(--ink);border:2px solid var(--line)}
+.btn.danger{background:none;color:var(--err);border:2px solid #7f3a4a}
+textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);min-height:84px;resize:vertical}
+.msg{min-height:1.4em;margin:10px 0 0;font-size:15px}
+.msg.err{color:var(--err)}
+.note{font-size:14px;color:var(--mute)}
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(10,5,20,.7);display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheet .in{background:var(--panel);width:100%;max-width:720px;border-radius:24px 24px 0 0;padding:22px max(5vw,18px) calc(22px + env(safe-area-inset-bottom))}
+.sheet .in h2{margin:0 0 6px;font-size:20px}
+.sheet .in .btns{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.banner{margin-top:12px;padding:12px 14px;border-radius:14px;background:#3b1830;color:var(--err);font-size:15px}
+.banner[hidden]{display:none}
 </style>
 </head>
 <body>
-<header><div class="wrap"><a class="brand" href="/">StreamWing</a><a href="/#join">Get early access</a></div></header>
-<main><div class="wrap">
-<h1>The StreamWing bot opens here.</h1>
-<p>We're testing it with a small group of creators right now. Get early access and we'll send you your invite when your spot opens.</p>
-<a class="btn" href="/#join">Get early access</a>
-</div></main>
-<footer><div class="wrap"><span style="font-weight:600;color:var(--ink)">StreamWing</span><span><a href="/privacy">Privacy</a> &nbsp;·&nbsp; <a href="/terms">Terms</a></span></div></footer>
+<header><div class="wrap">
+  <span class="brand">StreamWing</span>
+  <span class="status"><span class="dot" id="dot"></span><span id="statusText">Loading</span></span>
+  <button class="menu" id="menuBtn" type="button" aria-label="Settings" hidden>⋯</button>
+</div></header>
+
+<main class="wrap" id="app"></main>
+
+<div class="sheet" id="sheet" hidden><div class="in" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <h2 id="sheetTitle">Settings</h2>
+  <p class="note" id="sheetInfo"></p>
+  <div class="btns">
+    <button class="btn ghost" type="button" id="discBtn">Disconnect Chaturbate</button>
+    <button class="btn danger" type="button" id="wipeBtn">Disconnect and delete everything StreamWing knows</button>
+    <button class="btn ghost" type="button" id="closeSheet">Close</button>
+  </div>
+  <p class="msg" id="sheetMsg"></p>
+</div></div>
+
+<script>
+{
+const API = (location.hostname === 'localhost' && localStorage.getItem('sw_api')) || 'https://streamwing-production.up.railway.app';
+const $ = id => document.getElementById(id);
+const app = $('app');
+
+// The access key arrives in the link's #k=... and is kept on this device only.
+let key = '';
+try {
+  const m = location.hash.match(/k=([\w-]{20,})/);
+  if (m) { localStorage.setItem('sw_k', m[1]); history.replaceState(null, '', location.pathname); }
+  key = localStorage.getItem('sw_k') || '';
+} catch (e) {}
+
+// Safe DOM building. Usernames and chat come from strangers, so nothing is ever set as HTML.
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v; else if (k.startsWith('on')) el.addEventListener(k.slice(2), v); else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : String(kid));
+  return el;
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, { ...opts, headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' } });
+  let body = {}; try { body = await r.json(); } catch (e) {}
+  if (!r.ok) throw Object.assign(new Error(body.error || 'Something went wrong.'), { status: r.status });
+  return body;
+}
+
+const ago = t => {
+  const s = Math.max(0, (Date.now() - new Date(t)) / 1000);
+  if (s < 60) return 'now';
+  if (s < 3600) return Math.floor(s / 60) + 'm';
+  if (s < 86400) return Math.floor(s / 3600) + 'h';
+  return Math.floor(s / 86400) + 'd';
+};
+const n = x => Number(x || 0).toLocaleString();
+const nth = d => d + (['th','st','nd','rd'][(d % 100 - 20) % 10] || ['th','st','nd','rd'][d % 100] || 'th');
+const sinceDay = t => { const d = Math.round((Date.now() - new Date(t)) / 86400000); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; };
+
+function setStatus(text, cls) { $('statusText').textContent = text; $('dot').className = 'dot ' + (cls || ''); }
+
+// ---------- signed-out and setup screens ----------
+function noKey(msg) {
+  setStatus('Not signed in');
+  app.replaceChildren(h('div', { class: 'box' },
+    h('h1', {}, 'The StreamWing bot opens here.'),
+    h('p', {}, msg || "Open this page from your private StreamWing link. If you don't have one yet, get on the early-access list and we'll send it."),
+    h('a', { class: 'btn', href: '/#join' }, 'Get early access')));
+}
+
+function connectScreen(me) {
+  setStatus('Not connected');
+  const ta = h('textarea', { id: 'eventsUrl', placeholder: 'https://eventsapi.chaturbate.com/events/' + me.username + '/...', 'aria-label': 'Your Events API link', autocomplete: 'off', spellcheck: 'false' });
+  const msg = h('p', { class: 'msg', 'aria-live': 'polite' });
+  const btn = h('button', { class: 'btn', type: 'button', onclick: async () => {
+    msg.className = 'msg'; msg.textContent = 'Checking with Chaturbate…'; btn.disabled = true;
+    try { await api('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: ta.value }) }); load(); }
+    catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
+    finally { btn.disabled = false; }
+  } }, 'Connect');
+  app.replaceChildren(h('div', { class: 'box' },
+    h('h1', {}, 'Hi ' + me.displayName + '. One setup step.'),
+    h('p', {}, 'StreamWing reads your room through Chaturbate’s Events API. It only reads. It never posts in your room or touches your account.'),
+    h('ol', {},
+      h('li', {}, 'Open ', h('a', { href: 'https://chaturbate.com/statsapi/authtoken/', target: '_blank', rel: 'noopener' }, 'your Chaturbate token page'), ' (you need to be logged in).'),
+      h('li', {}, 'Create a token and tick ', h('b', {}, 'Events API'), '.'),
+      h('li', {}, 'Copy the Events API link it shows you and paste it here.')),
+    ta, h('div', { style: 'margin-top:14px' }, btn), msg,
+    h('p', { class: 'note', style: 'margin-top:14px' }, 'You can disconnect at any time, and deleting the token on Chaturbate cuts StreamWing off straight away.')));
+}
+
+// ---------- the live panel ----------
+let me = null, feedItems = [], tab = 'callouts', es = null, meTimer = null;
+const KIND = {
+  big_tipper_back: ['k-big', 'Big tipper is back'],
+  tipper_back:     ['k-tipper', 'Tipper is back'],
+  regular_back:    ['k-regular', 'Regular is here'],
+  light_blue_back: ['k-lb', "Back, has tokens, hasn't tipped you yet"],
+  new_with_tokens: ['k-lb', 'New, has tokens'],
+  first_tip:       ['k-win', 'First tip ever'],
+};
+const ROW = {
+  new_viewer: f => ['New viewer ', h('b', {}, f.username)],
+  returning:  f => ['Back again ', h('b', {}, f.username), ` · ${nth(f.data.fan?.visit_days || 2)} day`],
+  tip:        f => [h('b', {}, f.username), ` tipped ${n(f.data.tokens)}`, f.data.fan ? ` · ${n(f.data.fan.total_tips)} total` : ''],
+  follow:     f => [h('b', {}, f.username), ' followed you'],
+  fanclub:    f => [h('b', {}, f.username), ' joined your fan club'],
+  media:      f => [h('b', {}, f.username), ` bought ${f.data.name || 'media'} for ${n(f.data.tokens)}`],
+  live:       f => [f.data.joinedMidStream ? 'Connected while you were live' : 'You went live'],
+};
+
+function facts(fan) {
+  if (!fan) return '';
+  const bits = [];
+  if (Number(fan.total_tips) > 0) bits.push(`tipped you ${n(fan.total_tips)}`); else bits.push('never tipped you');
+  bits.push(fan.visit_days > 1 ? `${nth(fan.visit_days)} day here` : 'first day here');
+  if (fan.visit_days > 1 && fan.last_tip_at) bits.push(`last tip ${sinceDay(fan.last_tip_at)}`);
+  if (fan.in_fanclub) bits.push('fan club');
+  else if (fan.is_follower) bits.push('follows you');
+  return bits.join(' · ');
+}
+
+function card(f) {
+  const [cls, label] = KIND[f.kind];
+  const fan = f.data.fan || {};
+  let headline = label, extra = '';
+  if (f.kind === 'first_tip') { extra = `${n(f.data.tokens)} tokens` + (f.data.converted ? ' · light blue converted' : ''); }
+  return h('div', { class: 'card ' + cls, 'data-user': f.username, 'data-session': f.session_id || '' },
+    h('div', { class: 'top' }, h('span', { class: 'label' }, headline), h('span', { class: 'when' }, ago(f.created_at))),
+    h('div', { class: 'name' }, f.username),
+    h('div', { class: 'facts' }, extra || facts(fan)),
+    h('div', { class: 'said' }, fan.last_message ? `“${fan.last_message}”` : ''));
+}
+
+function recapCard(r) {
+  const parts = [];
+  if (r.convertedFans?.length) parts.push(`Light blues who tipped: ${r.convertedFans.join(', ')}.`);
+  if (r.lightBluesNotYet?.length) parts.push(`Had tokens, didn't tip yet: ${r.lightBluesNotYet.join(', ')}.`);
+  if (r.topTippers?.length) parts.push(`Top tippers: ${r.topTippers.map(t => `${t.username} (${n(t.tipped)})`).join(', ')}.`);
+  return h('div', { class: 'recap' },
+    h('h3', {}, `Stream recap · ${Math.floor(r.minutes / 60)}h ${r.minutes % 60}m`),
+    h('div', { class: 'grid' },
+      [[n(r.tokens), 'tokens'], [n(r.tippers), 'tippers'], [n(r.uniqueVisitors), 'visitors'],
+       [n(r.returningVisitors), 'came back'], [`${n(r.lightBluesConverted)} of ${n(r.lightBluesSeen)}`, 'light blues tipped'], [n(r.newFollowers), 'new followers']]
+        .map(([b, s]) => h('div', {}, h('b', {}, b), h('span', {}, s)))),
+    parts.map(p => h('p', {}, p)));
+}
+
+function renderItem(f) {
+  if (KIND[f.kind]) return card(f);
+  if (f.kind === 'recap') return recapCard(f.data);
+  if (ROW[f.kind]) return h('div', { class: 'row', 'data-user': f.username || '' }, ...ROW[f.kind](f), h('span', { class: 'when' }, ago(f.created_at)));
+  return null;
+}
+
+function renderStats() {
+  const s = me.session && !me.session.ended_at ? me.session : null;
+  const box = $('stats'); if (!box) return;
+  const items = s
+    ? [[n(s.tokens), 'tokens'], [n(s.tippers), 'tippers'], [n(s.unique_visitors), 'visitors'], [`${n(s.light_blues_converted)}/${n(s.light_blues_seen)}`, 'blues tipped']]
+    : [[n(me.totals.fans), 'fans known'], [n(me.totals.tippers), 'tippers'], [n(me.totals.light_blues), 'light blues'], ['', 'offline']];
+  box.replaceChildren(...items.map(([b, l]) => h('div', { class: 'stat' }, h('b', {}, b), h('span', {}, l))));
+}
+
+async function renderRoom() {
+  const list = $('list');
+  try {
+    const { fans } = await api('/api/room');
+    if (tab !== 'room') return;
+    if (!fans.length) return list.replaceChildren(h('p', { class: 'empty' }, me.live ? "Nobody's in the room right now." : "You're offline. When you go live, the people in your room show up here."));
+    list.replaceChildren(...fans.map(fan => {
+      const kind = Number(fan.total_tips) >= 100 ? 'big_tipper_back' : Number(fan.total_tips) > 0 ? 'tipper_back' : fan.visit_days >= 3 ? 'regular_back' : fan.has_tokens ? 'light_blue_back' : null;
+      if (!kind) return h('div', { class: 'row' }, h('b', {}, fan.username), fan.visit_days > 1 ? ` · ${nth(fan.visit_days)} day` : ' · new');
+      return card({ kind, username: fan.username, created_at: fan.last_seen, data: { fan } });
+    }));
+  } catch (e) { list.replaceChildren(h('p', { class: 'empty' }, e.message)); }
+}
+
+function renderList() {
+  const list = $('list'); if (!list) return;
+  if (tab === 'room') return renderRoom();
+  const els = feedItems.map(renderItem).filter(Boolean);
+  list.replaceChildren(...(els.length ? els : [h('p', { class: 'empty' }, "You're connected. When you go live, your callouts land here: regulars arriving, big tippers coming back, and viewers who have tokens but haven't tipped you yet.")]));
+}
+
+function panel() {
+  $('menuBtn').hidden = false;
+  const tabBtn = (id, label) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(tab === id), onclick: () => { tab = id; panel(); } }, label);
+  app.replaceChildren(
+    h('div', { class: 'banner', id: 'banner', hidden: !me.lastError }, me.lastError || ''),
+    h('div', { class: 'stats', id: 'stats' }),
+    h('div', { class: 'tabs', role: 'tablist' }, tabBtn('callouts', 'Callouts'), tabBtn('room', 'In the room')),
+    h('div', { class: 'list', id: 'list', 'aria-live': 'polite' }));
+  renderStats(); renderList(); updateStatus();
+}
+
+function updateStatus() {
+  if (!me) return;
+  if (me.lastError) return setStatus('Needs attention');
+  if (me.live) return setStatus('Live', 'live');
+  setStatus('Connected', 'ok');
+}
+
+let refreshT = null;
+const refreshMe = () => { clearTimeout(refreshT); refreshT = setTimeout(async () => { try { me = await api('/api/me'); renderStats(); updateStatus(); const b = $('banner'); if (b) { b.hidden = !me.lastError; b.textContent = me.lastError || ''; } } catch (e) {} }, 1200); };
+
+function onItem(item) {
+  if (item.kind === 'heartbeat') return;
+  if (item.kind === 'status') { refreshMe(); return; }
+  if (item.kind === 'chat') {
+    // Update what they just said, but only on this stream's cards. Older cards keep what they said back then.
+    const latest = feedItems.find(f => f.session_id);
+    const sid = latest && latest.kind !== 'recap' ? latest.session_id : null;
+    if (!sid) return;
+    document.querySelectorAll('.card').forEach(c => { if (c.dataset.user === item.username && c.dataset.session === sid) c.querySelector('.said').textContent = `“${item.data.message}”`; });
+    for (const f of feedItems) if (f.username === item.username && f.session_id === sid && f.data.fan) f.data.fan.last_message = item.data.message;
+    return;
+  }
+  if (item.kind === 'leave') {
+    document.querySelectorAll('.card').forEach(c => { if (c.dataset.user === item.username) c.classList.add('gone'); });
+    return;
+  }
+  feedItems.unshift(item);
+  feedItems = feedItems.slice(0, 150);
+  if (tab === 'callouts') {
+    const el = renderItem(item);
+    const list = $('list');
+    if (el && list) { if (list.querySelector('.empty')) list.replaceChildren(); list.prepend(el); }
+  } else if (tab === 'room') renderRoom();
+  refreshMe();
+}
+
+function stream() {
+  if (es) es.close();
+  es = new EventSource(API + '/api/stream?k=' + encodeURIComponent(key));
+  es.onmessage = ev => { try { onItem(JSON.parse(ev.data)); } catch (e) {} };
+  es.onerror = () => setStatus('Reconnecting…');
+  es.onopen = () => updateStatus();
+}
+
+async function load() {
+  if (!key) return noKey();
+  try { me = await api('/api/me'); }
+  catch (e) {
+    if (e.status === 401) { try { localStorage.removeItem('sw_k'); } catch (x) {} return noKey("This link isn't working anymore. Ask StreamWing for a new one."); }
+    setStatus('Offline'); app.replaceChildren(h('p', { class: 'empty' }, "Can't reach StreamWing right now. It will keep trying."));
+    return setTimeout(load, 5000);
+  }
+  if (!me.connected) return connectScreen(me);
+  const { items } = await api('/api/feed?limit=80');
+  feedItems = items;
+  panel(); stream();
+  clearInterval(meTimer); meTimer = setInterval(refreshMe, 30000);
+}
+
+// Settings sheet
+$('menuBtn').addEventListener('click', () => { $('sheetInfo').textContent = me ? `Connected as ${me.username}. StreamWing remembers ${n(me.totals.fans)} people from your room.` : ''; $('sheetMsg').textContent = ''; $('sheet').hidden = false; });
+$('closeSheet').addEventListener('click', () => { $('sheet').hidden = true; });
+async function disconnect(deleteData) {
+  if (deleteData && !confirm('Delete everything StreamWing knows about your room? This can’t be undone.')) return;
+  try { await api('/api/disconnect', { method: 'POST', body: JSON.stringify({ deleteData }) }); $('sheet').hidden = true; if (es) es.close(); load(); }
+  catch (e) { $('sheetMsg').className = 'msg err'; $('sheetMsg').textContent = e.message; }
+}
+$('discBtn').addEventListener('click', () => disconnect(false));
+$('wipeBtn').addEventListener('click', () => disconnect(true));
+
+// Keep the "2m ago" labels fresh without re-rendering.
+setInterval(() => { if (tab === 'callouts') renderList(); }, 60000);
+
+load();
+}
+</script>
 </body>
 </html>

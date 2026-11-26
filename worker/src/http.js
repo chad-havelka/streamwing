@@ -9,6 +9,7 @@ import { subscribe } from './bus.js';
 import { startLoop, stopLoop, isPolling } from './poller.js';
 import { buildRecap } from './brain.js';
 import { recoverLink, openAccount } from './recover.js';
+import { handleResearchPublic, handleResearchAdmin } from './research.js';
 
 const send = (res, status, body, headers = {}) => {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers });
@@ -85,6 +86,9 @@ export function startHttp() {
         return send(res, 200, await openAccount(eventsUrl, req.socket.remoteAddress));
       }
 
+      // Performer research has its own routes and its own access control. See research.js.
+      if (path.startsWith('/api/research/admin/') && await handleResearchAdmin(req, res, url, path)) return;
+      if (path.startsWith('/api/research/') && await handleResearchPublic(req, res, url, path)) return;
       const p = await auth(req, url);
       if (!p) return send(res, 401, { error: 'This link is not valid. Ask StreamWing for a new one.' });
 

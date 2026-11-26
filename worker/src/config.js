@@ -38,6 +38,8 @@ export const config = {
   // The one-line AI note per fan. Off until ANTHROPIC_API_KEY is set.
   aiKey: env.ANTHROPIC_API_KEY || '',
   keySource,
+  // Researcher view password for /api/research/admin. Empty means the researcher view is switched off.
+  researchAdminToken: env.RESEARCH_ADMIN_TOKEN || '',
   // Raw events other than tips are deleted after this many days. 0 turns the purge off. Tips stay: they are each fan's tip log.
   eventRetentionDays: Number(env.EVENT_RETENTION_DAYS || 0),
   // An uptime monitor URL (for example a Healthchecks.io ping URL). Empty means no monitoring.

@@ -144,6 +144,9 @@ textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:12px 14px
 .cbpage .cbbox.on{background:#1a73e8;border-color:#1a73e8}
 .cbpage .cbstrike{text-decoration:line-through;color:#999}
 .cbpage .cbring{outline:3px solid #e879f9;outline-offset:4px;border-radius:6px}
+.cbpage .cbtok{font-size:13px}
+.cbpage .cbu{margin-top:4px;font-size:12px;word-break:break-all;color:#1a5fb4}
+.cbpage .cbleave{color:#888;font-size:12px;font-style:italic}
 .cbpage .cbpill{background:#e879f9;color:#1a0f2e;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
 .cbpage .cbgen{background:#f08a24;color:#fff;border-radius:4px;padding:6px 14px;display:inline-block;font-weight:600}
 .cbpage table{border-collapse:collapse;width:100%;font-size:13px}
@@ -408,16 +411,21 @@ function connectScreen(me) {
     h('div', { class: 'cbpage', 'aria-hidden': 'true' },
       h('div', { class: 'cbrow' }, h('span', { class: 'cblab' }, 'Token Name:'), h('span', { class: 'cbfield' }, 'StreamWing')),
       h('div', { class: 'cbrow', style: 'align-items:flex-start' }, h('span', { class: 'cblab' }, 'Scopes:'),
-        h('div', {}, cb(false, 'Stats API'), cb(false, 'Events API', 'cbstrike'),
+        h('div', {},
+          h('div', { class: 'cbrow' }, h('span', { class: 'cbbox' }), h('span', {}, 'Stats API'), h('span', { class: 'cbleave' }, 'leave empty')),
+          h('div', { class: 'cbrow' }, h('span', { class: 'cbbox' }), h('span', {}, 'Events API'), h('span', { class: 'cbleave' }, 'leave empty')),
           h('div', { class: 'cbrow' }, h('span', { class: 'cbbox on ring' }, '✓'), h('span', { class: 'cbring' }, 'Events API (public)'), h('span', { class: 'cbpill' }, 'tick this one')))),
       h('div', { class: 'cbrow', style: 'justify-content:center' }, h('span', { class: 'cbgen' }, 'Generate Auth Token ▶'))),
-    h('p', { class: 'cbcap' }, 'A picture of Chaturbate’s page. Yours may look a little different. Tick only the one box. Leave the crossed-out one alone.'));
+    h('p', { class: 'cbcap' }, 'A picture of Chaturbate’s page. Yours may look a little different. Only the (public) box gets a tick.'));
   const linkPic = h('div', {},
     h('div', { class: 'cbpage', 'aria-hidden': 'true' },
-      h('table', {}, h('tr', {}, h('th', {}, 'Token Name:'), h('th', {}, 'Scope:'), h('th', {}, 'Token URL:')),
-        h('tr', {}, h('td', {}, 'StreamWing'), h('td', {}, 'Events API (public)'),
-          h('td', {}, h('span', { class: 'cburl ring' }, 'https://eventsapi.chaturbate.com/events/' + me.username + '/••••••••/'), ' ', h('span', { class: 'cbpill' }, 'copy all of this'))))),
-    h('p', { class: 'cbcap' }, 'After you click Generate Auth Token, your new link shows up in this table. Copy the whole link, not the address at the top of your browser.'));
+      h('div', { class: 'cbtok', style: 'opacity:.4' },
+        h('div', {}, h('b', {}, 'events'), ' \u00b7 Events API'), h('div', { class: 'cbu' }, 'https://eventsapi.chaturbate.com/events/\u2026')),
+      h('div', { class: 'cbtok', style: 'border-top:1px solid #ddd;padding-top:10px;margin-top:10px' },
+        h('div', {}, h('b', {}, 'StreamWing'), ' \u00b7 ', h('span', { class: 'cbring' }, 'Events API (public)')),
+        h('div', { class: 'cbu cburl ring' }, 'https://eventsapi.chaturbate.com/events/' + me.username + '/\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022/'),
+        h('div', { style: 'margin-top:8px' }, h('span', { class: 'cbpill' }, 'copy this link')))),
+    h('p', { class: 'cbcap' }, 'Your new token is the last row, named StreamWing. Check the Scope says Events API (public). Then right-click the link and choose Copy link address. Older rows above it are from tokens you made before.'));
   put(app, DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo. Paste anything to see what happens next.'), h('div', { class: 'box' },
     h('h1', {}, 'Hi ' + me.displayName + '. One setup step.'),
     h('p', {}, 'StreamWing reads your room through Chaturbate’s Events API. It only reads. It never posts in your room or touches your account. This takes about two minutes.'),
@@ -426,7 +434,7 @@ function connectScreen(me) {
         h('p', {}, 'Be logged in as ', h('b', {}, me.username), ', the account you stream from. A viewer account won’t work.'),
         h('a', { class: 'btn', href: 'https://chaturbate.com/statsapi/authtoken/', target: '_blank', rel: 'noopener' }, 'Open Chaturbate token page')),
       step('2', 'Make a token',
-        h('p', {}, 'Type ', h('b', {}, 'StreamWing'), ' as the name. Tick ', h('b', {}, 'Events API (public)'), ' only. Then click ', h('b', {}, 'Generate Auth Token'), '.'),
+        h('p', {}, 'Type ', h('b', {}, 'StreamWing'), ' as the name. Tick ', h('b', {}, 'only the box that says (public)'), '. Leave the other two empty. Then click ', h('b', {}, 'Generate Auth Token'), '.'),
         formPic),
       step('3', 'Copy your link and paste it here',
         linkPic,
@@ -434,7 +442,8 @@ function connectScreen(me) {
     h('details', { class: 'stuck' }, h('summary', {}, 'Stuck? Common problems'),
       h('p', {}, h('b', {}, 'I see a login page, or the page won’t open. '), 'Log in to Chaturbate with the account you stream from, then open the token page again.'),
       h('p', {}, h('b', {}, 'StreamWing says the link is for someone else. '), 'You’re logged in to a different Chaturbate account than ' + me.username + '.'),
-      h('p', {}, h('b', {}, 'StreamWing says Chaturbate didn’t accept it. '), 'Make a new token and tick Events API (public) only. You can delete old tokens on that same page.'),
+      h('p', {}, h('b', {}, 'StreamWing says Chaturbate didn’t accept it. '), 'The usual cause is a wrong box ticked. Make a new token with only Events API (public) ticked. You can delete old tokens on that same page.'),
+      h('p', {}, h('b', {}, 'I see two links in my row. '), 'Copy the one that starts with eventsapi.chaturbate.com. The other one is the Stats link and won’t work here.'),
       h('p', {}, h('b', {}, 'Still stuck? '), 'Message the person who invited you. They’ll sort it out with you.')),
     h('p', { class: 'note' }, 'That link is the key to your room’s events. Paste it only here. You can disconnect any time, and deleting the token on Chaturbate cuts StreamWing off straight away.')));
 }

@@ -405,8 +405,15 @@ function connectScreen(me, pub) {
   const ta = h('textarea', { id: 'eventsUrl', placeholder: 'Paste the link from Chaturbate here', 'aria-label': 'The link from Chaturbate', autocomplete: 'off', spellcheck: 'false' });
   const msg = h('p', { class: 'msg', 'aria-live': 'polite' });
   let busy = false;
+  const LINK_OK = /^https:\/\/eventsapi\.chaturbate\.com\/events\//;
   const go = async () => {
     if (busy || !ta.value.trim()) return;
+    if (!DEMO && !LINK_OK.test(ta.value.trim())) {
+      ta.value = '';
+      msg.className = 'msg err';
+      msg.textContent = 'That is not the link. Go back to Chaturbate, right-click the link on the StreamWing row, and choose Copy link address. The link starts with https://eventsapi.chaturbate.com/events/';
+      return;
+    }
     busy = true; msg.className = 'msg'; msg.textContent = 'Checking with Chaturbate…'; btn.disabled = true;
     try { await api('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: ta.value }) }); justConnected = true; okStart(); window.scrollTo(0, 0); load(); }
     catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
@@ -434,8 +441,8 @@ function connectScreen(me, pub) {
       h('div', { class: 'cbtok', style: 'border-top:1px solid #ddd;padding-top:10px;margin-top:10px' },
         h('div', {}, h('b', {}, 'StreamWing'), ' \u00b7 ', h('span', { class: 'cbring' }, 'Events API (public)')),
         h('div', { class: 'cbu cburl ring' }, 'https://eventsapi.chaturbate.com/events/' + me.username + '/\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022/'),
-        h('div', { style: 'margin-top:8px' }, h('span', { class: 'cbpill' }, 'copy this link')))),
-    h('p', { class: 'cbcap' }, 'Your new token is the last row, named StreamWing. Check the Scope says Events API (public). Then right-click the link and choose Copy link address. Older rows above it are from tokens you made before.'));
+        h('div', { style: 'margin-top:8px' }, h('span', { class: 'cbpill' }, 'right-click this link')))),
+    h('p', { class: 'cbcap' }, 'Your new token is the last row, named StreamWing. Check the Scope says Events API (public). Then right-click the link and choose Copy link address. Do not click the link. It opens a page of raw code. Older rows above it are from tokens you made before.'));
   const pasteKids = pub
     ? [h('p', { style: 'margin-top:12px' }, 'You will paste your link here once you have your private StreamWing link.')]
     : [h('div', { style: 'margin-top:12px' }, ta), h('div', { style: 'margin-top:12px' }, btn), msg];
@@ -447,14 +454,14 @@ function connectScreen(me, pub) {
         pub ? h('p', {}, 'Be logged in to the account you stream from. A viewer account won’t work.') : h('p', {}, 'Be logged in as ', h('b', {}, me.username), ', the account you stream from. A viewer account won’t work.'),
         h('a', { class: 'btn', href: 'https://chaturbate.com/statsapi/authtoken/', target: '_blank', rel: 'noopener' }, 'Open Chaturbate token page')),
       step('2', 'Make a token',
-        h('p', {}, 'Type ', h('b', {}, 'StreamWing'), ' as the name. Tick ', h('b', {}, 'only Events API (public)'), '. Leave the other two empty. Then click ', h('b', {}, 'Generate Auth Token'), '.'),
+        h('p', {}, 'Type ', h('b', {}, 'StreamWing'), ' as the name. Chaturbate ticks Stats API for you, so untick it. Tick ', h('b', {}, 'only Events API (public)'), '. Leave Events API empty. Then click ', h('b', {}, 'Generate Auth Token'), '.'),
         formPic),
       step('3', 'Copy your link and paste it here', linkPic, ...pasteKids)),
     h('details', { class: 'stuck' }, h('summary', {}, 'Stuck? Common problems'),
       h('p', {}, h('b', {}, 'I see a login page, or the page won’t open. '), 'Log in to Chaturbate with the account you stream from, then open the token page again.'),
       h('p', {}, h('b', {}, 'StreamWing says the link is for someone else. '), 'You’re logged in to a different Chaturbate account than ' + me.username + '.'),
       h('p', {}, h('b', {}, 'StreamWing says Chaturbate didn’t accept it. '), 'The usual cause is a wrong box ticked. Make a new token with only Events API (public) ticked. You can delete old tokens on that same page.'),
-      h('p', {}, h('b', {}, 'I see two links in my row. '), 'Copy the one that starts with eventsapi.chaturbate.com. The other one is the Stats link and won’t work here.'),
+      h('p', {}, h('b', {}, 'I made a token with Stats API ticked. '), 'Delete that token on the Chaturbate page, then make a new one with only Events API (public) ticked.'),
       h('p', {}, h('b', {}, 'Still stuck? '), 'Email ', h('a', { href: 'mailto:quietquotient79@gmail.com' }, 'quietquotient79@gmail.com'), '.')),
     h('p', { class: 'note' }, 'That link is the key to your room’s events. Paste it only here. You can disconnect any time, and deleting the token on Chaturbate cuts StreamWing off straight away.')));
 }

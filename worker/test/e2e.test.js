@@ -172,3 +172,16 @@ test('the token page link, in any shape Chaturbate shows it, becomes her Events 
   assert.throws(() => parseEventsUrl('https://chaturbate.com/statsapi/?username=someone&token=AbC123xyz456', 'Jhessi_kissie'), /not Jhessi_kissie/);
   assert.throws(() => parseEventsUrl('https://chaturbate.com/statsapi/authtoken/', 'Jhessi_kissie'), /Generate auth token/);
 });
+
+test('events shaped exactly like Chaturbate\'s docs (name in `user`) are understood', async () => {
+  const { normalizeEvent } = await import('../src/cb.js');
+  const e = normalizeEvent({ method: 'tip', id: '1775683684418-0', object: {
+    broadcaster: 'Jhessi_kissie',
+    user: { user: 'luna_92', inFanclub: false, hasTokens: true, isMod: false, recentTips: 'some', gender: 'm', subgender: '' },
+    tip: { tokens: 25, isAnon: false, message: 'hi' } } });
+  assert.equal(e.user.username, 'luna_92');
+  assert.equal(e.user.hasTokens, true);
+  assert.equal(e.user.recentTips, 'some');
+  assert.equal(e.tip.tokens, 25);
+  assert.equal(e.user.isFollower, null, 'not in the docs, so unknown rather than false');
+});

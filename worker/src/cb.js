@@ -83,7 +83,8 @@ const pick = (o, ...keys) => { for (const k of keys) if (o && o[k] !== undefined
 export function normalizeUser(u) {
   if (!u) return null;
   return {
-    username: pick(u, 'username'),
+    // Chaturbate's docs call it `user`; client libraries see `username`. Accept either.
+    username: pick(u, 'username', 'user') ?? null,
     colorGroup: pick(u, 'colorGroup', 'color_group') ?? null,
     hasTokens: pick(u, 'hasTokens', 'has_tokens') ?? null,
     recentTips: pick(u, 'recentTips', 'recent_tips') ?? null,

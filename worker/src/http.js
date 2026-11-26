@@ -85,7 +85,7 @@ export function startHttp() {
         try { base = parseEventsUrl(eventsUrl, p.cb_username); } catch (e) { return send(res, 400, { error: e.message }); }
         // Prove the link works before saving it. timeout=0 returns straight away.
         try { await poll(base, 0); } catch (e) {
-          if (e instanceof CbError && e.auth) return send(res, 400, { error: "Chaturbate didn't accept that link. Make sure the token has the Events API box ticked, then copy the link again." });
+          if (e instanceof CbError && e.auth) return send(res, 400, { error: "Chaturbate didn't accept that. Make sure the token has the Events API box ticked, then copy it again." });
           return send(res, 502, { error: "Couldn't reach Chaturbate just now. Try again in a minute." });
         }
         await q(`update performers set cb_token_enc=$2, next_url_enc=null, connected_at=now(), last_error=null where id=$1`,

@@ -157,7 +157,7 @@ function noKey(msg) {
 
 function connectScreen(me) {
   setStatus('Not connected');
-  const ta = h('textarea', { id: 'eventsUrl', placeholder: 'https://eventsapi.chaturbate.com/events/' + me.username + '/...', 'aria-label': 'Your Events API link', autocomplete: 'off', spellcheck: 'false' });
+  const ta = h('textarea', { id: 'eventsUrl', placeholder: 'Paste your token here', 'aria-label': 'Your token or Events API link', autocomplete: 'off', spellcheck: 'false' });
   const msg = h('p', { class: 'msg', 'aria-live': 'polite' });
   const btn = h('button', { class: 'btn', type: 'button', onclick: async () => {
     msg.className = 'msg'; msg.textContent = 'Checking with Chaturbate…'; btn.disabled = true;
@@ -171,7 +171,7 @@ function connectScreen(me) {
     h('ol', {},
       h('li', {}, 'Open ', h('a', { href: 'https://chaturbate.com/statsapi/authtoken/', target: '_blank', rel: 'noopener' }, 'your Chaturbate token page'), ' (you need to be logged in).'),
       h('li', {}, 'Create a token and tick ', h('b', {}, 'Events API'), '.'),
-      h('li', {}, 'Copy the Events API link it shows you and paste it here.')),
+      h('li', {}, 'Copy the token (or the Events API link, either works) and paste it here.')),
     ta, h('div', { style: 'margin-top:14px' }, btn), msg,
     h('p', { class: 'note', style: 'margin-top:14px' }, 'You can disconnect at any time, and deleting the token on Chaturbate cuts StreamWing off straight away.')));
 }

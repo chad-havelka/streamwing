@@ -152,3 +152,10 @@ test('disconnect with delete wipes her data', async () => {
   const p = (await q(`select cb_token_enc from performers`)).rows[0];
   assert.equal(p.cb_token_enc, null);
 });
+
+test('a bare token is turned into her Events API link', async () => {
+  const { parseEventsUrl } = await import('../src/cb.js');
+  assert.equal(parseEventsUrl('  AbC123xyz456  ', 'Jhessi_kissie'), 'https://eventsapi.chaturbate.com/events/Jhessi_kissie/AbC123xyz456/');
+  assert.equal(parseEventsUrl('https://eventsapi.chaturbate.com/events/Jhessi_kissie/AbC123xyz456/?timeout=10', 'Jhessi_kissie'), 'https://eventsapi.chaturbate.com/events/Jhessi_kissie/AbC123xyz456/');
+  assert.throws(() => parseEventsUrl('short', 'Jhessi_kissie'));
+});

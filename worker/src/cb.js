@@ -7,6 +7,10 @@
 // Returns a clean base URL or throws with a message she can act on.
 export function parseEventsUrl(input, expectedUsername) {
   const raw = String(input || '').trim();
+  // A bare token works too: we already know whose room it is.
+  if (expectedUsername && /^[A-Za-z0-9_-]{8,}$/.test(raw)) {
+    return `https://eventsapi.chaturbate.com/events/${encodeURIComponent(expectedUsername)}/${raw}/`;
+  }
   let u;
   try { u = new URL(raw); } catch { throw new Error('Paste the full Events API link from Chaturbate. It starts with https://'); }
   if (u.protocol !== 'https:' && !(u.protocol === 'http:' && process.env.ALLOW_HTTP_EVENTS === '1')) throw new Error('The link has to start with https://');

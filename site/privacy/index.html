@@ -6,28 +6,48 @@
 <title>Privacy policy | StreamWing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
 <style>
-:root{color-scheme:dark;--bg:#160c26;--panel:#22143a;--line:#4a3470;--ink:#f4eefe;--soft:#d8cdf0;--mute:#b9a9d9;--pink:#e879f9;--pinkl:#f0abfc;--deep:#1a0f2e}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Poppins,system-ui,sans-serif}
-a{color:var(--pinkl)}
-:focus-visible{outline:3px solid var(--pinkl);outline-offset:2px}
-.wrap{max-width:760px;margin:0 auto;padding-inline:max(5vw,16px)}
-header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:20px;max-width:1200px}
-.brand{color:var(--ink);text-decoration:none;font-weight:700;font-size:22px}
 main{padding-block:40px 80px}
-h1{font-size:clamp(32px,5vw,48px);line-height:1.1;margin:0 0 16px}
-h2{font-size:22px;margin:40px 0 8px}
 p,li{color:var(--soft)}
 .note{color:var(--mute);font-size:14px}
-.btn{display:inline-flex;align-items:center;min-height:48px;padding:12px 26px;border-radius:999px;background:var(--pink);color:var(--deep);font-weight:600;font-size:17px;text-decoration:none;margin-top:24px}
-footer{border-top:1px solid #33224f;padding-block:28px;font-size:14px;color:var(--mute)}
-footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;max-width:1200px}
-</style>
+.two{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:48px;align-items:start}.side{background:#22143a;border:2px solid #4a3470;border-radius:24px;padding:24px}.two .doc{min-width:0}@media(max-width:820px){.two{grid-template-columns:1fr}.side{position:static}}
+.doc h2{font-size:24px;margin:40px 0 10px}
+
+.side h2{margin:0 0 8px;font-size:24px}
+.side p{margin:0 0 18px;font-size:15px;color:var(--soft)}
+.side .btn{width:100%}
+.lc-modal[hidden],.lc-modal [hidden]{display:none !important}
+.lc-modal{position:fixed;inset:0;background:rgba(10,5,20,.72);display:grid;place-items:center;padding:20px;z-index:50}
+.lc-modal-panel{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:28px;width:100%;max-width:480px;max-height:calc(100vh - 40px);overflow:auto}
+.lc-modal-panel h2{margin:0 0 8px;font-size:26px}
+.lc-close{position:absolute;top:14px;right:14px;background:none;border:2px solid var(--line);border-radius:999px;width:40px;height:40px;color:var(--ink);font-size:24px;line-height:1;cursor:pointer}
+.lc-modal .lc-sub{margin:0 0 20px;color:var(--soft);font-size:15px}
+.lc-modal form{display:grid;gap:18px}
+.lc-modal form[hidden]{display:none}
+.lc-modal label.f{display:flex;flex-direction:column;gap:8px;font-weight:500;font-size:15px}
+.lc-modal input[type=text]{font:16px Poppins,system-ui,sans-serif;padding:12px 14px;min-height:48px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.lc-modal fieldset{border:0;margin:0;padding:0}
+.lc-modal legend{font-weight:500;margin-bottom:10px;padding:0;font-size:15px}
+.lc-modal .chips{display:flex;flex-wrap:wrap;gap:8px}
+.lc-modal .chip{position:relative}
+.lc-modal .chip input{position:absolute;opacity:0;pointer-events:none}
+.lc-modal .chip span{display:inline-flex;align-items:center;min-height:40px;padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:var(--panel);cursor:pointer;font-size:14px}
+.lc-modal .chip input:checked+span{background:var(--pink);border-color:var(--pink);color:var(--deep);font-weight:600}
+.lc-modal .chip input:focus-visible+span{outline:3px solid var(--pinkl);outline-offset:2px}
+.lc-modal .check{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14px;cursor:pointer}
+.lc-modal .check input{width:20px;height:20px;margin:2px 0 0;accent-color:#e879f9;flex:none}
+.lc-modal .note{color:var(--mute);font-size:13px;margin:0}
+.lc-modal .msg{min-height:1.5em;margin:0;font-size:14px}
+.lc-modal .msg.err{color:#fda4af}
+.lc-modal .lc-done{font-size:16px;color:var(--ink);margin:12px 0 0}
+body.lc-open{overflow:hidden}</style>
+<script src="/cta.js" defer></script>
+<script src="/lead-card.js" defer></script>
 </head>
 <body>
-<header><div class="wrap"><a class="brand" href="/">StreamWing</a><a href="/#join">Get early access</a></div></header>
-<main><div class="wrap">
+<header><div class="wrap"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a><nav><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" data-cta href="/#join">Get early access</a></nav></div></header>
+<main><div class="wrap two"><div class="doc">
 <h1>Privacy policy</h1>
 <p class="note">Last updated November 25, 2026</p>
 <p>This policy covers the StreamWing website, streamwing.studio, and the StreamWing app performers open from their private link. The first part is about the signup and survey. The part headed "Inside the StreamWing app" is about performers who connect their Chaturbate room.</p>
@@ -52,6 +72,7 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;
 <p>We only message you on WhatsApp if you ticked the box saying we can. You can tell us to stop at any time on any channel, and we will.</p>
 <h2>Your choices</h2>
 <p>You can ask us what we hold about you, ask us to correct it, or ask us to delete it. Reply to any message we've sent you and we'll take care of it.</p>
+<p>If you are a viewer in a performer's room, write to us and we'll look up and delete what we hold about your Chaturbate username. There is no form for this yet, so it is handled by hand.</p>
 <h2>Inside the StreamWing app</h2>
 <p>When a performer connects her Chaturbate room, she gives StreamWing a link from Chaturbate that lets it read her room's events. It can only read. It never posts in her room and never touches her account.</p>
 <ul>
@@ -59,16 +80,58 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;
 <li><b>What we keep about the viewers in her room:</b> their Chaturbate username, when they came and went, what they tipped her, whether they followed her or joined her fan club, what Chaturbate reports about whether they have tokens, and the last five things they said in her public chat.</li>
 <li><b>Private messages:</b> we keep only the fact that one was sent, never what it said.</li>
 <li><b>Her own notes</b> about fans are hers. Only she sees them in the app.</li>
-<li><b>The one-line note StreamWing writes about a fan</b> is made with Claude, an AI service from Anthropic. After a stream, we send Anthropic that fan's username, what they tipped her, how many days they've visited, the last few things they said in her public chat, and her own note about them, if she wrote one. Private messages are never sent.</li>
+<li><b>AI notes are off until she turns them on.</b> If she does, Claude, an AI service from Anthropic, writes a one-line note about each fan after a stream. She sees exactly what is sent before she switches it on. What is sent: the fan's username, what they tipped her, how many days they've visited, the last few things they said in her public chat, and her own note about them, if she wrote one. Private messages are never sent. Anthropic handles that data under its API terms.</li>
 <li><b>Where it lives:</b> on servers run by Railway. StreamWing's operators can see this data to run and fix the service. We don't sell it and don't share it with advertisers.</li>
-<li><b>Deleting it:</b> in the app's settings, she can disconnect and delete everything StreamWing knows about her room.</li>
+<li><b>Deleting it:</b> she can disconnect and delete everything StreamWing knows about her room, in one step, at any time. Her account name stays until she asks us to remove it.</li>
+<li><b>Keeping it:</b> we keep fan records until she deletes them. Nothing deletes them on a timer.</li>
 </ul>
 
 <h2>Who this is for</h2>
 <p>StreamWing is for adults 18 and over. We don't knowingly collect information from anyone younger.</p>
 <h2>Changes</h2>
 <p>If we change this policy, we'll update the date at the top. If the change affects how we use information you already gave us, we'll tell you first.</p>
-</div></main>
-<footer><div class="wrap"><span style="font-weight:600;color:var(--ink)">StreamWing</span><span><a href="/privacy">Privacy</a> &nbsp;·&nbsp; <a href="/terms">Terms</a></span></div></footer>
+</div><aside class="side" id="leadCard">
+<h2>Want an invite?</h2>
+<p>Tell us your streamer name and how to reach you, and we’ll send it there.</p>
+<button type="button" class="btn" id="lcOpen" aria-haspopup="dialog" aria-controls="lcModal">Get early access</button>
+</aside></div></main>
+<footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div></div></footer>
+<div class="lc-modal" id="lcModal" role="dialog" aria-modal="true" aria-labelledby="lcModalTitle" hidden><div class="lc-modal-panel"><button type="button" class="lc-close" id="lcClose" aria-label="Close">&times;</button><h2 id="lcModalTitle">Request your invite</h2><p class="lc-sub">Tell us who you are, where you stream and how to reach you. We’ll get in touch when StreamWing is ready for your room.</p><form id="lcForm" novalidate>
+<label class="f" for="lcName">Streamer name
+<input id="lcName" type="text" autocomplete="off" maxlength="60" placeholder="The name your fans know you by">
+</label>
+<fieldset>
+<legend>Which platforms do you stream on?</legend>
+<div class="chips" id="lcChips">
+<label class="chip"><input type="checkbox" value="Chaturbate"><span>Chaturbate</span></label>
+<label class="chip"><input type="checkbox" value="Stripchat"><span>Stripchat</span></label>
+<label class="chip"><input type="checkbox" value="MyFreeCams"><span>MyFreeCams</span></label>
+<label class="chip"><input type="checkbox" value="CamSoda"><span>CamSoda</span></label>
+<label class="chip"><input type="checkbox" value="BongaCams"><span>BongaCams</span></label>
+<label class="chip"><input type="checkbox" value="LiveJasmin"><span>LiveJasmin</span></label>
+<label class="chip"><input type="checkbox" value="OnlyFans"><span>OnlyFans</span></label>
+<label class="chip"><input type="checkbox" value="Fansly"><span>Fansly</span></label>
+<label class="chip"><input type="checkbox" value="Other"><span>Other</span></label>
+</div>
+<label class="f" for="lcOther" id="lcOtherWrap" style="margin-top:12px" hidden>Other platform
+<input id="lcOther" type="text" maxlength="60" placeholder="Platform name">
+</label>
+</fieldset>
+<fieldset>
+<legend>Where should we reach you?</legend>
+<div class="chips">
+<label class="chip"><input type="radio" name="lcVia" value="Email" checked><span>Email</span></label>
+<label class="chip"><input type="radio" name="lcVia" value="Telegram"><span>Telegram</span></label>
+<label class="chip"><input type="radio" name="lcVia" value="WhatsApp"><span>WhatsApp</span></label>
+</div>
+<label class="f" for="lcVal" style="margin-top:12px"><span id="lcLabel">Email address</span>
+<input id="lcVal" type="text" maxlength="120" autocomplete="off" placeholder="you@example.com">
+</label>
+<label class="check" id="lcWaWrap" hidden><input type="checkbox" id="lcWa"><span>Yes, StreamWing can message me on WhatsApp about StreamWing. You can stop anytime. See our <a href="/privacy/">privacy policy</a>.</span></label>
+</fieldset>
+<p class="note">We'll only use this to reach you about StreamWing.</p>
+<p class="msg" id="lcMsg" role="status" aria-live="polite"></p>
+<button class="btn" type="submit" id="lcBtn" style="width:100%;justify-content:center;margin-top:4px">Get early access</button>
+</form><p class="lc-done" id="lcDone" hidden></p></div></div>
 </body>
 </html>

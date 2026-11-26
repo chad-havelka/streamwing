@@ -6,16 +6,19 @@
 <title>Connect your Chaturbate room to StreamWing</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="/site.css">
+<link rel="stylesheet" href="/assets/css/theme-night-plum.css">
+<link rel="stylesheet" href="/assets/css/tokens.css">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/components.css">
 <style>
-/* Standalone connect page. Shared rules live in /site.css. */
-[hidden]{display:none !important}
+/* Standalone connect page. Shared rules live in /assets/css/. */
+
 .hleft{display:flex;align-items:center;gap:12px}
 .hright{display:flex;align-items:center;gap:12px}
 .status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute)}
 .dot{width:10px;height:10px;border-radius:50%;background:#6b5a8a;flex:none}
 .dot.ok{background:var(--green);box-shadow:0 0 0 4px rgba(134,239,172,.2)}
-main.wrap{padding-top:8px;padding-bottom:32px}
+main.wrap{padding-top:var(--sp-top);padding-bottom:var(--sp-section)}
 .pair{display:grid;grid-template-columns:minmax(340px,.85fr) 1.35fr;gap:32px;align-items:start}
 .steps{display:flex;flex-direction:column;gap:18px}
 .step{display:flex;gap:14px;align-items:flex-start}
@@ -35,16 +38,18 @@ main.wrap{padding-top:8px;padding-bottom:32px}
 @media (max-width:820px){.pair{grid-template-columns:1fr;gap:20px}.frame{position:static}}
 </style>
 </head>
-<body>
+<body><a class="skip" href="#main">Skip to content</a>
 <header><div class="wrap">
   <div class="hleft">
-    <a class="brand" href="/" aria-label="StreamWing home"><svg width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg></a>
+    <a class="brand" href="/"><svg width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a>
     <span class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></span>
   </div>
   <div class="hright"><a class="btn ghost" id="dashLink" href="/connect-to-chaturbate/" hidden>Open dashboard</a></div>
 </div></header>
 
-<main class="wrap">
+<main class="wrap" id="main">
+  <p class="kicker">Setup</p>
+  <h1>Connect your Chaturbate room</h1>
   <div class="pair">
     <div class="steps">
       <div class="step">
@@ -77,7 +82,7 @@ main.wrap{padding-top:8px;padding-bottom:32px}
       </div>
     </div>
 
-    <div class="frame"><img src="/connect/token-page.png" alt="The Chaturbate token page with Token Name set to StreamWing, Stats API unticked, and Events API (public) ticked"></div>
+    <div class="frame"><img src="/connect-to-chaturbate/connect-step-2-token-form.jpg" alt="The Chaturbate token page with Token Name set to StreamWing, Stats API unticked, and Events API (public) ticked"></div>
   </div>
 </main>
 

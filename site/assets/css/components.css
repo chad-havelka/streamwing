@@ -1,12 +1,4 @@
-/* Shared chrome for every public page: colours, header, nav, buttons, footer, headings.
-   Page-specific layout stays in each page's own <style> block. */
-:root{color-scheme:dark;--bg:#160c26;--panel:#22143a;--panel2:#2f1d50;--line:#4a3470;--ink:#f4eefe;--soft:#d8cdf0;--mute:#b9a9d9;--pink:#e879f9;--pinkl:#f0abfc;--deep:#1a0f2e;--err:#fda4af;--green:#86efac}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Poppins,system-ui,sans-serif;overflow-x:clip}
-a{color:var(--pinkl)}
-:focus-visible{outline:3px solid var(--pinkl);outline-offset:2px}
-.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
-
+/* Components: header, nav, buttons, footer, FAQ. */
 /* Header: logo left, links and the early-access button right */
 header .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding-block:20px}
 .brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:700;font-size:22px}
@@ -18,10 +10,12 @@ header .btn{min-height:44px;padding:10px 20px;font-size:15px}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 26px;border-radius:999px;border:0;background:var(--pink);color:var(--deep);font:600 17px Poppins,system-ui,sans-serif;text-decoration:none;cursor:pointer}
 .btn.ghost{background:none;color:var(--ink);border:2px solid var(--line)}
 
-/* Headings */
-h1{font-size:clamp(32px,5vw,50px);line-height:1.1;font-weight:700;margin:0 0 16px;text-wrap:balance}
-h2{font-size:clamp(26px,3.6vw,38px);line-height:1.15;font-weight:700;margin:0 0 12px;text-wrap:balance}
-.kicker,body p.kicker{margin:0 0 14px;color:var(--pinkl);font-weight:600;font-size:15px}
+/* Phones: header stacks the links and button under the logo */
+@media (max-width:560px){
+  header .wrap{padding-block:14px}
+  nav{width:100%;justify-content:space-between;gap:10px 14px;font-size:14px}
+  header .btn{min-height:40px;padding:8px 16px;font-size:14px}
+}
 
 /* Footer: same on every page */
 footer{border-top:1px solid #33224f;padding-block:28px;font-size:14px;color:var(--mute)}
@@ -30,15 +24,8 @@ footer .links{display:flex;flex-wrap:wrap;gap:8px 20px}
 footer .links a{color:var(--mute);text-decoration:none}
 footer .links a:hover{color:var(--ink)}
 
-/* Phones: header stacks the links and button under the logo */
-@media (max-width:560px){
-  header .wrap{padding-block:14px}
-  nav{width:100%;justify-content:space-between;gap:10px 14px;font-size:14px}
-  header .btn{min-height:40px;padding:8px 16px;font-size:14px}
-}
-
 /* FAQ: native details, no script */
-.faq{padding-block:72px;border-top:1px solid #2f1d50}
+.faq{padding-block:var(--sp-section);border-top:1px solid var(--panel2)}
 .faq h2{margin-bottom:24px}
 .faq-list details{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:0 20px;margin-bottom:12px}
 .faq-list summary{cursor:pointer;list-style:none;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-weight:600;font-size:17px}
@@ -46,3 +33,6 @@ footer .links a:hover{color:var(--ink)}
 .faq-list summary::after{content:"+";font-size:24px;line-height:1;color:var(--pinkl);flex:none}
 .faq-list details[open] summary::after{content:"\2212"}
 .faq-list details p{margin:0 0 18px;color:var(--soft);font-size:15px}
+
+/* Performer call to action: set by cta.js once a room is connected in this browser */
+.btn.cta-performer{background:var(--cta-performer);border-color:var(--cta-performer);color:var(--deep)}

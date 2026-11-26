@@ -7,15 +7,18 @@
 <meta name="description" content="StreamWing is free during early access. Solo stays free. Solo Pro is a flat monthly price. We never take a percentage of your tips.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/site.css">
+<link rel="stylesheet" href="/assets/css/theme-night-plum.css">
+<link rel="stylesheet" href="/assets/css/tokens.css">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/components.css">
 <style>
 .lead{font-size:18px;color:var(--soft);max-width:680px;margin:0}
-.intro{padding-top:48px}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:40px;align-items:stretch}
-.plan{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:28px;display:flex;flex-direction:column}
+.intro{padding-top:var(--sp-top)}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-grid);margin-top:var(--sp-lead);align-items:stretch}
+.plan{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:var(--sp-card);display:flex;flex-direction:column}
 .plan-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .plan-head h2{margin:0;font-size:26px}
-.tag{display:inline-block;font-size:13px;font-weight:600;border-radius:999px;padding:3px 12px;background:var(--panel2);color:var(--pinkl)}
+.tag{display:inline-block;font-size:14px;font-weight:600;border-radius:999px;padding:3px 12px;background:var(--panel2);color:var(--pinkl)}
 .plan .line{margin:12px 0 0;color:var(--soft);font-size:15px}
 .price{margin:22px 0 0;font-size:52px;font-weight:700;line-height:1}
 .price small{font-size:18px;font-weight:500;color:var(--soft)}
@@ -29,12 +32,12 @@
 .plan.is-pro{border-color:var(--pink)}
 .plan.is-studio{border-style:dashed;background:transparent}
 .plan.is-studio h2{color:var(--soft)}
-.band{margin-top:72px;background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:32px}
+.band{margin-top:var(--sp-section);background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:32px}
 .band h2{margin-bottom:8px}
-.founders{margin-top:72px;display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap}
+.founders{margin-top:var(--sp-section);display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap}
 .founders h2{font-size:clamp(24px,3vw,30px);margin-bottom:8px}
 .founders p{margin:0;color:var(--soft);max-width:560px}
-.faq{padding-top:72px;border-top:0}
+.faq{padding-top:var(--sp-section);border-top:0}
 .faq h2{margin-bottom:24px}
 .faq details{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:0 20px;margin-bottom:12px}
 .faq summary{cursor:pointer;list-style:none;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-weight:600;font-size:17px}
@@ -47,9 +50,9 @@
 <script src="/cta.js" defer></script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 </head>
-<body>
-<header><div class="wrap"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a><nav><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/pricing/">Pricing</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" data-cta href="/#join">Get early access</a></nav></div></header>
-<main class="wrap intro">
+<body><a class="skip" href="#main">Skip to content</a>
+<!-- chrome:header --><header><div class="wrap"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a><nav><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/pricing/">Pricing</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" data-cta href="/#join">Get early access</a></nav></div></header><!-- /chrome:header -->
+<main class="wrap intro" id="main">
 <p class="kicker">Pricing</p>
 <h1>Free during early access.</h1>
 <p class="lead">Every plan that exists today costs nothing while StreamWing is in early access. No card. We never take a percentage of your tips.</p>
@@ -110,6 +113,6 @@
 <details><summary>Do I need a card?</summary><p>No. Everything is free during early access and we don't ask for payment details.</p></details><details><summary>Do you take a cut of my tips?</summary><p>No. Not on any plan. Solo Pro is a flat monthly price and Studio is a flat hourly rate.</p></details><details><summary>What happens after early access?</summary><p>Solo stays free. Solo Pro starts at the price on this page for rooms past the fan limit. We'll tell you before anything changes.</p></details><details><summary>What will Studio cost?</summary><p>The rate isn't set. Studio tools aren't built yet. We'll publish the rate and the cap before anyone is billed.</p></details><details><summary>Does StreamWing do anything in my room?</summary><p>No. It reads your room's events and shows them to you. It never posts, tips or changes anything.</p></details><details><summary>How do I stop?</summary><p>Delete the token on your Chaturbate token page. StreamWing loses access.</p></details>
 </section>
 </main>
-<footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div></div></footer>
+<!-- chrome:footer --><footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div></div></footer><!-- /chrome:footer -->
 </body>
 </html>

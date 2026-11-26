@@ -1,0 +1,18 @@
+/* Base: reset, page body, links, focus, containers and headings. Uses tokens only. */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 Poppins,system-ui,sans-serif;overflow-x:clip}
+a{color:var(--pinkl)}
+:focus-visible{outline:3px solid var(--pinkl);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+
+/* Hidden means hidden, everywhere. The one global !important rule in the site. */
+[hidden]{display:none !important}
+
+/* Skip link: hidden until a keyboard user tabs to it */
+.skip{position:absolute;left:12px;top:-100px;z-index:100;background:var(--pink);color:var(--deep);padding:10px 16px;border-radius:999px;font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
+
+/* Headings */
+h1{font-size:clamp(32px,5vw,50px);line-height:1.1;font-weight:700;margin:0 0 20px;text-wrap:balance}
+h2{font-size:clamp(26px,3.6vw,38px);line-height:1.15;font-weight:700;margin:0 0 12px;text-wrap:balance}
+.kicker,body p.kicker{margin:0 0 14px;color:var(--pinkl);font-weight:600;font-size:15px}

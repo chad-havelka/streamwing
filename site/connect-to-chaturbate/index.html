@@ -13,98 +13,94 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/theme-night-plum.css">
+<link rel="stylesheet" href="/assets/css/tokens.css">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/components.css">
 <style>
 /* The StreamWing panel. Built to be read at a glance from a phone or second screen while she's live.
    She never has to type anything during a stream. */
-:root{color-scheme:dark;--bg:#160c26;--panel:#22143a;--panel2:#2f1d50;--line:#4a3470;--ink:#f4eefe;--soft:#d8cdf0;--mute:#b9a9d9;--pink:#e879f9;--pinkl:#f0abfc;--deep:#1a0f2e;
-  --gold:#fbbf24;--blue:#7dd3fc;--green:#86efac;--err:#fda4af}
 *{box-sizing:border-box;min-width:0}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Poppins,system-ui,sans-serif}
-a{color:var(--pinkl)}
 button{font:inherit}
-:focus-visible{outline:3px solid var(--pinkl);outline-offset:2px}
 .wrap{max-width:1040px;margin:0 auto;padding:0 max(4vw,14px) 40px}
-header{position:sticky;top:0;z-index:5;background:rgba(22,12,38,.94);backdrop-filter:blur(8px);border-bottom:1px solid #33224f}
+header{position:sticky;top:0;z-index:5;background:rgba(22,12,38,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
 header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:12px}
-.brand{font-weight:700;font-size:19px}
-header .hleft{display:flex;align-items:center;gap:14px}
-header .hright{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
-header .brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:700;font-size:22px}
-nav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:15px}
-nav[hidden]{display:none}
-nav a.plain{color:var(--soft);text-decoration:none}
-header .btn{min-height:44px;padding:10px 20px;font-size:15px}
 .status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute)}
-.dot{width:10px;height:10px;border-radius:50%;background:#6b5a8a;flex:none}
-.dot.live{background:#f43f5e;box-shadow:0 0 0 4px rgba(244,63,94,.25)}
+body:not(.keyed) .status{display:none}
+body:not(.app-mode) .menu{display:none}
+body.app-mode nav{display:none}
+body.app-mode footer{display:none}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--dot-off);flex:none}
+.dot.live{background:var(--live);box-shadow:0 0 0 4px var(--live-halo)}
 .dot.ok{background:var(--green)}
 .menu{background:none;border:2px solid var(--line);color:var(--ink);font:600 15px Poppins,system-ui,sans-serif;line-height:1;padding:9px 16px;cursor:pointer;border-radius:999px;min-height:40px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
 .stat{background:var(--panel);border-radius:16px;padding:10px 8px;text-align:center}
 .stat b{display:block;font-size:22px;line-height:1.1}
-.stat span{font-size:12px;color:var(--mute)}
+.stat span{font-size:14px;color:var(--mute)}
 .tabs{display:flex;gap:6px;margin:6px 0 12px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{flex:1 0 auto;white-space:nowrap;min-height:44px;padding:0 12px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--soft);font-weight:600;font-size:15px;cursor:pointer}
 [data-user]:not([data-user='']){cursor:pointer}
-.sec{margin:18px 0 8px;font-size:13px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--mute)}
+.sec{margin:18px 0 8px;font-size:14px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--mute)}
 .sec:first-child{margin-top:4px}
 .fanrow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--panel)}
 .fanrow .who{flex:1}
 .fanrow .who b{display:block;font-size:17px;word-break:break-word}
 .fanrow .who span{font-size:14px;color:var(--mute)}
 .fanrow .amt{font-weight:700;font-size:17px;text-align:right}
-.fanrow .amt span{display:block;font-size:12px;font-weight:400;color:var(--mute)}
+.fanrow .amt span{display:block;font-size:14px;font-weight:400;color:var(--mute)}
 .fanrow.slip{border-left:6px solid var(--gold)}
 .search{width:100%;font:16px Poppins,system-ui,sans-serif;padding:12px 16px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);min-height:48px}
-.streamcard{background:var(--panel);border-radius:18px;padding:14px 16px}
+.streamcard{background:var(--panel);border-radius:18px;padding:14px 16px;overflow-x:auto}
 .gcards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}
 .gcard{background:var(--panel);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
-.gcard span{font-size:13px;color:var(--mute)}
+.gcard span{font-size:14px;color:var(--mute)}
 .gcard b{font-size:26px;font-weight:700}
-.gcard small{font-size:13px}
+.gcard small{font-size:14px}
 .gcard .gup{color:var(--green)}
 .gcard .gdown{color:var(--err)}
 .gcard .spark{margin-top:6px}
 .ghead h2{font-size:clamp(24px,3.4vw,34px);margin:0 0 6px}
 .ghead p{margin:0 0 4px;color:var(--soft)}
 .gthead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-.gthead span{font-size:13px;color:var(--mute)}
+.gthead span{font-size:14px;color:var(--mute)}
 .gtable{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
 .gtable th,.gtable td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line)}
 .gtable th:first-child,.gtable td:first-child{text-align:left}
-.gtable th{font-size:12px;color:var(--mute);font-weight:600}
-@media (max-width:820px){.gcards{grid-template-columns:repeat(2,1fr)}.gtable th,.gtable td{padding:7px 4px;font-size:12px}}
+.gtable th{font-size:14px;color:var(--mute);font-weight:600}
+@media (max-width:820px){.gcards{grid-template-columns:repeat(2,1fr)}.gtable th,.gtable td{padding:7px 4px;font-size:14px}}
 .streamcard h3{margin:0 0 10px;font-size:16px;font-weight:600}
 .streamcard .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .streamcard .grid div{background:var(--bg);border-radius:12px;padding:8px;text-align:center}
 .streamcard .grid b{display:block;font-size:19px}
-.streamcard .grid span{font-size:11px;color:var(--mute)}
-.d{display:block;font-size:12px;font-weight:600;margin-top:2px}
+.streamcard .grid span{font-size:14px;color:var(--mute)}
+.d{display:block;font-size:14px;font-weight:600;margin-top:2px}
 .d.up{color:var(--green)} .d.down{color:var(--err)} .d.same{color:var(--mute)}
 .vs{margin:12px 0 0;font-size:14px;color:var(--soft)}
 .prof .in{max-height:88vh;overflow:auto}
 .prof .pname{font-size:28px;font-weight:700;line-height:1.15;margin:0 0 6px;word-break:break-word}
 .badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.badge{font-size:13px;padding:4px 10px;border-radius:999px;background:var(--panel2);color:var(--soft)}
+.badge{font-size:14px;padding:4px 10px;border-radius:999px;background:var(--panel2);color:var(--soft)}
 .badge.lb{background:#12324a;color:var(--blue)} .badge.gold{background:#3a2a0c;color:var(--gold)}
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .pgrid div{background:var(--bg);border-radius:12px;padding:10px 6px;text-align:center}
 .pgrid b{display:block;font-size:20px}
-.pgrid span{font-size:12px;color:var(--mute)}
+.pgrid span{font-size:14px;color:var(--mute)}
 .seen{margin:10px 0 0;font-size:14px;color:var(--mute)}
 .notebox textarea{font:15px/1.45 Poppins,system-ui,sans-serif;min-height:80px}
 .notebox .btnrow{display:flex;align-items:center;gap:12px;margin-top:10px}
 .notebox .btnrow .btn{min-height:44px;padding:10px 20px}
 .plist{display:flex;flex-direction:column;gap:6px}
 .plist div{display:flex;gap:10px;padding:8px 12px;border-radius:12px;background:var(--bg);font-size:15px;color:var(--soft)}
-.plist div .t{margin-left:auto;flex:none;font-size:12px;color:var(--mute)}
+.plist div .t{margin-left:auto;flex:none;font-size:14px;color:var(--mute)}
 .tabs button[aria-selected=true]{background:var(--pink);border-color:var(--pink);color:var(--deep)}
 .list{display:flex;flex-direction:column;gap:10px}
 .card{background:var(--panel);border-radius:18px;padding:14px 16px;border-left:6px solid var(--line)}
 .card .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.card .label{font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
-.card .when{font-size:12px;color:var(--mute);flex:none}
+.card .label{font-size:14px;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+.card .when{font-size:14px;color:var(--mute);flex:none}
 .card .name{font-size:24px;font-weight:700;line-height:1.15;margin:2px 0 4px;word-break:break-word}
 .card .facts{font-size:15px;color:var(--soft)}
 .card .said{margin-top:6px;font-size:15px;color:var(--ink);font-style:italic}
@@ -119,23 +115,20 @@ header .btn{min-height:44px;padding:10px 20px;font-size:15px}
 .k-win{border-left-color:var(--gold);background:linear-gradient(90deg,rgba(251,191,36,.16),var(--panel) 60%)} .k-win .label{color:var(--gold)}
 .row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:14px;background:rgba(34,20,58,.55);font-size:15px;color:var(--soft)}
 .row b{color:var(--ink);font-weight:600}
-.row .when{margin-left:auto;font-size:12px;color:var(--mute)}
+.row .when{margin-left:auto;font-size:14px;color:var(--mute)}
 .recap{background:var(--panel2);border-radius:20px;padding:18px}
 .recap h3{margin:0 0 10px;font-size:20px}
 .recap .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .recap .grid div{background:var(--panel);border-radius:14px;padding:10px;text-align:center}
 .recap .grid b{display:block;font-size:22px}
-.recap .grid span{font-size:12px;color:var(--mute)}
+.recap .grid span{font-size:14px;color:var(--mute)}
 .recap p{margin:12px 0 0;color:var(--soft)}
 .empty{color:var(--mute);text-align:center;padding:36px 10px}
 .box{background:var(--panel);border-radius:22px;padding:22px;margin-top:22px}
 .wrap.connect-page{max-width:1040px}
-main.wrap.connect-page{padding-top:48px}
+main.wrap.connect-page{padding-top:var(--sp-top)}
 .connect-page .box{max-width:820px;margin-left:auto;margin-right:auto}
-h1{font-size:clamp(32px,5vw,50px);line-height:1.1;font-weight:700;margin:0 0 16px;text-wrap:balance}
-h2{font-size:clamp(26px,3.6vw,38px);line-height:1.15;font-weight:700;margin:0 0 12px;text-wrap:balance}
-.kicker{margin:0 0 14px;color:var(--pinkl);font-weight:600;font-size:15px}
-.sect{padding:48px 0;border-top:1px solid #2f1d50}
+.sect{padding:48px 0;border-top:1px solid var(--panel2)}
 .feat,.grid2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
 .grid2{grid-template-columns:repeat(2,1fr)}
 .card{background:var(--panel);border-radius:18px;padding:20px;border-left:0}
@@ -145,8 +138,6 @@ h2{font-size:clamp(26px,3.6vw,38px);line-height:1.15;font-weight:700;margin:0 0 
 .box p{color:var(--soft);margin:0 0 14px}
 ol{padding-left:22px;color:var(--soft);margin:0 0 16px}
 ol li{margin-bottom:8px}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 22px;border-radius:999px;border:0;background:var(--pink);color:var(--deep);font-weight:600;font-size:16px;text-decoration:none;cursor:pointer}
-.btn.ghost{background:none;color:var(--ink);border:2px solid var(--line)}
 .btn.danger{background:none;color:var(--err);border:2px solid #7f3a4a}
 textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);min-height:84px;resize:vertical}
 .msg{min-height:1.4em;margin:10px 0 0;font-size:15px}
@@ -176,40 +167,40 @@ textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:12px 14px
 .cbpage .cbrow{display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap}
 .cbpage .cblab{width:92px;text-align:right;color:#444;flex:none}
 .cbpage .cbfield{border:2px solid #4a90d9;border-radius:4px;padding:3px 8px;min-width:150px}
-.cbpage .cbbox{width:16px;height:16px;border:1px solid #888;border-radius:3px;display:inline-block;background:#fff;text-align:center;font-size:12px;line-height:14px;color:#fff;flex:none}
-.cbpage .cbbox.on{background:#1a73e8;border-color:#1a73e8}
-.cbpage .cbstrike{text-decoration:line-through;color:#999}
+.cbpage .cbbox{width:16px;height:16px;border:1px solid var(--mute);border-radius:3px;display:inline-block;background:#fff;text-align:center;font-size:12px;line-height:14px;color:#fff;flex:none}
+.cbpage .cbbox.on{background:var(--check);border-color:var(--check)}
+.cbpage .cbstrike{text-decoration:line-through;color:var(--mute)}
 .cbpage .cbring{outline:3px solid #e879f9;outline-offset:4px;border-radius:6px}
 .cbpage .cbtok{font-size:13px}
-.cbpage .cbu{margin-top:4px;font-size:12px;word-break:break-all;color:#1a5fb4}
-.cbpage .cbleave{color:#888;font-size:12px;font-style:italic}
+.cbpage .cbu{margin-top:4px;font-size:12px;word-break:break-all;color:var(--link-url)}
+.cbpage .cbleave{color:var(--mute);font-size:12px;font-style:italic}
 .cbpage .cbpill{background:#e879f9;color:#1a0f2e;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
-.cbpage .cbgen{background:#f08a24;color:#fff;border-radius:4px;padding:6px 14px;display:inline-block;font-weight:600}
+.cbpage .cbgen{background:var(--action);color:var(--deep);border-radius:4px;padding:6px 14px;display:inline-block;font-weight:600}
 .cbpage table{border-collapse:collapse;width:100%;font-size:13px}
 .cbpage th{text-align:left;border-bottom:2px solid #333;padding:4px 6px}
 .cbpage td{padding:6px;vertical-align:top}.cbpage td:nth-child(1),.cbpage td:nth-child(2),.cbpage th{white-space:nowrap}.cbpage td:nth-child(3){word-break:break-all}
-.cbpage .cburl{color:#1a5fb4}
-.cbcap{font-size:13px;color:var(--mute);margin:6px 0 0}
+.cbpage .cburl{color:var(--link-url)}
+.cbcap{font-size:14px;color:var(--mute);margin:6px 0 0}
 details.stuck{margin:6px 0 16px;color:var(--soft)}
 details.stuck summary{cursor:pointer;font-weight:600;color:var(--pinkl)}
 details.stuck p{margin:8px 0 0;font-size:15px}
 </style>
 <style id="coachCss">
-.coach{--ink:#f4eefe;--soft:#d8cdf0;--mute:#b9a9d9;--pink:#e879f9;--deep:#1a0f2e;--panel:#22143a;--panel2:#2f1d50;--line:#4a3470;font-family:Poppins,system-ui,sans-serif;color:var(--ink);box-sizing:border-box}
+.coach{font-family:Poppins,system-ui,sans-serif;color:var(--ink);box-sizing:border-box}
 .coach *{box-sizing:border-box}
 .coach.inline{margin:12px 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
-.coach.pipbody{background:#160c26;min-height:100vh;padding:12px}
-.coach .chead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--mute);margin-bottom:8px}
+.coach.pipbody{background:var(--bg);min-height:100vh;padding:12px}
+.coach .chead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;color:var(--mute);margin-bottom:8px}
 .coach .chead b{color:var(--ink);font-weight:600}
 .coach .cname{font-size:18px;font-weight:600}
-.coach .cwhy{font-size:13px;color:var(--pink);margin-top:2px}
-.coach .cfacts{font-size:13px;color:var(--mute);margin-top:2px}
+.coach .cwhy{font-size:14px;color:var(--pink);margin-top:2px}
+.coach .cfacts{font-size:14px;color:var(--mute);margin-top:2px}
 .coach .cmsg{margin:10px 0;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:15px;line-height:1.4;color:var(--soft);user-select:text}
 .coach .crow{display:flex;gap:8px;flex-wrap:wrap}
 .coach button{font:inherit;font-size:14px;font-weight:600;min-height:40px;padding:8px 16px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--ink);cursor:pointer}
 .coach button.main{background:var(--pink);border-color:var(--pink);color:var(--deep)}
-.coach button.small{min-height:32px;padding:4px 12px;font-size:13px}
-.coach .cfoot{margin-top:10px;font-size:12px;color:var(--mute)}
+.coach button.small{min-height:32px;padding:4px 12px;font-size:14px}
+.coach .cfoot{margin-top:10px;font-size:14px;color:var(--mute)}
 .coach .cempty{font-size:14px;color:var(--mute);padding:6px 0}
 .coach .cbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
 .coach .cbar .t{font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -219,13 +210,11 @@ details.stuck p{margin:8px 0 0;font-size:15px}
 .coach .cdot.off{background:var(--line)}
 </style>
 </head>
-<body>
-<header><div class="wrap">
-  <div class="hleft"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg></a><span class="status"><span class="dot" id="dot"></span><span id="statusText">Loading</span></span></div>
-  <div class="hright"><nav id="pubNav" hidden><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/pricing/">Pricing</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" href="/#join">Get early access</a></nav><button class="menu" id="menuBtn" type="button" hidden>Settings</button></div>
-</div></header>
+<body><a class="skip" href="#app">Skip to content</a>
+<!-- chrome:header --><header><div class="wrap"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a><nav><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/pricing/">Pricing</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" data-cta href="/#join">Get early access</a></nav></div></header><!-- /chrome:header -->
 
 <main class="wrap" id="app"></main>
+<!-- chrome:footer --><footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div></div></footer><!-- /chrome:footer -->
 
 <div class="sheet prof" id="fanSheet" hidden><div class="in" role="dialog" aria-modal="true" aria-label="Fan profile" id="fanSheetIn"></div></div>
 
@@ -248,6 +237,11 @@ const app = $('app');
 
 // /connect-to-chaturbate/#demo plays a sample stream with made-up fans. Nothing is sent anywhere.
 const DEMO = location.hash === '#demo';
+
+// App header parts (status light and Settings). The common header is in the page markup.
+const headerBrand = document.querySelector('header .brand');
+headerBrand.after(h('span', { class: 'status' }, h('span', { class: 'dot', id: 'dot' }), h('span', { id: 'statusText' }, 'Not connected')));
+document.querySelector('header .wrap').append(h('button', { class: 'menu', id: 'menuBtn', type: 'button' }, 'Settings'));
 
 // The access key arrives in the link's #k=... and is kept on this device only.
 let key = '';
@@ -436,7 +430,7 @@ function noKey(msg) {
 }
 
 function connectScreen(me, pub) {
-  const pubNav = document.getElementById('pubNav'); if (pubNav) pubNav.hidden = false;
+  document.body.classList.remove('app-mode');
   document.querySelectorAll('header .wrap, main.wrap').forEach(el => el.classList.add('connect-page'));
   setStatus('Not connected');
   const ta = h('textarea', { id: 'eventsUrl', placeholder: 'Paste the link from Chaturbate here', 'aria-label': 'The link from Chaturbate', autocomplete: 'off', spellcheck: 'false' });
@@ -496,6 +490,7 @@ function connectScreen(me, pub) {
     ...(pub ? [h('p', { style: 'margin-top:12px' }, 'Paste the long link from Chaturbate to connect your room. If you already have a StreamWing link, open that instead.')] : []),
     h('div', { style: 'margin-top:12px' }, ta), h('div', { style: 'margin-top:12px' }, btn), msg];
   put(app, DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo. Paste anything to see what happens next.'), h('div', {},
+    h('p', { class: 'kicker' }, 'Setup'),
     h('h1', {}, pub ? 'Connect your Chaturbate room.' : 'Hi ' + me.displayName + '. One setup step.'),
     h('p', {}, 'StreamWing reads your Chaturbate room and tells you who is in it: regulars who came back, big tippers, and people with tokens who haven’t tipped you yet. It only reads. It never posts in your room, messages or tips for you, and it never touches your account.'),
     h('div', { style: 'margin:18px 0' },
@@ -1096,6 +1091,7 @@ function stream() {
 }
 
 async function load() {
+  document.body.classList.toggle('keyed', !!key);
   if (!key) return connectScreen({ displayName: 'there', username: 'your_username' }, true);
   try { me = await api('/api/me'); }
   catch (e) {
@@ -1105,7 +1101,7 @@ async function load() {
   }
   if (!me.connected) return connectScreen(me);
   document.querySelectorAll('.connect-page').forEach(el => el.classList.remove('connect-page'));
-  const pubNav2 = document.getElementById('pubNav'); if (pubNav2) pubNav2.hidden = true;
+  document.body.classList.add('app-mode');
   const { items } = await api('/api/feed?limit=80');
   feedItems = items;
   panel(); stream();

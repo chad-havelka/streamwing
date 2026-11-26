@@ -6,7 +6,10 @@
 <title>StreamWing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/site.css">
+<link rel="stylesheet" href="/assets/css/theme-night-plum.css">
+<link rel="stylesheet" href="/assets/css/tokens.css">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/components.css">
 <style>
 /* VOICE: warm, confident, creator-first; talks to the streamer, not the fan
    IDEA: a stream overlay: chat bubbles, the owl co-host in a headset
@@ -17,28 +20,28 @@ html{scroll-padding-top:16px}
 @media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 :focus-visible{outline:3px solid var(--pinkl);outline-offset:2px}
 .btn[disabled]{opacity:.55;cursor:not-allowed}
-.hero{display:flex;flex-wrap:wrap;align-items:center;gap:48px;padding-block:40px 72px}
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:48px;padding-block:var(--sp-top) var(--sp-section)}
 .hero .copy{flex:1 1 440px}
 .lead{margin:24px 0 0;font-size:18px;color:var(--soft);max-width:34em}
 .ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
 .stage{flex:1 1 420px;position:relative;height:480px;border-radius:32px;background:var(--panel);overflow:hidden}
 .stage .disc{position:absolute;left:50%;top:56%;width:380px;height:380px;margin:-190px 0 0 -190px;border-radius:50%;background:var(--panel2)}
 .stage svg{position:absolute;left:50%;bottom:24px;width:300px;height:315px;margin-left:-150px}
-.bub{position:absolute;background:var(--panel2);border:1px solid #5a4185;border-radius:18px;padding:10px 16px;font-size:15px;max-width:72%}
+.bub{position:absolute;background:var(--panel2);border:1px solid var(--edge);border-radius:18px;padding:10px 16px;font-size:15px;max-width:72%}
 .bub b{color:var(--pinkl)}
 @media(prefers-reduced-motion:no-preference){.bub{animation:pop .5s ease-out both}.bub:nth-of-type(2){animation-delay:.5s}.bub:nth-of-type(3){animation-delay:1s}@keyframes pop{from{opacity:0;transform:translateY(10px)}}}
-.light{background:#f7f2ff;color:var(--deep);padding-block:80px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;margin-top:44px}
-.card{background:#fff;border:1px solid #e6dcf7;border-radius:24px;padding:28px}
+.light{background:var(--light-bg);color:var(--light-ink);padding-block:var(--sp-section)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:var(--sp-grid);margin-top:var(--sp-lead)}
+.card{background:var(--card);border:1px solid var(--light-line);border-radius:24px;padding:var(--sp-card)}
 .card h3{margin:18px 0 8px;font-size:21px;font-weight:600}
-.card p{margin:0;color:#4a3a63}
-.promo{padding-block:8px 80px}
+.card p{margin:0;color:var(--light-soft)}
+.promo{padding-block:8px var(--sp-section)}
 .promo .wrap{max-width:1000px;text-align:center}
 .promo video{display:block;width:100%;height:auto;aspect-ratio:16/9;margin-top:28px;border-radius:24px;border:1px solid var(--line);background:#000}
-.signoff{background:var(--panel);padding-block:80px}
+.signoff{background:var(--panel);padding-block:var(--sp-section)}
 .signoff .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:32px;text-align:center}
 .signoff p{margin:0;font-size:clamp(24px,3.4vw,38px);line-height:1.25;font-weight:600}
-.form-band{padding-block:88px}
+.form-band{padding-block:var(--sp-section)}
 .form-band .wrap{max-width:640px}
 .sub{margin:16px 0 0;font-size:18px;color:var(--soft)}
 form{margin-top:32px;display:flex;flex-direction:column;gap:24px}
@@ -78,7 +81,7 @@ legend{font-weight:500;margin-bottom:10px;padding:0}
 .done{background:var(--panel);border:2px solid var(--pink);border-radius:24px;padding:28px;margin-top:32px}
 .done h3{margin:0 0 6px;font-size:24px}
 .done p{margin:0 0 20px;color:var(--soft)}
-.leads{border-top:1px solid #33224f;padding-block:56px}
+.leads{border-top:1px solid #33224f;padding-block:var(--sp-section)}
 .leads-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px}
 .leads h2{font-size:28px}
 .scroll{overflow-x:auto;margin-top:20px}
@@ -87,14 +90,31 @@ th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #33224f;vertical
 th{color:var(--mute);font-weight:500}
 td.t{white-space:nowrap;color:var(--mute)}
 .note{color:var(--mute);font-size:14px;margin:8px 0 0}
-[hidden]{display:none!important}
+
+.bub-1{left:20px;top:28px}
+.bub-2{right:20px;top:92px}
+.bub-3{left:20px;top:156px}
+.light-top{border-top:1px solid var(--light-line)}
+.grid-tight{margin-top:24px}
+.fine{margin:12px 0 0;font-size:15px;color:var(--light-accent)}
+.note-light{margin-top:24px;color:var(--light-soft)}
+.light-link{color:var(--light-accent)}
+.icon-gap{margin-top:16px}
+.f-gap{margin-top:14px}
+.sub-tight{margin-top:8px}
+.h3-gap{margin-top:28px;font-size:21px}
+.p0{margin:0}
+.btn-gap{margin-top:28px}
+.count{color:var(--mute);font-weight:500}
+.btn-sm{min-height:44px;padding:10px 20px;font-size:15px}
+.td-mute{color:var(--mute)}
 @media(max-width:600px){.stage{height:420px}.stage svg{width:240px;height:252px;margin-left:-120px}table{font-size:13px}}
 </style>
 <script src="/cta.js" defer></script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 </head>
-<body>
-<header><div class="wrap"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a><nav><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/pricing/">Pricing</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" data-cta href="/#join">Get early access</a></nav></div></header>
+<body><a class="skip" href="#top">Skip to content</a>
+<!-- chrome:header --><header><div class="wrap"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a><nav><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/pricing/">Pricing</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" data-cta href="/#join">Get early access</a></nav></div></header><!-- /chrome:header -->
 
 <main id="top">
 <section class="wrap hero">
@@ -106,9 +126,9 @@ td.t{white-space:nowrap;color:var(--mute)}
 </div>
 <div class="stage">
 <div class="disc"></div>
-<div class="bub" style="left:20px;top:28px"><b>jules</b> remember me from tuesday?</div>
-<div class="bub" style="right:20px;top:92px"><b>mike_t</b> first time here, hi</div>
-<div class="bub" style="left:20px;top:156px"><b>ashh</b> you never answered my DM</div>
+<div class="bub bub-1"><b>jules</b> remember me from tuesday?</div>
+<div class="bub bub-2"><b>mike_t</b> first time here, hi</div>
+<div class="bub bub-3"><b>ashh</b> you never answered my DM</div>
 <svg viewBox="0 0 400 420" role="img" aria-label="StreamWing owl wearing a headset">
 <ellipse cx="200" cy="405" rx="120" ry="12" fill="#0d0618" opacity=".6"/>
 <path d="M95 135 L78 58 L152 112Z M305 135 L322 58 L248 112Z" fill="#7c5cc4"/>
@@ -139,25 +159,25 @@ td.t{white-space:nowrap;color:var(--mute)}
 <div class="grid" id="feats"></div>
 </div></section>
 
-<section class="light" id="privacy" style="border-top:1px solid #e6dcf7"><div class="wrap">
+<section class="light light-top" id="privacy"><div class="wrap">
 <h2>Your room's data, your call</h2>
 <p>Seven things we do with your room's data, and what each one means for you.</p>
-<div class="grid" style="margin-top:24px">
-<div class="card"><h3>We only read your room</h3><p>StreamWing reads your room's events through a link you create. It can't post, tip or message anyone as you.</p><p style="margin:12px 0 0;font-size:15px;color:#86198f"><b>What it means for you:</b> Nobody speaks in your room under your name. Delete the link on Chaturbate and StreamWing loses access to your room.</p></div>
-<div class="card"><h3>We keep what your panel shows</h3><p>Each regular's username, when they visited, what they tipped, whether they follow you or are in your fan club, and their last five public chat messages.</p><p style="margin:12px 0 0;font-size:15px;color:#86198f"><b>What it means for you:</b> Your history with a regular is there when you need it. We never store what a private message says.</p></div>
-<div class="card"><h3>Your room link is encrypted</h3><p>The Chaturbate link you paste is stored encrypted, not as plain text.</p><p style="margin:12px 0 0;font-size:15px;color:#86198f"><b>What it means for you:</b> A copy of our database alone doesn't reveal your room link.</p></div>
-<div class="card"><h3>AI notes are off until you turn them on</h3><p>If you turn them on, Claude, an AI service from Anthropic, writes a one-line note about each fan. You see exactly what is sent before you switch it on.</p><p style="margin:12px 0 0;font-size:15px;color:#86198f"><b>What it means for you:</b> Nothing about your fans goes to an AI service unless you choose it.</p></div>
-<div class="card"><h3>We don't sell your fans' data</h3><p>We don't sell it, and we don't share it with advertisers. Our team opens your data only to fix a problem the service has.</p><p style="margin:12px 0 0;font-size:15px;color:#86198f"><b>What it means for you:</b> Your fan list stays your business record, not a product we sell.</p></div>
-<div class="card"><h3>Delete everything in one step</h3><p>Disconnect and delete removes everything StreamWing holds about your room. It can't be undone.</p><p style="margin:12px 0 0;font-size:15px;color:#86198f"><b>What it means for you:</b> You can leave at any time and nothing about your room stays in our database. Your account name stays until you ask us to remove it.</p></div>
-<div class="card"><h3>No automatic deletion</h3><p>We keep fan records until you delete them. Nothing deletes them on a timer.</p><p style="margin:12px 0 0;font-size:15px;color:#86198f"><b>What it means for you:</b> A regular's history is what makes the notes and birthdays work. A timer would throw it away.</p></div>
+<div class="grid grid-tight">
+<div class="card"><h3>We only read your room</h3><p>StreamWing reads your room's events through a link you create. It can't post, tip or message anyone as you.</p><p class="fine"><b>What it means for you:</b> Nobody speaks in your room under your name. Delete the link on Chaturbate and StreamWing loses access to your room.</p></div>
+<div class="card"><h3>We keep what your panel shows</h3><p>Each regular's username, when they visited, what they tipped, whether they follow you or are in your fan club, and their last five public chat messages.</p><p class="fine"><b>What it means for you:</b> Your history with a regular is there when you need it. We never store what a private message says.</p></div>
+<div class="card"><h3>Your room link is encrypted</h3><p>The Chaturbate link you paste is stored encrypted, not as plain text.</p><p class="fine"><b>What it means for you:</b> A copy of our database alone doesn't reveal your room link.</p></div>
+<div class="card"><h3>AI notes are off until you turn them on</h3><p>If you turn them on, Claude, an AI service from Anthropic, writes a one-line note about each fan. You see exactly what is sent before you switch it on.</p><p class="fine"><b>What it means for you:</b> Nothing about your fans goes to an AI service unless you choose it.</p></div>
+<div class="card"><h3>We don't sell your fans' data</h3><p>We don't sell it, and we don't share it with advertisers. Our team opens your data only to fix a problem the service has.</p><p class="fine"><b>What it means for you:</b> Your fan list stays your business record, not a product we sell.</p></div>
+<div class="card"><h3>Delete everything in one step</h3><p>Disconnect and delete removes everything StreamWing holds about your room. It can't be undone.</p><p class="fine"><b>What it means for you:</b> You can leave at any time and nothing about your room stays in our database. Your account name stays until you ask us to remove it.</p></div>
+<div class="card"><h3>No automatic deletion</h3><p>We keep fan records until you delete them. Nothing deletes them on a timer.</p><p class="fine"><b>What it means for you:</b> A regular's history is what makes the notes and birthdays work. A timer would throw it away.</p></div>
 </div>
-<p class="note" style="margin-top:24px;color:#4a3a63">Full detail is in our <a href="/privacy" style="color:#86198f">privacy policy</a>.</p>
+<p class="note note-light">Full detail is in our <a class="light-link" href="/privacy">privacy policy</a>.</p>
 </div></section>
 
 <section class="signoff"><div class="wrap">
 <svg width="120" height="126" viewBox="0 0 400 420" aria-hidden="true"><path d="M95 135 L78 58 L152 112Z M305 135 L322 58 L248 112Z" fill="#7c5cc4"/><ellipse cx="200" cy="250" rx="132" ry="150" fill="#7c5cc4"/><ellipse cx="200" cy="292" rx="86" ry="100" fill="#c4b5fd"/><circle cx="150" cy="190" r="58" fill="#f3eeff"/><circle cx="250" cy="190" r="58" fill="#f3eeff"/><path d="M120 196 Q150 170 180 196 M220 196 Q250 170 280 196" stroke="#1a0f2e" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M186 226 L214 226 L200 256Z" fill="#f5a524"/><path d="M76 205 C76 48 324 48 324 205" stroke="#e879f9" stroke-width="14" fill="none" stroke-linecap="round"/><rect x="58" y="182" width="34" height="62" rx="14" fill="#e879f9"/><rect x="308" y="182" width="34" height="62" rx="14" fill="#e879f9"/></svg>
 <div><p>Have a good stream.<br>I'll meet some of your fans.</p>
-<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" style="margin-top:16px"><path d="M12 21C5 15.5 2 12 2 8a5 5 0 0 1 10-1 5 5 0 0 1 10 1c0 4-3 7.5-10 13z" fill="#e879f9"/></svg>
+<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" class="icon-gap"><path d="M12 21C5 15.5 2 12 2 8a5 5 0 0 1 10-1 5 5 0 0 1 10 1c0 4-3 7.5-10 13z" fill="#e879f9"/></svg>
 <div class="share" id="signoffShare"><p class="lbl">Know a streamer who'd want this?</p></div></div>
 </div></section>
 
@@ -172,7 +192,7 @@ td.t{white-space:nowrap;color:var(--mute)}
 <fieldset>
 <legend>Which platforms do you stream on?</legend>
 <div class="chips" id="chips"></div>
-<label class="f" for="otherName" id="otherWrap" style="margin-top:14px" hidden>Other platform
+<label class="f f-gap" for="otherName" id="otherWrap" hidden>Other platform
 <input id="otherName" type="text" maxlength="60" placeholder="Platform name">
 </label>
 </fieldset>
@@ -183,7 +203,7 @@ td.t{white-space:nowrap;color:var(--mute)}
 <label class="chip"><input type="radio" name="reachVia" value="Telegram"><span>Telegram</span></label>
 <label class="chip"><input type="radio" name="reachVia" value="WhatsApp"><span>WhatsApp</span></label>
 </div>
-<label class="f" for="reachVal" style="margin-top:14px"><span id="reachLabel">Email address</span>
+<label class="f f-gap" for="reachVal"><span id="reachLabel">Email address</span>
 <input id="reachVal" type="text" maxlength="120" autocomplete="off" placeholder="you@example.com">
 </label>
 <label class="check" id="waWrap" hidden><input type="checkbox" id="waOk"><span>Yes, StreamWing can message me on WhatsApp about StreamWing. You can stop anytime. See our <a href="/privacy">privacy policy</a>.</span></label>
@@ -196,7 +216,7 @@ td.t{white-space:nowrap;color:var(--mute)}
 <div class="survey" id="survey" hidden>
 <p class="kicker" id="svThanks">You're on the list.</p>
 <h3 class="sv-title">Help us build it for your room</h3>
-<p class="sub" style="margin-top:8px">A few quick taps. Skip anything.</p>
+<p class="sub sub-tight">A few quick taps. Skip anything.</p>
 <div class="bar" aria-hidden="true"><span id="svBar"></span></div>
 <p class="note" id="svCount"></p>
 <div id="svStep" aria-live="polite"></div>
@@ -211,16 +231,16 @@ td.t{white-space:nowrap;color:var(--mute)}
 <div class="done" id="done" hidden>
 <h3 id="doneTitle">Thank you.</h3>
 <p>That helps a lot. We'll reach out when StreamWing is ready for your stream.</p>
-<h3 style="margin-top:28px;font-size:21px">Know a streamer who'd want this?</h3>
-<p style="margin:0">Send them your invite link. When they sign up, we'll know they came from you.</p>
+<h3 class="h3-gap">Know a streamer who'd want this?</h3>
+<p class="p0">Send them your invite link. When they sign up, we'll know they came from you.</p>
 <div class="share" id="doneShare"></div>
-<button class="btn ghost" type="button" id="againBtn" style="margin-top:28px">Add another creator</button>
+<button class="btn ghost btn-gap" type="button" id="againBtn">Add another creator</button>
 </div>
 </div></section>
 
 <section class="leads" id="leads" hidden><div class="wrap">
-<div class="leads-head"><h2>Leads <span id="leadCount" style="color:var(--mute);font-weight:500"></span></h2>
-<button class="btn ghost" type="button" id="copyBtn" style="min-height:44px;padding:10px 20px;font-size:15px">Copy as CSV</button></div>
+<div class="leads-head"><h2>Leads <span id="leadCount" class="count"></span></h2>
+<button class="btn ghost btn-sm" type="button" id="copyBtn">Copy as CSV</button></div>
 <p class="note">Only you can see this list.</p>
 <p class="msg" id="leadsMsg" role="status"></p>
 <div class="scroll"><table><thead><tr><th>Streamer name</th><th>Platforms</th><th>Reach</th><th>Survey</th><th>Added</th></tr></thead><tbody id="leadRows"></tbody></table></div>
@@ -238,7 +258,7 @@ td.t{white-space:nowrap;color:var(--mute)}
 </form>
 
 <section class="faq" id="faq"><div class="wrap"><h2>Questions streamers ask</h2><div class="faq-list"><details><summary>Does StreamWing post or message in my room?</summary><p>No. It reads public room events from Chaturbate. It never posts, messages or sends anything in your name.</p></details><details><summary>What is sent to Anthropic, and is it on by default?</summary><p>AI notes are off until you turn them on. When you do, you see exactly what is sent first. Claude, an AI model from Anthropic, writes each note from a fan's username, days in your room, tips, fan club and follow status, whether they have tokens, their last five public chat messages, and your own note. Private messages are never sent.</p></details><details><summary>How long do you keep fan records?</summary><p>Until you delete them. Nothing deletes them on a timer. You can disconnect and delete everything StreamWing knows about your room in one step.</p></details><details><summary>What happens when I disconnect?</summary><p>Deleting the access token on Chaturbate cuts StreamWing off.</p></details><details><summary>What do I need to connect my room?</summary><p>The private link you were sent and a Chaturbate account. You make one access token, tick only the public box, and paste the link in. Nothing to install.</p></details><details><summary>Can a viewer ask for their data to be removed?</summary><p>Yes. They can write to us and we delete their record by hand. There is no form yet.</p></details><details><summary>What does it cost?</summary><p>Pricing isn't final yet. StreamWing is in early access and invite-only while we build.</p></details></div></div></section>
-<footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div></div></footer>
+<!-- chrome:footer --><footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div></div></footer><!-- /chrome:footer -->
 
 <script>
 {
@@ -313,7 +333,7 @@ $('svCount').textContent='Question '+(step+1)+' of '+SURVEY.length;
 $('svBar').style.width=Math.round(step/SURVEY.length*100)+'%';
 let h=`<fieldset><legend class="sv-q">${s.q}</legend>`;
 if(s.type==='text')h+=s.long?`<textarea id="svText" maxlength="500" rows="3" placeholder="${s.ph}" aria-label="${s.q}"></textarea>`:`<input id="svText" type="text" maxlength="80" placeholder="${s.ph}" aria-label="${s.q}">`;
-else{const opts=s.other?[...s.opts,'Other']:s.opts;h+='<div class="chips">'+opts.map((o,i)=>`<label class="chip"><input type="${s.type==='one'?'radio':'checkbox'}" name="sv" value="${esc(o)}" id="sv${i}"><span>${esc(o)}</span></label>`).join('')+'</div>';if(s.other)h+='<label class="f" for="svOther" id="svOtherWrap" style="margin-top:14px" hidden>Tell us more<input id="svOther" type="text" maxlength="120" placeholder="Type your answer"></label>'}
+else{const opts=s.other?[...s.opts,'Other']:s.opts;h+='<div class="chips">'+opts.map((o,i)=>`<label class="chip"><input type="${s.type==='one'?'radio':'checkbox'}" name="sv" value="${esc(o)}" id="sv${i}"><span>${esc(o)}</span></label>`).join('')+'</div>';if(s.other)h+='<label class="f f-gap" for="svOther" id="svOtherWrap" hidden>Tell us more<input id="svOther" type="text" maxlength="120" placeholder="Type your answer"></label>'}
 $('svStep').innerHTML=h+'</fieldset>';
 if(s.type==='text'){$('svText').value=val||''}
 else{const vals=val===undefined?[]:Array.isArray(val)?val:[val];const oth=vals.find(v=>v.startsWith('Other: '));for(const inp of $('svStep').querySelectorAll('input[name="sv"]')){inp.checked=vals.includes(inp.value)||(inp.value==='Other'&&!!oth)}if(s.other){$('svOtherWrap').hidden=!oth&&!vals.includes('Other');if(oth)$('svOther').value=oth.slice(7)}}
@@ -385,7 +405,7 @@ let current=[];
 function renderLeads(docs){
 current=docs.map(d=>d.data()).filter(Boolean);
 $('leadCount').textContent='('+current.length+')';
-$('leadRows').innerHTML=current.length?current.map(l=>`<tr><td>${esc(l.streamerName||'')}</td><td>${esc((l.platforms||[]).join(', '))}</td><td>${esc((l.reachVia||'')+(l.reach?': '+l.reach:''))}</td><td>${l.survey?(l.survey.completed?'Done':'Partial'):'None'}</td><td class="t">${esc(l.createdAt?new Date(l.createdAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')}</td></tr>`).join(''):'<tr><td colspan="5" style="color:var(--mute)">No leads yet. The first creator who signs up shows here.</td></tr>';
+$('leadRows').innerHTML=current.length?current.map(l=>`<tr><td>${esc(l.streamerName||'')}</td><td>${esc((l.platforms||[]).join(', '))}</td><td>${esc((l.reachVia||'')+(l.reach?': '+l.reach:''))}</td><td>${l.survey?(l.survey.completed?'Done':'Partial'):'None'}</td><td class="t">${esc(l.createdAt?new Date(l.createdAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')}</td></tr>`).join(''):'<tr><td colspan="5" class="td-mute">No leads yet. The first creator who signs up shows here.</td></tr>';
 }
 $('copyBtn').addEventListener('click',async()=>{
 const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';

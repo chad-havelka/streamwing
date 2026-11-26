@@ -1,0 +1,12 @@
+/* Scales: spacing, radius, type and motion. No colours here.
+   Desktop values in :root. Phones (600px and under) step down in the media query. */
+:root{
+  --sp-top:64px;       /* space above the first heading on a page */
+  --sp-section:96px;   /* space between sections (half above, half below each divider) */
+  --sp-lead:40px;      /* heading block to the content under it */
+  --sp-card:28px;      /* card padding */
+  --sp-grid:24px;      /* gap between cards */
+}
+@media (max-width:600px){
+  :root{--sp-top:40px;--sp-section:64px;--sp-lead:32px;--sp-card:22px;--sp-grid:18px}
+}

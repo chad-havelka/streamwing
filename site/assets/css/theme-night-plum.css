@@ -1,0 +1,39 @@
+/* Colours only. This is the one place colour values live.
+   To make a new theme, copy this file, change the values, and point the pages at the copy.
+   Run the contrast check (tools/check-contrast.mjs) after any change. */
+:root{
+  color-scheme:dark;
+  /* Night plum: dark surfaces */
+  --bg:#160c26;
+  --panel:#22143a;
+  --panel2:#2f1d50;
+  --line:#9070c4;          /* control and card edges: 3:1 or better on --bg, --panel and --panel2 */
+  --rule:#33224f;          /* decorative dividers only */
+  --edge:#5a4185;          /* decorative card edge on the home page stage */
+  /* Text */
+  --ink:#f4eefe;
+  --soft:#d8cdf0;
+  --mute:#b9a9d9;
+  /* Accents */
+  --pink:#e879f9;
+  --pinkl:#f0abfc;
+  --deep:#1a0f2e;          /* text on pink and on light surfaces */
+  --err:#fda4af;
+  --gold:#fbbf24;          /* Chaturbate page: big tippers and wins */
+  --blue:#7dd3fc;          /* Chaturbate page: light blue fans */
+  --green:#86efac;
+  --link-url:#93c5fd;      /* Chaturbate URL text on dark surfaces */
+  --cta-performer:#facc15; /* main call to action once a performer's room is connected */
+  --action:#f08a24;        /* Generate button on the Chaturbate page. Label is --deep for 7:1 */
+  --check:#1a73e8;         /* ticked box in the Chaturbate form */
+  --live:#f43f5e;          /* live status dot */
+  --live-halo:rgba(244,63,94,.25);
+  --dot-off:#6b5a8a;       /* idle status dot */
+  /* Light section (home page features, privacy card) */
+  --light-bg:#f7f2ff;
+  --light-ink:#1a0f2e;
+  --light-soft:#4a3a63;
+  --light-accent:#86198f;
+  --light-line:#e6dcf7;
+  --card:#ffffff;
+}

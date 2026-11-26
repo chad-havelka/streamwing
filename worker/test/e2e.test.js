@@ -398,6 +398,65 @@ test('live updates reach an open panel, and only the right performer\'s', async 
   await settle();
 });
 
+test('a saved place that Chaturbate says is too old is replaced, not retried forever', async () => {
+  // Captured behaviour from events.testbed.cb.dev: HTTP 400, {"status":"You waited too long...","nextUrl":"..."}
+  const { stopLoop, startLoop } = await import('../src/poller.js');
+  const { encrypt } = await import('../src/crypto.js');
+  const { config } = await import('../src/config.js');
+  const { ev, user } = sim;
+  const pid = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
+  stopLoop(pid); await wait(1500);
+  await q(`update performers set next_url_enc=$2 where id=$1`, [pid, encrypt(`${sim.eventsUrl}?i=stale`, config.tokenKey)]);
+  startLoop(pid);
+  await wait(500);
+  sim.push([ev('broadcastStart', { user: user('sim_room') }), ev('userEnter', { user: user('after_gap_gus') }), ev('broadcastStop', { user: user('sim_room') })]);
+  await settle();
+  assert.equal((await call('/api/fans/after_gap_gus')).status, 200, 'events after the gap are received');
+  const me = (await call('/api/me')).body;
+  assert.equal(me.lastError, null, 'no error left behind');
+});
+
+test('a real session captured from the Chaturbate testbed (Nov 2026) is understood end to end', async () => {
+  // Every event below is what events.testbed.cb.dev actually sent for a second account (streamwingtester)
+  // in quietquotient's room: unfollow, follow, chat, an anonymous tip, a normal tip, unfollow, leave, re-enter.
+  // We connected after the viewer was already in the room, so the first thing seen is not an "enter".
+  const RU = o => ({ isMod: false, gender: 'm', isOwner: false, isSpying: false, language: 'en', username: 'streamwingtester',
+    hasTokens: true, inFanclub: false, subgender: '', colorGroup: 't', isFollower: false, isSilenced: false, recentTips: 'few',
+    fcAutoRenew: false, hasDarkmode: false, inPrivateShow: false, isBroadcasting: true, ...o });
+  const TR = { colorGroup: 'tr', recentTips: 'some' };
+  const E = (id, method, user, extra = {}) => ({ method, id, object: { broadcaster: 'sim_room', user, ...extra } });
+  sim.push([
+    E('1795666146613-0', 'unfollow', RU({})),
+    E('1795666149785-0', 'follow', RU({ isFollower: true })),
+    E('1795666165533-0', 'chatMessage', RU({ isFollower: true }), { message: { font: 'default', orig: null, color: '', bgColor: null, message: 'hello from the test' } }),
+    E('1795666179616-0', 'tip', RU({ isFollower: true }), { tip: { isAnon: true, tokens: 10, message: 'anon tip' } }),
+    E('1795666190905-0', 'tip', RU({ isFollower: true, ...TR }), { tip: { isAnon: false, tokens: 25, message: 'test' } }),
+    E('1795666209037-0', 'unfollow', RU({ ...TR })),
+    E('1795666216659-0', 'userLeave', RU({ ...TR })),
+    E('1795666228164-0', 'userEnter', RU({ ...TR })),
+  ]);
+  await settle();
+  const me = (await call('/api/me')).body;
+  assert.equal(me.session.tokens, 35, 'the anonymous 10 counts, plus the 25');
+  assert.equal(me.session.tippers, 1);
+  assert.equal(me.session.unique_visitors, 1);
+  assert.equal(me.session.new_visitors, 1);
+  const fan = (await call('/api/fans/streamwingtester')).body;
+  assert.equal(fan.total_tips, 35);
+  assert.equal(fan.tip_count, 2);
+  assert.equal(fan.biggest_tip, 25);
+  assert.equal(fan.last_message, 'hello from the test');
+  assert.equal(fan.is_follower, false, 'followed, then unfollowed');
+  assert.equal(fan.color_group, 'tr');
+  assert.equal(fan.recent_tips, 'some');
+  const items = (await call('/api/feed?limit=100')).body.items.filter(i => i.username === 'streamwingtester').reverse();
+  assert.deepEqual(items.map(i => i.kind), ['follow', 'first_tip', 'tip'],
+    'no "new viewer" card after someone who was already in the room has tipped');
+  assert.equal(items[1].data.isAnon, true, 'the anonymous tip is marked anonymous');
+  sim.push([sim.ev('broadcastStop', { user: sim.user('sim_room') })]);
+  await settle();
+});
+
 let otherId, otherKey;
 test("one performer never sees another's fans, feed or streams", async () => {
   const { newAccessKey, hashKey } = await import('../src/crypto.js');
@@ -493,4 +552,27 @@ test('a network block is not mistaken for a bad token', async () => {
   assert.equal(blocked.auth, false);
   assert.equal(blocked.retryable, true);
   assert.equal(new CbError(401, '{"status":"Unauthorized"}').auth, true);
+});
+
+test("an event captured from Chaturbate's own testbed (Nov 2026) is understood", async () => {
+  // Real response from events.testbed.cb.dev for an owner entering her own room. Not hand-written.
+  const captured = { method: 'userEnter', id: '1795664417157-0', object: { broadcaster: 'quietquotient', user: {
+    colorGroup: 'o', fcAutoRenew: false, gender: 'm', hasDarkmode: false, hasTokens: true, inFanclub: false,
+    inPrivateShow: false, isBroadcasting: true, isFollower: false, isMod: false, isOwner: true, isSilenced: false,
+    isSpying: false, language: 'en', recentTips: 'few', subgender: '', username: 'quietquotient' } } };
+  const { normalizeEvent } = await import('../src/cb.js');
+  const e = normalizeEvent(captured);
+  assert.deepEqual(e.user, { username: 'quietquotient', colorGroup: 'o', hasTokens: true, recentTips: 'few', isFollower: false,
+    inFanclub: false, isMod: false, isOwner: true, language: 'en', gender: 'm' });
+  assert.equal(e.broadcaster, 'quietquotient');
+  assert.equal(e.id, '1795664417157-0');
+});
+
+test('a restart link is only followed when it stays on the same feed', async () => {
+  const { restartFor } = await import('../src/cb.js');
+  const cur = 'https://events.testbed.cb.dev/events/quietquotient/tok123/?i=1-0&timeout=10';
+  assert.equal(restartFor('https://events.testbed.cb.dev/events/quietquotient/tok123/?timeout=0', cur), 'https://events.testbed.cb.dev/events/quietquotient/tok123/');
+  assert.equal(restartFor('https://evil.example/events/quietquotient/tok123/', cur), null, 'other host');
+  assert.equal(restartFor('https://events.testbed.cb.dev/events/someone_else/tok999/', cur), null, 'other feed');
+  assert.equal(restartFor('not a url', cur), null);
 });

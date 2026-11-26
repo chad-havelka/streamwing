@@ -71,7 +71,13 @@ export async function poll(url, timeoutSec) {
       headers: { 'user-agent': 'StreamWing/0.1 (+https://streamwing.studio)' },
     });
     const text = await res.text();
-    if (!res.ok) throw new CbError(res.status, text.slice(0, 300));
+    if (!res.ok) {
+      const err = new CbError(res.status, text.slice(0, 300));
+      // When our saved place in the feed is too old, Chaturbate answers 400 with a fresh nextUrl
+      // ("You waited too long. Please start over using nextUrl"). Keep it so the worker can restart from it.
+      try { const b = JSON.parse(text); if (res.status === 400 && typeof b.nextUrl === 'string') err.restartUrl = b.nextUrl; } catch { /* not JSON */ }
+      throw err;
+    }
     let body;
     try { body = JSON.parse(text); } catch { throw new CbError(502, 'not JSON: ' + text.slice(0, 120)); }
     return { events: Array.isArray(body.events) ? body.events : [], nextUrl: body.nextUrl || null };
@@ -114,4 +120,14 @@ export function normalizeEvent(e) {
     subject: pick(o, 'subject') ?? null,
     raw: e,
   };
+}
+
+// A restart link is only trusted if it points at the same feed we were already reading.
+export function restartFor(restartUrl, currentUrl) {
+  try {
+    const r = new URL(restartUrl), c = new URL(currentUrl);
+    if (r.origin !== c.origin || r.pathname !== c.pathname) return null;
+    r.searchParams.delete('timeout');
+    return r.toString();
+  } catch { return null; }
 }

@@ -2,7 +2,7 @@
 import { config } from './config.js';
 import { q, tx } from './db.js';
 import { decrypt, encrypt } from './crypto.js';
-import { poll, normalizeEvent } from './cb.js';
+import { poll, normalizeEvent, restartFor } from './cb.js';
 import { processEvent } from './brain.js';
 import { publish } from './bus.js';
 import { writeNotesForSession } from './ai.js';
@@ -12,6 +12,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function runLoop(performerId, state) {
   let backoff = 1000;
+  let restarts = 0;
   while (!state.stopped) {
     const pr = await q(`select * from performers where id=$1`, [performerId]);
     const performer = pr.rows[0];
@@ -43,6 +44,7 @@ async function runLoop(performerId, state) {
         [performerId, nextUrl ? encrypt(nextUrl, config.tokenKey) : null, events.length > 0]);
       publish(performerId, { kind: 'heartbeat', transient: true, data: { at: new Date().toISOString() } });
       backoff = 1000;
+      restarts = 0;
     } catch (err) {
       if (err.auth) {
         // Token deleted or wrong. Stop until she reconnects; don't hammer Chaturbate.
@@ -50,6 +52,14 @@ async function runLoop(performerId, state) {
           [performerId, 'Chaturbate rejected the saved link. It may have been deleted. Reconnect Chaturbate.']);
         publish(performerId, { kind: 'status', transient: true, data: { error: 'token_rejected' } });
         break;
+      }
+      // Our place in the feed got too old (worker was down a while). Chaturbate sends a fresh link: use it.
+      const fresh = err.restartUrl && restartFor(err.restartUrl, url);
+      if (fresh) {
+        await q(`update performers set next_url_enc=$2, last_error=null where id=$1`, [performerId, encrypt(fresh, config.tokenKey)]);
+        console.log(`[poll ${performer.cb_username}] saved place was too old; restarted from Chaturbate's fresh link`);
+        if (++restarts > 3) await sleep(backoff); // never spin if it keeps happening
+        continue;
       }
       // A stale cursor can 404; fall back to the base URL once.
       if (err.status === 404 && performer.next_url_enc) {

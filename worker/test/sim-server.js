@@ -32,6 +32,11 @@ export function createSim({ username = 'sim_room', token = 'simtoken123', port =
     const m = url.pathname.match(/^\/events\/([^/]+)\/([^/]+)\/$/);
     if (!m) { res.writeHead(404); return res.end('{}'); }
     if (m[1] !== username || m[2] !== token) { res.writeHead(401); return res.end('{"status":"Unauthorized"}'); }
+    // Chaturbate's real answer to a saved place that is too old: 400 plus a fresh nextUrl.
+    if (url.searchParams.get('i') === 'stale') {
+      res.writeHead(400, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify({ status: "You waited too long. Please start over using 'nextUrl'", nextUrl: `${base}/events/${username}/${token}/?i=${log.length}&timeout=0` }));
+    }
     const from = Number(url.searchParams.get('i') || 0);
     const timeout = Number(url.searchParams.get('timeout') ?? 10);
     const reply = () => {

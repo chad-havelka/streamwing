@@ -104,7 +104,9 @@ export async function processEvent(c, performer, ev) {
   const before = await getFan(c, pid, uname);
   let fan = await touchFan(c, pid, ev.user);
 
-  const newToRoom = !before || before.visits === 0;
+  // Someone we've only seen chat or tip (they were already in the room when we connected) is not new:
+  // when they later walk in, treating them as brand new would shout "New viewer" about a fan who has tipped.
+  const newToRoom = !before || (before.visits === 0 && Number(before.tip_count) === 0 && Number(before.messages_count) === 0);
   // Mark them as seen in this session, and count them the first time they show up in it.
   const seen = async (lightBlue) => {
     const r = await c.query(

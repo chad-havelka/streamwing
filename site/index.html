@@ -78,6 +78,16 @@ legend{font-weight:500;margin-bottom:10px;padding:0}
 .chip input:focus-visible+span{outline:3px solid var(--pinkl);outline-offset:2px}
 .msg{min-height:1.5em;margin:0;font-size:15px}
 .msg.err{color:var(--err)}
+.share{margin-top:20px}
+.share .row{display:flex;flex-wrap:wrap;gap:10px}
+.share .row button,.share .row a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:999px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:600 15px Poppins,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.share .row .primary{background:var(--pink);border-color:var(--pink);color:var(--deep)}
+.share .link{display:flex;gap:10px;margin-top:14px}
+.share .link input{flex:1;min-height:44px;font-size:15px;color:var(--soft)}
+.share .ok{min-height:1.4em;margin:8px 0 0;font-size:14px;color:var(--pinkl)}
+.signoff .share{margin-top:20px}
+.signoff .share p.lbl{font-size:17px;font-weight:500;color:var(--soft);margin:0 0 12px}
+.signoff .share .row{justify-content:center}
 .done{background:var(--panel);border:2px solid var(--pink);border-radius:24px;padding:28px;margin-top:32px}
 .done h3{margin:0 0 6px;font-size:24px}
 .done p{margin:0 0 20px;color:var(--soft)}
@@ -148,7 +158,8 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 <section class="signoff"><div class="wrap">
 <svg width="120" height="126" viewBox="0 0 400 420" aria-hidden="true"><path d="M95 135 L78 58 L152 112Z M305 135 L322 58 L248 112Z" fill="#7c5cc4"/><ellipse cx="200" cy="250" rx="132" ry="150" fill="#7c5cc4"/><ellipse cx="200" cy="292" rx="86" ry="100" fill="#c4b5fd"/><circle cx="150" cy="190" r="58" fill="#f3eeff"/><circle cx="250" cy="190" r="58" fill="#f3eeff"/><path d="M120 196 Q150 170 180 196 M220 196 Q250 170 280 196" stroke="#1a0f2e" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M186 226 L214 226 L200 256Z" fill="#f5a524"/><path d="M76 205 C76 48 324 48 324 205" stroke="#e879f9" stroke-width="14" fill="none" stroke-linecap="round"/><rect x="58" y="182" width="34" height="62" rx="14" fill="#e879f9"/><rect x="308" y="182" width="34" height="62" rx="14" fill="#e879f9"/></svg>
 <div><p>Have a good stream.<br>I'll meet some of your fans.</p>
-<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" style="margin-top:16px"><path d="M12 21C5 15.5 2 12 2 8a5 5 0 0 1 10-1 5 5 0 0 1 10 1c0 4-3 7.5-10 13z" fill="#e879f9"/></svg></div>
+<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" style="margin-top:16px"><path d="M12 21C5 15.5 2 12 2 8a5 5 0 0 1 10-1 5 5 0 0 1 10 1c0 4-3 7.5-10 13z" fill="#e879f9"/></svg>
+<div class="share" id="signoffShare"><p class="lbl">Know a streamer who'd want this?</p></div></div>
 </div></section>
 
 <section class="form-band" id="join"><div class="wrap">
@@ -201,7 +212,10 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 <div class="done" id="done" hidden>
 <h3 id="doneTitle">Thank you.</h3>
 <p>That helps a lot. We'll reach out when StreamWing is ready for your stream.</p>
-<button class="btn" type="button" id="againBtn">Add another creator</button>
+<h3 style="margin-top:28px;font-size:21px">Know a streamer who'd want this?</h3>
+<p style="margin:0">Send them your invite link. When they sign up, we'll know they came from you.</p>
+<div class="share" id="doneShare"></div>
+<button class="btn ghost" type="button" id="againBtn" style="margin-top:28px">Add another creator</button>
 </div>
 </div></section>
 
@@ -216,6 +230,9 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 
 <form name="early-access" data-netlify="true" netlify-honeypot="bot-field" hidden>
 <input name="bot-field"><input name="lead-id"><input name="streamer-name"><input name="platforms"><input name="reach-via"><input name="reach"><input name="whatsapp-optin"><input name="referral-code">
+</form>
+<form name="share" data-netlify="true" netlify-honeypot="bot-field" hidden>
+<input name="bot-field"><input name="lead-id"><input name="invite-code"><input name="channel"><input name="where">
 </form>
 <form name="pain-survey" data-netlify="true" netlify-honeypot="bot-field" hidden>
 <input name="bot-field"><input name="lead-id"><input name="streamer-name"><input name="hours"><input name="audience"><input name="setup"><input name="hardest"><input name="growth"><input name="most-wanted"><input name="tools"><input name="pay-model"><input name="country"><input name="next-stream"><input name="referral"><input name="wish"><input name="completed">
@@ -285,7 +302,7 @@ $('submitBtn').disabled=true;setMsg(msg,'Saving…');
 try{
 if(mode==='claude'){ref=db.collection('leads').doc(lead.id);await ref.set(lead)}
 else await netlifyPost('early-access',{'lead-id':lead.id,'streamer-name':name,platforms:lead.platforms.join(', '),'reach-via':via,reach,'whatsapp-optin':lead.whatsappOptIn?'yes':'no','referral-code':REF});
-setMsg(msg,'');$('leadForm').hidden=true;$('svThanks').textContent="You're on the list, "+name+'.';answers={};step=0;surveySent=false;$('survey').hidden=false;renderStep();$('survey').scrollIntoView({behavior:'smooth',block:'start'});
+try{localStorage.setItem('sw_mycode',lead.id.replace(/-/g,'').slice(0,8))}catch(e){}renderShare('signoffShare','signoff');setMsg(msg,'');$('leadForm').hidden=true;$('svThanks').textContent="You're on the list, "+name+'.';answers={};step=0;surveySent=false;$('survey').hidden=false;renderStep();$('survey').scrollIntoView({behavior:'smooth',block:'start'});
 }catch(err){setMsg(msg,err&&err.code==='quota_exceeded'?"The lead list is full, so this one wasn't saved.":"That didn't save. Try again.",true)}
 finally{$('submitBtn').disabled=false}
 });
@@ -322,7 +339,7 @@ if(Object.keys(flat).length){
 if(mode==='claude')await ref.update({survey:{...flat,completed:complete,answeredAt:new Date().toISOString()}});
 else await netlifyPost('pain-survey',{'lead-id':lead.id,'streamer-name':lead.streamerName,...flat,completed:complete?'yes':'no'});
 }
-surveySent=true;$('survey').hidden=true;$('doneTitle').textContent='Thank you, '+lead.streamerName+'.';$('done').hidden=false;
+surveySent=true;$('survey').hidden=true;$('doneTitle').textContent='Thank you, '+lead.streamerName+'.';$('done').hidden=false;renderShare('doneShare','survey-done');
 }catch(err){setMsg($('svMsg'),"That didn't save. Try again.",true)}
 finally{btns.forEach(b=>b.disabled=false)}
 }
@@ -338,6 +355,29 @@ if(!(navigator.sendBeacon&&navigator.sendBeacon('/',b)))fetch('/',{method:'POST'
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')sendPartial()});
 window.addEventListener('pagehide',sendPartial);
+const SITE='https://streamwing.studio';
+function myCode(){if(lead&&lead.id)return lead.id.replace(/-/g,'').slice(0,8);try{return localStorage.getItem('sw_mycode')||''}catch(e){return ''}}
+function shareLink(){const c=myCode();return c?SITE+'/invite/'+c:SITE}
+function shareText(where){return (where==='survey-done'?'I just joined the StreamWing early-access list. ':'')+'StreamWing is an AI assistant that works inside your stream. Regulars want to be remembered. New fans want a hello.'}
+function logShare(channel,where){if(mode!=='netlify')return;netlifyPost('share',{'lead-id':lead?lead.id:'','invite-code':myCode(),channel,where}).catch(()=>{})}
+function renderShare(id,where){
+const box=$(id);if(!box)return;box.querySelectorAll('.row,.link,.ok').forEach(n=>n.remove());
+const url=shareLink(),text=shareText(where),both=text+' '+url;
+const row=document.createElement('div');row.className='row';
+const add=(label,fn,primary)=>{const b=document.createElement('button');b.type='button';b.textContent=label;if(primary)b.className='primary';b.addEventListener('click',fn);row.appendChild(b)};
+const open=(href,ch)=>{logShare(ch,where);window.open(href,'_blank','noopener')};
+const ok=document.createElement('p');ok.className='ok';ok.setAttribute('aria-live','polite');
+const copy=async()=>{try{await navigator.clipboard.writeText(url);ok.textContent='Link copied.'}catch(e){const i=box.querySelector('.link input');if(i){i.select();ok.textContent='Link selected. Copy it from here.'}else ok.textContent=url}logShare('copy',where)};
+if(navigator.share)add('Share',async()=>{try{await navigator.share({title:'StreamWing',text,url});logShare('native',where)}catch(e){}},true);
+add('WhatsApp',()=>open('https://wa.me/?text='+encodeURIComponent(both),'whatsapp'),!navigator.share);
+add('Telegram',()=>open('https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text),'telegram'));
+add('Email',()=>{logShare('email',where);location.href='mailto:?subject='+encodeURIComponent('You should see StreamWing')+'&body='+encodeURIComponent(both)});
+add('Copy link',copy);
+box.appendChild(row);
+if(where==='survey-done'){const l=document.createElement('div');l.className='link';l.innerHTML='<input type="text" readonly aria-label="Your invite link">';l.querySelector('input').value=url;box.appendChild(l)}
+box.appendChild(ok);
+}
+renderShare('signoffShare','signoff');
 $('againBtn').addEventListener('click',()=>{$('leadForm').reset();$('otherWrap').hidden=true;$('waWrap').hidden=true;$('reachLabel').textContent=REACH.Email[0];$('reachVal').placeholder=REACH.Email[1];$('done').hidden=true;$('leadForm').hidden=false;lead=null;ref=null;setMsg($('msg'),'');$('sname').focus()});
 
 /* Owner-only list, claude.ai page only */

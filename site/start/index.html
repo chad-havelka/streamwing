@@ -126,6 +126,30 @@ textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:12px 14px
 .linkbtn{background:none;border:0;padding:0;color:var(--pinkl);text-decoration:underline;font:inherit;cursor:pointer}
 .tip{margin-top:12px;font-size:14px;color:var(--mute);text-align:center}
 </style>
+<style id="coachCss">
+.coach{--ink:#f4eefe;--soft:#d8cdf0;--mute:#b9a9d9;--pink:#e879f9;--deep:#1a0f2e;--panel:#22143a;--panel2:#2f1d50;--line:#4a3470;font-family:Poppins,system-ui,sans-serif;color:var(--ink);box-sizing:border-box}
+.coach *{box-sizing:border-box}
+.coach.inline{margin:12px 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.coach.pipbody{background:#160c26;min-height:100vh;padding:12px}
+.coach .chead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--mute);margin-bottom:8px}
+.coach .chead b{color:var(--ink);font-weight:600}
+.coach .cname{font-size:18px;font-weight:600}
+.coach .cwhy{font-size:13px;color:var(--pink);margin-top:2px}
+.coach .cfacts{font-size:13px;color:var(--mute);margin-top:2px}
+.coach .cmsg{margin:10px 0;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:15px;line-height:1.4;color:var(--soft);user-select:text}
+.coach .crow{display:flex;gap:8px;flex-wrap:wrap}
+.coach button{font:inherit;font-size:14px;font-weight:600;min-height:40px;padding:8px 16px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--ink);cursor:pointer}
+.coach button.main{background:var(--pink);border-color:var(--pink);color:var(--deep)}
+.coach button.small{min-height:32px;padding:4px 12px;font-size:13px}
+.coach .cfoot{margin-top:10px;font-size:12px;color:var(--mute)}
+.coach .cempty{font-size:14px;color:var(--mute);padding:6px 0}
+.coach .cbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
+.coach .cbar .t{font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.coach .cbar .t b{font-weight:600}
+.coach .cbar .t span{color:var(--mute)}
+.coach .cdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pink);margin-right:8px}
+.coach .cdot.off{background:var(--line)}
+</style>
 </head>
 <body>
 <header><div class="wrap">
@@ -578,11 +602,12 @@ function panel() {
     DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo with sample fans. Not a real room.'),
     h('div', { class: 'banner', id: 'banner', hidden: !me.lastError }, h('span', { id: 'bannerText' }, me.lastError || ''), ' ', h('button', { class: 'linkbtn', type: 'button', onclick: () => connectScreen(me) }, 'Reconnect Chaturbate')),
     h('div', { class: 'stats', id: 'stats' }),
+    h('div', { id: 'coachInline' }),
     h('div', { class: 'tabs', role: 'tablist' }, tabBtn('callouts', 'Callouts'), tabBtn('room', 'Room'), tabBtn('fans', 'Fans'), tabBtn('streams', 'Streams')),
     h('div', { class: 'list', id: 'list', 'aria-live': 'polite' }),
     !(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) &&
       h('p', { class: 'tip' }, 'Tip: add this page to your home screen so StreamWing is one tap away when you go live.'));
-  renderStats(); renderList(); updateStatus();
+  renderStats(); renderList(); updateStatus(); coachDraw();
 }
 
 function updateStatus() {
@@ -595,6 +620,103 @@ function updateStatus() {
 
 let refreshT = null;
 const refreshMe = () => { clearTimeout(refreshT); refreshT = setTimeout(async () => { try { me = await api('/api/me'); renderStats(); updateStatus(); const b = $('banner'); if (b) { b.hidden = !me.lastError; $('bannerText').textContent = me.lastError || ''; } keepAwake(); } catch (e) {} }, 1200); };
+
+// ---------- the coach strip: nudges on her own screen. She copies and sends everything herself. ----------
+const COACH_KINDS = { big_tipper_back: 0, first_tip: 1, tipper_back: 2, light_blue_back: 3, new_with_tokens: 4, regular_back: 5 };
+const COACH_SHORT = { big_tipper_back: 'is back, a big tipper', first_tip: 'tipped for the first time', tipper_back: 'is back', light_blue_back: 'is back with tokens', new_with_tokens: 'is new, has tokens', regular_back: 'is here' };
+const coach = { queue: [], handled: new Set(), pip: null, collapsed: false, note: '', noteT: null };
+const COACH_W = 360, COACH_H_OPEN = 420, COACH_H_BAR = 96;
+function coachMessage(q) {
+  const u = q.username;
+  return ({
+    big_tipper_back: `Hey ${u}! So good to see you back. Thank you for everything you do for this room. How's your week going?`,
+    first_tip: `${u}, thank you so much for the tip! It really made my night.`,
+    tipper_back: `Hi ${u}, thanks for coming back. I like having you in the room. How was your day?`,
+    light_blue_back: `Hi ${u}, I'm happy you came back. Is there anything you'd like to see tonight?`,
+    new_with_tokens: `Hi ${u}, welcome! Glad you stopped by. What brought you to my room tonight?`,
+    regular_back: `Hi ${u}, glad you're here again. How was your day?`,
+  })[q.kind];
+}
+function coachAdd(item) {
+  if (!(item.kind in COACH_KINDS) || !item.username) return;
+  if (coach.handled.has(item.username) || coach.queue.some(q => q.username === item.username)) return;
+  coach.queue.push({ username: item.username, kind: item.kind, fan: item.data.fan || {}, tokens: item.data.tokens });
+  coach.queue.sort((a, b) => COACH_KINDS[a.kind] - COACH_KINDS[b.kind]);
+  coachDraw();
+}
+function coachFlash(text) {
+  coach.note = text; clearTimeout(coach.noteT);
+  coach.noteT = setTimeout(() => { coach.note = ''; coachDraw(); }, 6000);
+}
+async function coachCopy(text, win) {
+  try { await (win || window).navigator.clipboard.writeText(text); return true; } catch (e) {}
+  try {
+    const d = (win || window).document, t = d.createElement('textarea'); t.value = text; d.body.append(t); t.select();
+    const ok = d.execCommand('copy'); t.remove(); return ok;
+  } catch (e) { return false; }
+}
+// After any tap inside the pop-out, shrink it back to the thin bar.
+function coachAfterTap(win) {
+  if (!coach.pip) return;
+  coach.collapsed = true; coachResize(win); coachDraw();
+}
+function coachResize(win) {
+  const p = coach.pip; if (!p) return;
+  try { p.resizeTo(COACH_W, coach.collapsed ? COACH_H_BAR : COACH_H_OPEN); } catch (e) { /* needs a tap; arriving nudges never resize */ }
+}
+function coachRemove(u, handled) {
+  coach.queue = coach.queue.filter(q => q.username !== u); if (handled) coach.handled.add(u);
+}
+function coachView(win) {
+  const q = coach.queue[0];
+  if (coach.pip && coach.collapsed) {
+    return h('div', { class: 'cbar' },
+      h('div', { class: 't' }, coach.note ? coach.note
+        : q ? [h('span', { class: 'cdot' }), h('b', {}, q.username), ' ' + COACH_SHORT[q.kind], coach.queue.length > 1 ? h('span', {}, ` · ${coach.queue.length - 1} more`) : null]
+        : [h('span', { class: 'cdot off' }), h('span', {}, 'Nothing to nudge')]),
+      h('button', { type: 'button', class: 'main small', onclick: () => { coach.collapsed = false; coachResize(win); coachDraw(); } }, 'Open'));
+  }
+  const head = h('div', { class: 'chead' }, h('b', {}, 'Nudges'), h('span', {}, coach.queue.length ? `${coach.queue.length} waiting` : 'none waiting'),
+    coach.pip ? null : (window.documentPictureInPicture
+      ? h('button', { type: 'button', class: 'small', onclick: coachPop }, 'Pop out')
+      : h('span', {}, 'Pop-out needs Chrome or Edge on a computer')));
+  if (!q) return h('div', {}, head, h('p', { class: 'cempty' }, coach.note || 'Nothing to nudge right now. When a regular or a big tipper arrives, a suggested message shows up here.'));
+  const msg = coachMessage(q);
+  return h('div', {}, head,
+    h('div', { class: 'cname' }, q.username),
+    h('div', { class: 'cwhy' }, KIND[q.kind][1]),
+    h('div', { class: 'cfacts' }, facts(q.fan)),
+    h('div', { class: 'cmsg' }, msg),
+    h('div', { class: 'crow' },
+      h('button', { type: 'button', class: 'main', onclick: async () => { const ok = await coachCopy(msg, win); coachFlash(ok ? `Copied for ${q.username}. Paste it into their DM on Chaturbate yourself.` : 'Could not copy. Select the message and copy it by hand.'); coachAfterTap(win); coachDraw(); } }, 'Copy message'),
+      h('button', { type: 'button', onclick: () => { coachRemove(q.username, true); coachAfterTap(win); coachDraw(); } }, 'Done'),
+      h('button', { type: 'button', onclick: () => { coachRemove(q.username, true); coachAfterTap(win); coachDraw(); } }, 'Skip'),
+      h('button', { type: 'button', onclick: () => { coach.queue.push(coach.queue.shift()); coachAfterTap(win); coachDraw(); } }, 'Later')),
+    coach.note ? h('div', { class: 'cfoot' }, coach.note) : null,
+    h('div', { class: 'cfoot' }, 'Only you see this. StreamWing never sends anything to Chaturbate for you.'));
+}
+function coachDraw() {
+  const inline = $('coachInline');
+  if (inline) {
+    inline.className = 'coach inline';
+    if (coach.pip) put(inline, h('div', { class: 'chead' }, h('span', {}, 'Nudges are in the pop-out window.'), h('button', { type: 'button', class: 'small', onclick: () => coach.pip && coach.pip.close() }, 'Bring back')));
+    else put(inline, coachView(window));
+  }
+  if (coach.pip) { const root = coach.pip.document.getElementById('coachRoot'); if (root) put(root, coachView(coach.pip)); }
+}
+async function coachPop() {
+  if (!window.documentPictureInPicture || coach.pip) return;
+  try {
+    const p = await documentPictureInPicture.requestWindow({ width: COACH_W, height: COACH_H_OPEN });
+    p.document.head.append(p.document.importNode($('coachCss'), true));
+    const f = p.document.createElement('link'); f.rel = 'stylesheet'; f.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap'; p.document.head.append(f);
+    p.document.body.style.margin = '0';
+    const root = p.document.createElement('div'); root.id = 'coachRoot'; root.className = 'coach pipbody'; p.document.body.append(root);
+    coach.pip = p; coach.collapsed = false;
+    p.addEventListener('pagehide', () => { coach.pip = null; coach.collapsed = false; coachDraw(); });
+    coachDraw();
+  } catch (e) { coachFlash('Could not open the pop-out here. You can keep using the strip on this page.'); coachDraw(); }
+}
 
 function onItem(item) {
   if (item.kind === 'heartbeat') return;
@@ -614,6 +736,7 @@ function onItem(item) {
   }
   feedItems.unshift(item);
   feedItems = feedItems.slice(0, 150);
+  coachAdd(item);
   if (tab === 'callouts') {
     const el = renderItem(item);
     const list = $('list');

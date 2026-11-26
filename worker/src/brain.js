@@ -220,6 +220,7 @@ export async function processEvent(c, performer, ev) {
 
     case 'chatMessage': {
       const text = (ev.message?.message || '').slice(0, 500);
+      await c.query(`update sessions set messages = messages + 1 where id=$1`, [sid]);
       const r = await c.query(
         `update fans set last_message = $3, last_message_at = now(), messages_count = messages_count + 1, last_seen = now(),
            recent_messages = (

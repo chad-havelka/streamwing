@@ -37,8 +37,9 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 .stat{background:var(--panel);border-radius:16px;padding:10px 8px;text-align:center}
 .stat b{display:block;font-size:22px;line-height:1.1}
 .stat span{font-size:12px;color:var(--mute)}
-.tabs{display:flex;gap:8px;margin:6px 0 12px}
-.tabs button{flex:1;min-height:44px;padding:0 6px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--soft);font-weight:600;font-size:15px;cursor:pointer}
+.tabs{display:flex;gap:6px;margin:6px 0 12px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:1 0 auto;white-space:nowrap;min-height:44px;padding:0 12px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--soft);font-weight:600;font-size:15px;cursor:pointer}
 [data-user]:not([data-user='']){cursor:pointer}
 .sec{margin:18px 0 8px;font-size:13px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--mute)}
 .sec:first-child{margin-top:4px}
@@ -344,6 +345,16 @@ async function demoApi(path, opts) {
     const cur = demo.live || s.ended_at ? [{ ...s }] : [];
     return { sessions: [...cur, ...DEMO_SESSIONS] };
   }
+  if (path === '/api/growth') {
+    // Sample numbers only, oldest first. Real numbers come from finished streams.
+    const rows = [...DEMO_SESSIONS].reverse().map(x => ({ at: x.started_at, minutes: 120, tokens: x.tokens, tippers: x.tippers,
+      visitors: x.unique_visitors, returning: x.returning_visitors, blues_converted: x.light_blues_converted, messages: 180 + (x.tokens % 90), peak: x.peak_in_room }));
+    const avg = a => a.length ? Math.round(a.reduce((t, v) => t + v, 0) / a.length) : null;
+    const share = a => { const v = a.reduce((t, x) => t + x.visitors, 0); return v ? Math.round(100 * a.reduce((t, x) => t + x.returning, 0) / v) : null; };
+    const sum = a => ({ n: a.length, tokens: avg(a.map(x => x.tokens)), visitors: avg(a.map(x => x.visitors)), messages: avg(a.map(x => x.messages)), returning_share: share(a) });
+    return { streams: rows, recent: sum(rows.slice(-5)), previous: sum(rows.slice(-10, -5)) };
+  }
+  if (path === '/api/settings') return { timezone: null };
   if (path === '/api/room') return { fans: [...demo.room].sort((a, b) => b.total_tips - a.total_tips || b.visit_days - a.visit_days) };
   return {};
 }
@@ -521,6 +532,39 @@ const when = t => new Date(t).toLocaleString([], { weekday: 'short', month: 'sho
 const dur = (a, b) => { const m = Math.round((new Date(b || Date.now()) - new Date(a)) / 60000); return `${Math.floor(m / 60)}h ${m % 60}m`; };
 
 // ---------- Streams tab ----------
+// ---------- growth: how each finished stream compares, from the sessions StreamWing already keeps ----------
+const growthDelta = (now, before) => {
+  if (now == null || before == null) return null;
+  const d = Math.round(now - before);
+  return d === 0 ? 'same as before' : (d > 0 ? '▲ ' : '▼ ') + n(Math.abs(d)) + ' from before';
+};
+async function renderGrowth() {
+  const list = $('list');
+  try {
+    const g = await api('/api/growth');
+    if (tab !== 'growth') return;
+    if (!g.streams.length) return list.replaceChildren(h('p', { class: 'empty' }, 'Your growth shows up here once you finish your first stream. Each stream adds a point to the chart.'));
+    const max = Math.max(1, ...g.streams.map(x => x.tokens));
+    const W = 340, H = 150, pad = 6, bw = (W - pad * 2) / g.streams.length;
+    const bars = g.streams.map((x, i) => {
+      const bh = Math.round((x.tokens / max) * (H - 26));
+      return `<rect x="${pad + i * bw + 2}" y="${H - 20 - bh}" width="${Math.max(2, bw - 4)}" height="${bh}" rx="2" fill="#e879f9"><title>${Number(x.tokens)} tokens</title></rect>`;
+    }).join('');
+    const chart = h('div', { class: 'streamcard' }, h('h3', {}, 'Tokens per stream'));
+    const svg = h('div', {}); svg.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Tokens per stream, oldest on the left">${bars}</svg>`;
+    chart.append(svg, h('p', { class: 'note' }, 'Each bar is one finished stream, oldest on the left.'));
+    const r = g.recent, p = g.previous;
+    const cell = (val, prevVal, label, suffix = '') => h('div', {}, h('b', {}, val == null ? '–' : n(val) + suffix), h('span', {}, label), p.n ? h('small', {}, growthDelta(val, prevVal)) : null);
+    const summary = h('div', { class: 'streamcard' },
+      h('h3', {}, p.n ? `Last ${r.n} streams, compared with the ${p.n} before` : `Your last ${r.n} streams`),
+      h('div', { class: 'grid' },
+        cell(r.tokens, p.tokens, 'tokens per stream'), cell(r.visitors, p.visitors, 'visitors per stream'),
+        cell(r.messages, p.messages, 'chat messages per stream'), cell(r.returning_share, p.returning_share, 'came back', '%')));
+    list.replaceChildren(summary, chart,
+      h('p', { class: 'note', style: 'text-align:center' }, 'Each stream is counted from the moment StreamWing connected. Earlier streams are not in this chart.'));
+  } catch (e) { list.replaceChildren(h('p', { class: 'empty' }, e.message)); }
+}
+
 async function renderStreams() {
   const list = $('list');
   try {
@@ -597,6 +641,14 @@ async function openProfile(username) {
     catch (e) { saved.textContent = e.message; }
     finally { save.disabled = false; }
   } }, 'Save note');
+  const bdIn = h('input', { type: 'date', 'aria-label': 'Birthday for ' + f.username, value: f.birthday ? String(f.birthday).slice(0, 10) : '' });
+  const bdSaved = h('span', { class: 'note', 'aria-live': 'polite' }, '');
+  const bdSave = h('button', { class: 'btn', type: 'button', onclick: async () => {
+    bdSave.disabled = true; bdSaved.textContent = 'Saving\u2026';
+    try { await api('/api/fans/' + encodeURIComponent(f.username) + '/birthday', { method: 'POST', body: JSON.stringify({ birthday: bdIn.value }) }); bdSaved.textContent = bdIn.value ? 'Saved. We\u2019ll remind you on the day.' : 'Removed'; }
+    catch (e) { bdSaved.textContent = e.message; }
+    finally { bdSave.disabled = false; }
+  } }, 'Save birthday');
   const msgs = (f.recent_messages || []);
   const tips = (f.tips || []);
   put(box,
@@ -610,6 +662,8 @@ async function openProfile(username) {
     h('p', { class: 'seen' }, `First seen ${when(f.first_seen)} · last here ${ago(f.last_seen)} ago`),
     h('p', { class: 'sec' }, 'Your note'),
     h('div', { class: 'notebox' }, ta, h('div', { class: 'btnrow' }, save, saved)),
+    h('p', { class: 'sec' }, 'Birthday'),
+    h('div', { class: 'notebox' }, bdIn, h('div', { class: 'btnrow' }, bdSave, bdSaved)),
     h('p', { class: 'sec' }, 'What they said lately'),
     msgs.length ? h('div', { class: 'plist' }, msgs.map(m => h('div', {}, `\u201C${m.m}\u201D`, h('span', { class: 't' }, ago(m.t))))) : h('p', { class: 'note' }, 'Nothing in chat yet.'),
     h('p', { class: 'sec' }, 'Tips'),
@@ -659,9 +713,27 @@ function renderList() {
   if (tab === 'room') return renderRoom();
   if (tab === 'fans') return renderFans();
   if (tab === 'streams') return renderStreams();
+  if (tab === 'growth') return renderGrowth();
   const els = feedItems.map(renderItem).filter(Boolean);
+  if (!DEMO && tab === 'callouts') briefCard().then(c => { if (c && tab === 'callouts' && !document.getElementById('brief')) list.prepend(c); }).catch(() => {});
   list.replaceChildren(...(els.length ? els : [h('p', { class: 'empty' }, "You're connected. When you go live, your callouts land here: regulars arriving, big tippers coming back, and viewers who have tokens but haven't tipped you yet.")]));
 }
+
+// ---------- daily brief: once a day, when she opens her panel ----------
+async function briefCard() {
+  const key = 'sw_brief_' + key_hash();
+  const today = new Date().toLocaleDateString('en-CA');
+  let seen = null; try { seen = localStorage.getItem(key); } catch (e) {}
+  if (seen === today) return null;
+  const b = await api('/api/brief');
+  const lines = [];
+  if (b.streak >= 2) lines.push(h('p', {}, h('b', {}, `Happy ${b.streak} day streak${me && me.displayName && me.displayName !== 'there' ? ', ' + me.displayName : ''}!`)));
+  for (const it of b.items) if (it.kind !== 'streak') lines.push(h('p', {}, it.text));
+  if (!lines.length) return null;
+  return h('div', { class: 'okcard brief', id: 'brief' }, h('b', {}, 'Today'), ...lines,
+    h('button', { class: 'btn', type: 'button', onclick: () => { try { localStorage.setItem(key, today); } catch (e) {} document.getElementById('brief')?.remove(); } }, 'Got it'));
+}
+function key_hash() { return (me && me.username || 'me').toLowerCase(); }
 
 let justConnected = false, okT = null;
 function okDraw() {
@@ -690,7 +762,7 @@ function panel() {
     h('div', { class: 'okcard', id: 'okcard', hidden: true, 'aria-live': 'polite' }),
     h('div', { class: 'stats', id: 'stats' }),
     h('div', { id: 'coachInline' }),
-    h('div', { class: 'tabs', role: 'tablist' }, tabBtn('callouts', 'Callouts'), tabBtn('room', 'Room'), tabBtn('fans', 'Fans'), tabBtn('streams', 'Streams')),
+    h('div', { class: 'tabs', role: 'tablist' }, tabBtn('callouts', 'Callouts'), tabBtn('growth', 'Growth'), tabBtn('room', 'Room'), tabBtn('fans', 'Fans'), tabBtn('streams', 'Streams')),
     h('div', { class: 'list', id: 'list', 'aria-live': 'polite' }),
     !(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) &&
       h('p', { class: 'tip' }, 'Tip: add this page to your home screen so StreamWing is one tap away when you go live.'));
@@ -876,6 +948,7 @@ async function load() {
   const { items } = await api('/api/feed?limit=80');
   feedItems = items;
   panel(); stream();
+  try { await api('/api/settings', { method: 'POST', body: JSON.stringify({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }) }); } catch (e) {}
   clearInterval(meTimer); meTimer = setInterval(refreshMe, 30000);
 }
 

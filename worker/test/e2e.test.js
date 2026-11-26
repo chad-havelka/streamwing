@@ -232,6 +232,34 @@ test('stream history: each recap compares with the stream before it', async () =
   assert.equal(sessions[1].tokens, 25);
 });
 
+test('daily brief: a birthday on the day, a streak from stream dates, and bad birthdays refused', async () => {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date());
+  await call('/api/settings', { method: 'POST', body: JSON.stringify({ timezone: 'America/Chicago' }) });
+  assert.equal((await call('/api/fans/dave_r/birthday', { method: 'POST', body: JSON.stringify({ birthday: 'not a date' }) })).status, 400);
+  assert.equal((await call('/api/fans/dave_r/birthday', { method: 'POST', body: JSON.stringify({ birthday: today }) })).status, 200);
+  const b = (await call('/api/brief')).body;
+  assert.equal(b.timezone, 'America/Chicago', JSON.stringify(b));
+  assert.equal(b.day, today);
+  assert.ok(b.items.some(i => i.kind === 'birthday' && i.username === 'dave_r'), 'dave_r has a birthday today');
+  assert.ok(b.streak >= 1, 'streaming today counts as a day');
+  assert.ok(!JSON.stringify(b).includes('"m"'), 'no chat text in the brief');
+  await call('/api/fans/dave_r/birthday', { method: 'POST', body: JSON.stringify({ birthday: '' }) });
+  assert.ok(!(await call('/api/brief')).body.items.some(i => i.kind === 'birthday'), 'clearing the birthday removes it');
+});
+
+test('growth: finished streams in order, with a chat count per stream and no chat text', async () => {
+  const g = (await call('/api/growth')).body;
+  assert.equal(g.streams.length, 2, 'two finished streams');
+  assert.equal(g.streams[0].tokens, 25, 'oldest first');
+  assert.equal(g.streams[1].tokens, 110);
+  assert.equal(typeof g.streams[1].messages, 'number', 'each stream carries a chat count');
+  assert.equal(g.recent.n, 2);
+  assert.equal(g.previous.n, 0, 'nothing before the last five to compare with');
+  assert.ok(!JSON.stringify(g).includes('"m"'), 'no chat text in the growth data');
+  assert.equal((await call('/api/settings', { method: 'POST', body: JSON.stringify({ timezone: 'America/Chicago' }) })).body.timezone, 'America/Chicago');
+  assert.equal((await call('/api/settings', { method: 'POST', body: JSON.stringify({ timezone: 'Not/AZone' }) })).status, 400, 'bad time zone is refused');
+});
+
 test('slipping away: tippers and regulars who missed her last 3 streams', async () => {
   const { ev, user } = sim;
   const owner = user('sim_room', { isOwner: true });

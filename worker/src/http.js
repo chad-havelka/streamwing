@@ -43,7 +43,7 @@ async function auth(req, url) {
 
 const FAN_FIELDS = `username, first_seen, last_seen, visits, visit_days, total_tips, tip_count, biggest_tip,
   first_tip_at, last_tip_at, color_group, recent_tips, has_tokens, is_follower, in_fanclub, is_mod,
-  language, last_message, last_message_at, messages_count, note, note_at, recent_messages, owner_note, owner_note_at`;
+  language, last_message, last_message_at, messages_count, note, note_at, recent_messages, owner_note, owner_note_at, birthday`;
 
 async function status(p) {
   const s = await q(`select * from sessions where performer_id=$1 order by started_at desc limit 1`, [p.id]);
@@ -147,6 +147,76 @@ export function startHttp() {
       }
 
       // Every stream, newest first, so the panel can compare each with the one before.
+      if (req.method === 'GET' && path === '/api/growth') {
+        const r = await q(
+          `select started_at, ended_at, tokens, tippers, unique_visitors, returning_visitors, light_blues_converted, messages, peak_in_room
+           from sessions where performer_id=$1 and ended_at is not null order by started_at desc limit 30`, [p.id]);
+        const streams = r.rows.reverse().map(x => ({
+          at: x.started_at, minutes: Math.round((new Date(x.ended_at) - new Date(x.started_at)) / 60000),
+          tokens: x.tokens, tippers: x.tippers, visitors: x.unique_visitors, returning: x.returning_visitors,
+          blues_converted: x.light_blues_converted, messages: x.messages, peak: x.peak_in_room }));
+        const avg = a => a.length ? Math.round(a.reduce((t, v) => t + v, 0) / a.length) : null;
+        const share = a => { const v = a.reduce((t, x) => t + x.visitors, 0); return v ? Math.round(100 * a.reduce((t, x) => t + x.returning, 0) / v) : null; };
+        const summarize = a => ({ n: a.length, tokens: avg(a.map(x => x.tokens)), visitors: avg(a.map(x => x.visitors)), messages: avg(a.map(x => x.messages)), returning_share: share(a) });
+        return send(res, 200, { streams, recent: summarize(streams.slice(-5)), previous: summarize(streams.slice(-10, -5)) });
+      }
+
+      if (req.method === 'GET' && path === '/api/brief') {
+        const pr = await q(`select timezone from performers where id=$1`, [p.id]);
+        const tz = pr.rows[0]?.timezone || 'UTC';
+        const today = (await q(`select to_char(now() at time zone $1, 'YYYY-MM-DD') d`, [tz])).rows[0].d;
+        const days = (await q(
+          `select distinct to_char(started_at at time zone $2, 'YYYY-MM-DD') d from sessions where performer_id=$1 order by d desc limit 90`,
+          [p.id, tz])).rows.map(x => x.d);
+        const back = d => new Date(Date.parse(d + 'T00:00:00Z') - 86400000).toISOString().slice(0, 10);
+        let cursor = days.includes(today) ? today : back(today);
+        let streak = 0;
+        while (days.includes(cursor)) { streak++; cursor = back(cursor); }
+        const yesterday = back(today);
+        const last = (await q(
+          `select started_at, messages, tokens, unique_visitors from sessions where performer_id=$1 and ended_at is not null order by started_at desc limit 6`,
+          [p.id])).rows;
+        const items = [];
+        if (streak >= 2) items.push({ kind: 'streak', text: `${streak} days in a row streaming. Keep it going.` });
+        const bdays = await q(
+          `select username from fans where performer_id=$1 and birthday is not null and to_char(birthday, 'MM-DD') = substr($2, 6, 5) order by username`,
+          [p.id, today]);
+        for (const b of bdays.rows) items.push({ kind: 'birthday', text: `${b.username} has a birthday today.`, username: b.username });
+        const lastStream = last[0];
+        const lastDay = lastStream && (await q(`select to_char($1::timestamptz at time zone $2, 'YYYY-MM-DD') d`, [lastStream.started_at, tz])).rows[0].d;
+        if (lastStream && lastDay === yesterday) {
+          const usual = last.slice(1, 6);
+          const avgMsgs = usual.length ? Math.round(usual.reduce((t, x) => t + x.messages, 0) / usual.length) : null;
+          if (avgMsgs != null && lastStream.messages > avgMsgs) {
+            items.push({ kind: 'chat', text: `Chat ran ${lastStream.messages} messages yesterday. Your usual is about ${avgMsgs}.` });
+          } else if (lastStream.messages) {
+            items.push({ kind: 'chat', text: `Chat ran ${lastStream.messages} messages yesterday.` });
+          }
+        }
+        return send(res, 200, { day: today, timezone: tz, streak, items });
+      }
+
+      const bdMatch = path.match(/^\/api\/fans\/([^/]+)\/birthday$/);
+      if (req.method === 'POST' && bdMatch) {
+        const { birthday } = await readJson(req);
+        let val = null;
+        if (birthday) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(birthday)) || Number.isNaN(Date.parse(birthday))) return send(res, 400, { error: 'use a date like 1990-11-26' });
+          val = String(birthday);
+        }
+        const r = await q(`update fans set birthday=$3 where performer_id=$1 and username=$2 returning birthday`,
+          [p.id, decodeURIComponent(bdMatch[1]), val]);
+        return r.rows[0] ? send(res, 200, { birthday: r.rows[0].birthday }) : send(res, 404, { error: 'not found' });
+      }
+
+      if (req.method === 'POST' && path === '/api/settings') {
+        const { timezone } = await readJson(req);
+        let tz = null;
+        if (timezone) { try { new Intl.DateTimeFormat('en-US', { timeZone: String(timezone) }); tz = String(timezone); } catch { return send(res, 400, { error: 'bad timezone' }); } }
+        await q(`update performers set timezone=$2 where id=$1`, [p.id, tz]);
+        return send(res, 200, { timezone: tz });
+      }
+
       if (req.method === 'GET' && path === '/api/sessions') {
         const r = await q(`select * from sessions where performer_id=$1 order by started_at desc limit 30`, [p.id]);
         return send(res, 200, { sessions: r.rows });

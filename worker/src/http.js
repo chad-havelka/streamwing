@@ -72,7 +72,7 @@ export function startHttp() {
     const path = url.pathname;
 
     try {
-      if (path === '/health') return send(res, 200, { ok: true });
+      if (path === '/health') return send(res, 200, { ok: true, ai: !!config.aiKey, keySource: config.keySource, monitor: !!config.healthcheckUrl });
 
       const p = await auth(req, url);
       if (!p) return send(res, 401, { error: 'This link is not valid. Ask StreamWing for a new one.' });

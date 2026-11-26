@@ -317,6 +317,8 @@ test('media, fan club, unfollows, leaving and repeat tips are all counted proper
   assert.equal(me.session.fanclub_joins, 1);
   assert.equal((await call('/api/fans/bob_b')).body.in_fanclub, true);
   assert.equal((await call('/api/fans/bob_b')).body.last_message.length, 500, 'very long chat lines are cut at 500 characters');
+  const rawChat = (await q(`select payload::text p from events where method='chatMessage' and username='bob_b'`)).rows.map(r => r.p).join(' ');
+  assert.ok(rawChat.includes('[not stored]') && !rawChat.includes('love this room'), 'chat events are logged without their words');
   assert.equal((await call('/api/fans/cy_c')).body.is_follower, false, 'followed, then unfollowed');
   assert.deepEqual((await call('/api/room')).body.fans.map(f => f.username).sort(), ['ann_a', 'bob_b'], 'cy left the room');
   const k = await kinds();
@@ -602,4 +604,34 @@ test('a restart link is only followed when it stays on the same feed', async () 
   assert.equal(restartFor('https://evil.example/events/quietquotient/tok123/', cur), null, 'other host');
   assert.equal(restartFor('https://events.testbed.cb.dev/events/someone_else/tok999/', cur), null, 'other feed');
   assert.equal(restartFor('not a url', cur), null);
+});
+
+test('the monitor pings when healthy, pings /fail with the reason when a connection has an error, and /health shows which keys are set', async () => {
+  const hits = [];
+  const mon = http.createServer(async (req, res) => { let b = ''; for await (const c of req) b += c; hits.push({ path: req.url, body: b }); res.end('OK'); }).listen(8796);
+  try {
+    const { runCheck } = await import('../src/monitor.js');
+    await q(`update performers set last_error=null, last_poll_at=now() where cb_username='sim_room'`);
+    await runCheck('http://127.0.0.1:8796/abc');
+    assert.equal(hits.at(-1).path, '/abc');
+    const before = (await q(`select cb_token_enc, approved from performers where cb_username='sim_room'`)).rows[0];
+    await q(`update performers set approved=true, cb_token_enc=coalesce(cb_token_enc,'x'), last_error='Chaturbate did not accept the token' where cb_username='sim_room'`);
+    await runCheck('http://127.0.0.1:8796/abc');
+    assert.equal(hits.at(-1).path, '/abc/fail');
+    assert.match(hits.at(-1).body, /sim_room: Chaturbate did not accept the token/);
+    assert.ok(!/fan|chat|tip/i.test(hits.at(-1).body.replace(/Chaturbate did not accept the token/, '')), 'only performer names and errors leave the server');
+    await q(`update performers set last_error=null, cb_token_enc=$1, approved=$2 where cb_username='sim_room'`, [before.cb_token_enc, before.approved]);
+    const h = await (await fetch(API + '/health')).json();
+    assert.deepEqual(h, { ok: true, ai: true, keySource: 'explicit', monitor: false });
+  } finally { mon.close(); }
+});
+
+test('old raw events expire after the retention period, but tips stay', async () => {
+  const pid = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
+  await q(`insert into events (performer_id, cb_event_id, method, username, payload, received_at) values ($1,'old-follow','follow','x','{}', now() - interval '40 days'), ($1,'old-tip','tip','x','{}', now() - interval '40 days'), ($1,'new-follow','follow','x','{}', now() - interval '5 days')`, [pid]);
+  const { purgeOldEvents } = await import('../src/purge.js');
+  assert.equal(await purgeOldEvents(0), 0, 'zero turns the purge off');
+  await purgeOldEvents(30);
+  const left = (await q(`select cb_event_id from events where cb_event_id in ('old-follow','old-tip','new-follow') order by 1`)).rows.map(r => r.cb_event_id);
+  assert.deepEqual(left, ['new-follow', 'old-tip']);
 });

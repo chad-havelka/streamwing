@@ -69,9 +69,12 @@ export async function processEvent(c, performer, ev) {
   const uname = ev.user?.username || null;
 
   // Private messages are hers. We keep that one happened, never what it said.
+  // Public chat text is not kept in the raw log either. The last five things each fan said live on the fan record.
   const payload = ev.method === 'privateMessage'
     ? { method: ev.method, id: ev.raw.id, object: { broadcaster: ev.broadcaster, user: ev.raw.object?.user, message: '[not stored]' } }
-    : ev.raw;
+    : ev.method === 'chatMessage'
+      ? { ...ev.raw, object: { ...ev.raw.object, message: { message: '[not stored]' } } }
+      : ev.raw;
   const ins = await c.query(
     `insert into events (performer_id, cb_event_id, method, username, payload)
      values ($1,$2,$3,$4,$5) on conflict (performer_id, cb_event_id) do nothing returning id`,

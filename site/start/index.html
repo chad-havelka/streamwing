@@ -372,10 +372,11 @@ function connectScreen(me) {
     h('h1', {}, 'Hi ' + me.displayName + '. One setup step.'),
     h('p', {}, 'StreamWing reads your room through Chaturbate’s Events API. It only reads. It never posts in your room or touches your account.'),
     h('ol', {},
-      h('li', {}, 'Open ', h('a', { href: 'https://chaturbate.com/statsapi/authtoken/', target: '_blank', rel: 'noopener' }, 'your Chaturbate token page'), ', logged in as ' + me.username + '.'),
-      h('li', {}, 'Name the token StreamWing and tick ', h('b', {}, 'Events API'), '.'),
+      h('li', {}, 'Open ', h('a', { href: 'https://chaturbate.com/statsapi/authtoken/', target: '_blank', rel: 'noopener' }, 'your Chaturbate token page'), ' in a new tab. Be logged in as ' + me.username + ', the account you stream from.'),
+      h('li', {}, 'Type StreamWing in the name box and tick ', h('b', {}, 'Events API (public)'), '. You don\u2019t need the Stats API box.'),
       h('li', {}, 'Click ', h('b', {}, 'Generate auth token'), '.'),
-      h('li', {}, 'Copy the whole link that appears on the page and paste it here.')),
+      h('li', {}, 'A long link appears on that page. Select all of it, copy it, and paste it below. Copy the link from the page itself, not the address at the top of your browser.')),
+    h('p', { class: 'note' }, 'That link is the key to your room\u2019s events. Paste it only here. To cut StreamWing off at any time, delete the token on the same Chaturbate page.'),
     ta, h('div', { style: 'margin-top:14px' }, btn), msg,
     h('p', { class: 'note', style: 'margin-top:14px' }, 'You can disconnect at any time, and deleting the token on Chaturbate cuts StreamWing off straight away.')));
 }
@@ -736,7 +737,7 @@ function onItem(item) {
   }
   feedItems.unshift(item);
   feedItems = feedItems.slice(0, 150);
-  coachAdd(item);
+  try { coachAdd(item); } catch (e) { /* the strip must never stop the feed */ }
   if (tab === 'callouts') {
     const el = renderItem(item);
     const list = $('list');

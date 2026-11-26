@@ -1,5 +1,16 @@
 // All settings come from environment variables. Nothing secret lives in the repo.
+import crypto from 'node:crypto';
 const env = process.env;
+
+// The key that encrypts each performer's Events API link at rest.
+// TOKEN_KEY (32 bytes, base64) if set. Otherwise derived from TOKEN_SECRET, which on Railway
+// is a reference to the database password Railway generates, so no one has to handle a raw secret.
+function tokenKey() {
+  if (env.TOKEN_KEY) return Buffer.from(env.TOKEN_KEY, 'base64');
+  if (env.TOKEN_SECRET) return crypto.createHash('sha256').update(`streamwing-token-key:${env.TOKEN_SECRET}`).digest();
+  throw new Error('Set TOKEN_KEY or TOKEN_SECRET');
+}
+const dbUrl = required('DATABASE_URL');
 
 function required(name) {
   const v = env[name];
@@ -8,9 +19,8 @@ function required(name) {
 }
 
 export const config = {
-  databaseUrl: required('DATABASE_URL'),
-  // 32 random bytes, base64. Encrypts each performer's Chaturbate Events API URL at rest.
-  tokenKey: Buffer.from(required('TOKEN_KEY'), 'base64'),
+  databaseUrl: dbUrl,
+  tokenKey: tokenKey(),
   port: Number(env.PORT || 8080),
   allowedOrigins: (env.ALLOWED_ORIGINS || 'https://streamwing.studio,https://www.streamwing.studio')
     .split(',').map(s => s.trim()).filter(Boolean),
@@ -22,7 +32,8 @@ export const config = {
   regularDays: Number(env.REGULAR_DAYS || 3),
   // Re-entering the room within this many minutes doesn't count as a new visit.
   revisitMinutes: Number(env.REVISIT_MINUTES || 30),
-  dbSsl: env.DB_SSL === 'false' ? false : { rejectUnauthorized: false },
+  // Railway's private network doesn't use SSL; anything else does unless told otherwise.
+  dbSsl: env.DB_SSL === 'false' || /\.railway\.internal[:/]/.test(dbUrl) ? false : { rejectUnauthorized: false },
 };
 
 if (config.tokenKey.length !== 32) throw new Error('TOKEN_KEY must be 32 bytes, base64-encoded');

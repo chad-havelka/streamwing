@@ -6,6 +6,12 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#160c26">
 <title>StreamWing</title>
+<link rel="manifest" href="/start/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/start/icon-180.png">
+<link rel="icon" href="/start/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="StreamWing">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -79,6 +85,8 @@ textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:12px 14px
 .sheet .in .btns{display:flex;flex-direction:column;gap:10px;margin-top:16px}
 .banner{margin-top:12px;padding:12px 14px;border-radius:14px;background:#3b1830;color:var(--err);font-size:15px}
 .banner[hidden]{display:none}
+.linkbtn{background:none;border:0;padding:0;color:var(--pinkl);text-decoration:underline;font:inherit;cursor:pointer}
+.tip{margin-top:12px;font-size:14px;color:var(--mute);text-align:center}
 </style>
 </head>
 <body>
@@ -115,8 +123,11 @@ let key = '';
 if (DEMO) key = 'demo';
 else try {
   const m = location.hash.match(/k=([\w-]{20,})/);
-  if (m) { localStorage.setItem('sw_k', m[1]); history.replaceState(null, '', location.pathname); }
-  key = localStorage.getItem('sw_k') || '';
+  // The key stays in the address so "Open in Safari" and a home-screen icon keep working.
+  // It's after the #, so it's never sent to any server.
+  if (m) localStorage.setItem('sw_k', m[1]);
+  key = (m && m[1]) || localStorage.getItem('sw_k') || '';
+  if (key && !m) history.replaceState(null, '', location.pathname + '#k=' + key);
 } catch (e) {}
 
 // Safe DOM building. Usernames and chat come from strangers, so nothing is ever set as HTML.
@@ -368,14 +379,17 @@ function panel() {
   const tabBtn = (id, label) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(tab === id), onclick: () => { tab = id; panel(); } }, label);
   app.replaceChildren(
     DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo with sample fans. Not a real room.'),
-    h('div', { class: 'banner', id: 'banner', hidden: !me.lastError }, me.lastError || ''),
+    h('div', { class: 'banner', id: 'banner', hidden: !me.lastError }, h('span', { id: 'bannerText' }, me.lastError || ''), ' ', h('button', { class: 'linkbtn', type: 'button', onclick: () => connectScreen(me) }, 'Reconnect Chaturbate')),
     h('div', { class: 'stats', id: 'stats' }),
     h('div', { class: 'tabs', role: 'tablist' }, tabBtn('callouts', 'Callouts'), tabBtn('room', 'In the room')),
-    h('div', { class: 'list', id: 'list', 'aria-live': 'polite' }));
+    h('div', { class: 'list', id: 'list', 'aria-live': 'polite' }),
+    !(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) &&
+      h('p', { class: 'tip' }, 'Tip: add this page to your home screen so StreamWing is one tap away when you go live.'));
   renderStats(); renderList(); updateStatus();
 }
 
 function updateStatus() {
+  keepAwake();
   if (!me) return;
   if (me.lastError) return setStatus('Needs attention');
   if (me.live) return setStatus('Live', 'live');
@@ -383,7 +397,7 @@ function updateStatus() {
 }
 
 let refreshT = null;
-const refreshMe = () => { clearTimeout(refreshT); refreshT = setTimeout(async () => { try { me = await api('/api/me'); renderStats(); updateStatus(); const b = $('banner'); if (b) { b.hidden = !me.lastError; b.textContent = me.lastError || ''; } } catch (e) {} }, 1200); };
+const refreshMe = () => { clearTimeout(refreshT); refreshT = setTimeout(async () => { try { me = await api('/api/me'); renderStats(); updateStatus(); const b = $('banner'); if (b) { b.hidden = !me.lastError; $('bannerText').textContent = me.lastError || ''; } keepAwake(); } catch (e) {} }, 1200); };
 
 function onItem(item) {
   if (item.kind === 'heartbeat') return;
@@ -411,13 +425,36 @@ function onItem(item) {
   refreshMe();
 }
 
+let dropped = false, wake = null;
+// Anything that happened while the phone slept or the connection was down: fetch it and redraw.
+async function catchUp() {
+  if (DEMO || !me) return;
+  try {
+    const { items } = await api('/api/feed?limit=80');
+    feedItems = items;
+    me = await api('/api/me');
+    renderStats(); updateStatus(); renderList();
+  } catch (e) {}
+}
+// While she's live and the panel is on screen, ask the phone not to dim and lock.
+async function keepAwake() {
+  try {
+    const want = me && me.live && document.visibilityState === 'visible';
+    if (want && !wake && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); }
+    if (!want && wake) { await wake.release(); wake = null; }
+  } catch (e) { wake = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { catchUp(); keepAwake(); }
+});
+
 function stream() {
   if (DEMO) return demoStream();
   if (es) es.close();
   es = new EventSource(API + '/api/stream?k=' + encodeURIComponent(key));
   es.onmessage = ev => { try { onItem(JSON.parse(ev.data)); } catch (e) {} };
-  es.onerror = () => setStatus('Reconnecting…');
-  es.onopen = () => updateStatus();
+  es.onerror = () => { dropped = true; setStatus('Reconnecting…'); };
+  es.onopen = () => { updateStatus(); if (dropped) { dropped = false; catchUp(); } };
 }
 
 async function load() {

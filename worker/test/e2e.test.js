@@ -201,3 +201,11 @@ test("Chaturbate's own tip example (docs/methods/tip.html) is understood exactly
   assert.equal(e.tip.tokens, 25);
   assert.equal(e.tip.isAnon, false);
 });
+
+test('a network block is not mistaken for a bad token', async () => {
+  const { CbError } = await import('../src/cb.js');
+  const blocked = new CbError(403, '<!DOCTYPE html><title>Just a moment...</title> cloudflare');
+  assert.equal(blocked.auth, false);
+  assert.equal(blocked.retryable, true);
+  assert.equal(new CbError(401, '{"status":"Unauthorized"}').auth, true);
+});

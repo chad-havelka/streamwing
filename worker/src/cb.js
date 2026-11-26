@@ -53,8 +53,11 @@ export class CbError extends Error {
     super(`Chaturbate answered ${status}`);
     this.status = status;
     this.body = body;
-    this.auth = status === 401 || status === 403;
-    this.retryable = status === 429 || status >= 500;
+    // A 403 that comes back as a web page is Chaturbate's network blocking us, not a bad token.
+    const blocked = status === 403 && /<html|cloudflare/i.test(body || '');
+    this.blocked = blocked;
+    this.auth = status === 401 || (status === 403 && !blocked);
+    this.retryable = status === 429 || status >= 500 || this.blocked;
   }
 }
 

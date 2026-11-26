@@ -191,7 +191,7 @@ const demo = {
 };
 const daysAgo = d => new Date(Date.now() - d * 86400000).toISOString();
 const DEMO_FANS = {
-  velvet_rob: { username: 'velvet_rob', note: 'Your biggest fan. Mentioned his daughter starts college this week.', total_tips: 1240, tip_count: 22, biggest_tip: 200, visit_days: 14, last_tip_at: daysAgo(3), in_fanclub: true, is_follower: true, has_tokens: true, last_message: 'made it just in time' },
+  velvet_rob: { username: 'velvet_rob', note: 'Your biggest fan. Mentioned his daughter starts college this week.', total_tips: 1240, tip_count: 22, biggest_tip: 200, visit_days: 14, last_tip_at: daysAgo(3), last_seen: new Date().toISOString(), in_fanclub: true, is_follower: true, has_tokens: true, last_message: 'made it just in time' },
   curious_k:  { username: 'curious_k', total_tips: 0, visit_days: 1, has_tokens: false },
   mike_t:     { username: 'mike_t', note: 'Loves your laugh. Has tokens but always holds back; a hello by name helps.', total_tips: 0, visit_days: 3, is_follower: true, has_tokens: true, last_message: 'your laugh is the best part of my night' },
   sam_vee:    { username: 'sam_vee', total_tips: 0, visit_days: 6, is_follower: true, has_tokens: false, last_message: 'hi again' },
@@ -311,7 +311,9 @@ async function api(path, opts = {}) {
 }
 
 const ago = t => {
-  const s = Math.max(0, (Date.now() - new Date(t)) / 1000);
+  const ms = new Date(t).getTime();
+  if (!t || !Number.isFinite(ms)) return '';   // no date on record: show nothing rather than "NaNd"
+  const s = Math.max(0, (Date.now() - ms) / 1000);
   if (s < 60) return 'now';
   if (s < 3600) return Math.floor(s / 60) + 'm';
   if (s < 86400) return Math.floor(s / 3600) + 'h';
@@ -450,7 +452,7 @@ let fanQuery = '', fanTimer = null;
 function fanRow(f, slip) {
   const sub = slip
     ? `missed your last ${f.missed_streams} streams · ${f.visit_days} ${f.visit_days === 1 ? 'day' : 'days'} here`
-    : `${f.visit_days > 1 ? nth(f.visit_days) + ' day' : 'first day'} · last here ${ago(f.last_seen)}${f.owner_note ? ' · has a note' : ''}`;
+    : `${f.visit_days > 1 ? nth(f.visit_days) + ' day' : 'first day'} · ${ago(f.last_seen) ? 'last here ' + ago(f.last_seen) : 'seen recently'}${f.owner_note ? ' · has a note' : ''}`;
   return h('div', { class: 'fanrow' + (slip ? ' slip' : ''), 'data-user': f.username },
     h('div', { class: 'who' }, h('b', {}, f.username), h('span', {}, sub)),
     h('div', { class: 'amt' }, Number(f.total_tips) ? n(f.total_tips) : '\u2013', h('span', {}, 'tipped')));

@@ -57,6 +57,10 @@ after(async () => { aiServer.close(); clearInterval(timer); server.close(); sim.
 test('bad link and bad key are refused', async () => {
   const r = await fetch(API + '/api/me', { headers: { authorization: 'Bearer nope-nope-nope-nope-nope' } });
   assert.equal(r.status, 401);
+  await q(`update performers set approved=false`);
+  assert.equal((await call('/api/me')).status, 401, 'an unapproved account is locked out');
+  await q(`update performers set approved=true`);
+  assert.equal((await call('/api/me')).status, 200);
   const wrongUser = await call('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: sim.eventsUrl.replace('sim_room', 'someone_else') }) });
   assert.equal(wrongUser.status, 400);
   assert.match(wrongUser.body.error, /not sim_room/);
@@ -157,6 +161,7 @@ test('stream 2, next day: she sees who is back and who they are', async () => {
   assert.equal(me.session.tokens, 110);
   assert.equal(me.session.light_blues_converted, 1);
   assert.equal(me.session.returning_visitors, 3);
+  assert.equal(me.session.light_blues_seen, 2, 'dave and kat are light blue; luna already tipped, so she is not');
 
   const room = (await call('/api/room')).body.fans.map(f => f.username);
   assert.equal(room[0], 'luna_92', 'biggest tipper first');
@@ -172,6 +177,11 @@ test('worker restart resumes from the saved cursor without double counting', asy
   const before = (await q(`select count(*)::int n from events`)).rows[0].n;
   const { stopLoop, startLoop } = await import('../src/poller.js');
   const pid = (await q(`select id from performers`)).rows[0].id;
+  const { decrypt } = await import('../src/crypto.js');
+  const { config } = await import('../src/config.js');
+  const savedCursor = (await q(`select next_url_enc from performers`)).rows[0].next_url_enc;
+  assert.ok(savedCursor, 'the cursor is saved while she streams');
+  assert.match(decrypt(savedCursor, config.tokenKey), /[?&]i=[1-9]\d*/, 'and it has moved past the start');
   stopLoop(pid); await wait(1500);
   await q(`update performers set next_url_enc = null`); // worst case: cursor lost, replay from start
   startLoop(pid); await settle();
@@ -212,6 +222,10 @@ test('stream history: each recap compares with the stream before it', async () =
   assert.equal(recap.data.tokens, 110);
   assert.equal(recap.data.previous.tokens, 25);
   assert.equal(recap.data.previous.uniqueVisitors, 3);
+  await wait(1500);
+  const daveAsked = aiCalls.find(c => JSON.parse(c.body.messages[0].content).fan === 'dave_r');
+  assert.ok(daveAsked, 'dave tipped in stream 2, so Claude was asked about him');
+  assert.equal((await call('/api/fans/dave_r')).body.note, null, 'when Claude says SKIP, no note is saved');
   const sessions = (await call('/api/sessions')).body.sessions;
   assert.equal(sessions.length, 2);
   assert.equal(sessions[0].tokens, 110);
@@ -226,6 +240,7 @@ test('slipping away: tippers and regulars who missed her last 3 streams', async 
     await wait(50);
     sim.push([ev('broadcastStart', { user: owner }), ev('userEnter', { user: user('kat_x', { hasTokens: true }) }), ev('broadcastStop', { user: owner })]);
     await settle();
+    if (i < 2) assert.deepEqual((await call('/api/slipping')).body.fans, [], `only ${i + 1} stream missed so far, not slipping yet`);
   }
   const slipping = (await call('/api/slipping')).body.fans;
   assert.deepEqual(slipping.map(f => f.username), ['luna_92', 'dave_r'], 'tippers who stopped coming, biggest first');
@@ -233,12 +248,199 @@ test('slipping away: tippers and regulars who missed her last 3 streams', async 
   assert.ok(!slipping.some(f => f.username === 'kat_x'), 'someone still coming is not slipping');
 });
 
-test('disconnect with delete wipes her data', async () => {
+test('her own activity is ignored even when Chaturbate sends no owner flag', async () => {
+  const { ev, user } = sim;
+  const owner = user('sim_room');          // no isOwner: Chaturbate's documented fields do not include one
+  const shout = user('SIM_ROOM');          // letter case must not matter
+  sim.push([
+    ev('broadcastStart', { user: owner }),
+    ev('userEnter', { user: owner }),
+    ev('chatMessage', { user: shout, message: { message: 'welcome everyone' } }),
+    ev('tip', { user: owner, tip: { tokens: 500, isAnon: false, message: '' } }),
+  ]);
+  await settle();
+  assert.equal((await call('/api/fans/sim_room')).status, 404, 'she never becomes one of her own fans');
+  assert.ok(!(await call('/api/fans')).body.fans.some(f => f.username.toLowerCase() === 'sim_room'));
+  assert.equal((await call('/api/me')).body.session.tokens, 0, 'her own tip is not income');
+});
+
+test('a first tip from someone who was not light blue is not a conversion', async () => {
+  const { ev, user } = sim;
+  const gary = user('gary_gray');
+  sim.push([ev('userEnter', { user: gary }), ev('tip', { user: gary, tip: { tokens: 50, isAnon: false, message: '' } })]);
+  await settle();
+  const item = (await call('/api/feed?limit=5')).body.items.find(i => i.kind === 'first_tip' && i.username === 'gary_gray');
+  assert.ok(item, 'it is still a first tip');
+  assert.equal(item.data.converted, false);
+  const me = (await call('/api/me')).body;
+  assert.equal(me.session.tokens, 50);
+  assert.equal(me.session.light_blues_converted, 0);
+});
+
+test('coming back later the same day is another visit but not another day', async () => {
+  const { ev, user } = sim;
+  const before = (await call('/api/fans/kat_x')).body;
+  await q(`update fans set last_seen = now() - interval '2 hours' where username = 'kat_x'`);
+  sim.push([ev('userEnter', { user: user('kat_x', { hasTokens: true }) }), ev('broadcastStop', { user: user('sim_room') })]);
+  await settle();
+  const after = (await call('/api/fans/kat_x')).body;
+  assert.equal(after.visits, before.visits + 1);
+  assert.equal(after.visit_days, before.visit_days);
+  const recap = (await call('/api/feed?limit=1')).body.items[0];
+  assert.equal(recap.kind, 'recap');
+  assert.equal(recap.data.tokens, 50);
+  assert.equal(recap.data.lightBluesConverted, 0);
+});
+
+test('media, fan club, unfollows, leaving and repeat tips are all counted properly', async () => {
+  const { ev, user } = sim;
+  const owner = user('sim_room');
+  const ann = user('ann_a', { hasTokens: true }), bob = user('bob_b');
+  // Chaturbate's documented user fields have no follower flag, so cy's events carry none either.
+  const { isFollower: _omit, ...cy } = user('cy_c');
+  sim.push([
+    ev('broadcastStart', { user: owner }),
+    ev('userEnter', { user: ann }), ev('userEnter', { user: bob }), ev('userEnter', { user: cy }),
+    ev('chatMessage', { user: bob, message: { message: 'love this room' } }),
+    ev('chatMessage', { user: bob, message: { message: 'x'.repeat(600) } }),
+    ev('mediaPurchase', { user: ann, media: { name: 'beach set', tokens: 30, type: 'photos' } }),
+    ev('fanclubJoin', { user: bob }),
+    ev('follow', { user: cy }), ev('unfollow', { user: cy }),
+    ev('userLeave', { user: cy }),
+    ev('tip', { user: ann, tip: { tokens: 10, isAnon: false, message: '' } }),
+    ev('tip', { user: ann, tip: { tokens: 10, isAnon: false, message: '' } }),
+  ]);
+  await settle();
+  const me = (await call('/api/me')).body;
+  assert.equal(me.session.tokens, 50, '30 for the media plus two 10 tips');
+  assert.equal(me.session.tippers, 1, 'two tips from one fan is one tipper');
+  assert.equal(me.session.fanclub_joins, 1);
+  assert.equal((await call('/api/fans/bob_b')).body.in_fanclub, true);
+  assert.equal((await call('/api/fans/bob_b')).body.last_message.length, 500, 'very long chat lines are cut at 500 characters');
+  assert.equal((await call('/api/fans/cy_c')).body.is_follower, false, 'followed, then unfollowed');
+  assert.deepEqual((await call('/api/room')).body.fans.map(f => f.username).sort(), ['ann_a', 'bob_b'], 'cy left the room');
+  const k = await kinds();
+  for (const want of ['media:ann_a', 'fanclub:bob_b', 'first_tip:ann_a', 'tip:ann_a']) assert.ok(k.includes(want), want);
+  sim.push([ev('broadcastStop', { user: owner })]);
+  await settle();
+  const recap = (await call('/api/feed?limit=1')).body.items[0].data;
+  assert.equal(recap.peakInRoom, 3);
+  assert.equal(recap.fanclubJoins, 1);
+  assert.deepEqual(recap.topTippers.map(t => [t.username, Number(t.tipped)]), [['ann_a', 20]]);
+});
+
+test('Claude notes switch off with no key, and respect the per-stream cap', async () => {
+  await wait(1500); // let the notes for the stream that just ended finish
+  const { config } = await import('../src/config.js');
+  const { writeNotesForSession } = await import('../src/ai.js');
+  const pid = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
+  const sid = (await q(`select s.id from sessions s join session_fans sf on sf.session_id = s.id where sf.username = 'ann_a' and s.performer_id = $1`, [pid])).rows[0].id;
+  const base = aiCalls.length;
+  config.aiKey = '';
+  try { assert.deepEqual(await writeNotesForSession(pid, sid), { skipped: 'no key' }); } finally { config.aiKey = 'test-key'; }
+  assert.equal(aiCalls.length, base, 'no key, no calls to Claude');
+  config.aiNotesPerStream = 1;
+  try { await writeNotesForSession(pid, sid); } finally { config.aiNotesPerStream = 40; }
+  assert.equal(aiCalls.length, base + 1, 'capped at one fan');
+  await writeNotesForSession(pid, sid);
+  assert.equal(aiCalls.length, base + 3, 'ann tipped and bob chatted, so both are asked about');
+});
+
+test('callout rules: every kind, at its boundary', async () => {
+  const { enterCallout, isLightBlue } = await import('../src/brain.js');
+  const fan = o => ({ total_tips: 0, visit_days: 1, has_tokens: false, ...o });
+  assert.equal(enterCallout(null, fan({}), true), 'new_viewer');
+  assert.equal(enterCallout(null, fan({ has_tokens: true }), true), 'new_with_tokens');
+  assert.equal(enterCallout({}, fan({ total_tips: 1 }), false), 'tipper_back');
+  assert.equal(enterCallout({}, fan({ total_tips: 99 }), false), 'tipper_back');
+  assert.equal(enterCallout({}, fan({ total_tips: 100 }), false), 'big_tipper_back');
+  assert.equal(enterCallout({}, fan({ visit_days: 2 }), false), 'returning');
+  assert.equal(enterCallout({}, fan({ visit_days: 3 }), false), 'regular_back');
+  assert.equal(enterCallout({}, fan({ has_tokens: true }), false), 'light_blue_back');
+  assert.equal(enterCallout({}, fan({ has_tokens: true, visit_days: 3 }), false), 'regular_back', 'a regular beats light blue');
+  assert.equal(isLightBlue(fan({ has_tokens: true })), true);
+  assert.equal(isLightBlue(fan({ has_tokens: true, total_tips: 5 })), false, 'tipping makes them not light blue');
+  assert.equal(isLightBlue(fan({ has_tokens: false })), false);
+  assert.equal(isLightBlue(fan({ has_tokens: null })), false, 'unknown is not light blue');
+});
+
+test('the panel on streamwing.studio may call the API; other sites may not', async () => {
+  const ok = await fetch(API + '/api/me', { headers: { origin: 'https://streamwing.studio', authorization: `Bearer ${key}` } });
+  assert.equal(ok.headers.get('access-control-allow-origin'), 'https://streamwing.studio');
+  const pre = await fetch(API + '/api/connect', { method: 'OPTIONS', headers: { origin: 'https://streamwing.studio', 'access-control-request-method': 'POST', 'access-control-request-headers': 'authorization, content-type' } });
+  assert.equal(pre.status, 204);
+  assert.match(pre.headers.get('access-control-allow-headers'), /authorization/);
+  const bad = await fetch(API + '/api/me', { headers: { origin: 'https://evil.example', authorization: `Bearer ${key}` } });
+  assert.equal(bad.headers.get('access-control-allow-origin'), null);
+});
+
+test('live updates reach an open panel, and only the right performer\'s', async () => {
+  const ctl = new AbortController();
+  const res = await fetch(`${API}/api/stream?k=${key}`, { signal: ctl.signal });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type'), /text\/event-stream/);
+  const { ev, user } = sim;
+  sim.push([ev('broadcastStart', { user: user('sim_room') }), ev('userEnter', { user: user('sse_sam') })]);
+  let got = '';
+  const reader = res.body.getReader();
+  const until = Date.now() + 6000;
+  while (Date.now() < until && !/sse_sam/.test(got)) {
+    const r = await Promise.race([reader.read(), wait(1500).then(() => ({ timeout: true }))]);
+    if (r.done) break;
+    if (r.value) got += Buffer.from(r.value).toString();
+  }
+  ctl.abort();
+  assert.match(got, /"kind":"new_viewer"/);
+  assert.match(got, /sse_sam/);
+  const none = await fetch(`${API}/api/stream?k=wrong-wrong-wrong-wrong-wrong`);
+  assert.equal(none.status, 401);
+  sim.push([ev('broadcastStop', { user: user('sim_room') })]);
+  await settle();
+});
+
+let otherId, otherKey;
+test("one performer never sees another's fans, feed or streams", async () => {
+  const { newAccessKey, hashKey } = await import('../src/crypto.js');
+  otherKey = newAccessKey();
+  otherId = (await q(`insert into performers (cb_username, display_name, access_key_hash) values ('other_room','Other',$1) returning id`, [hashKey(otherKey)])).rows[0].id;
+  await q(`insert into fans (performer_id, username, visits, visit_days, total_tips, tip_count, has_tokens, last_seen) values ($1,'other_whale',9,9,900,3,true, now() - interval '30 days')`, [otherId]);
+  for (let i = 0; i < 4; i++) await q(`insert into sessions (performer_id, started_at, ended_at) values ($1, now() - interval '${20 - i} days', now() - interval '${20 - i} days' + interval '1 hour')`, [otherId]);
+  await q(`insert into feed (performer_id, kind, username) values ($1,'tip','other_whale')`, [otherId]);
+  const mine = await Promise.all(['/api/fans', '/api/fans?q=other', '/api/slipping', '/api/room', '/api/feed?limit=100', '/api/sessions', '/api/me'].map(p => call(p).then(r => JSON.stringify(r.body))));
+  for (const body of mine) assert.ok(!/other_whale|other_room/.test(body), 'her views never contain the other performer');
+  assert.equal((await call('/api/fans/other_whale')).status, 404);
+  assert.equal((await call('/api/fans/other_whale/note', { method: 'POST', body: JSON.stringify({ note: 'x' }) })).status, 404);
+  // And the other performer's own key does see theirs: the views are scoped, not just empty.
+  const theirs = await fetch(API + '/api/slipping', { headers: { authorization: `Bearer ${otherKey}` } }).then(r => r.json());
+  assert.deepEqual(theirs.fans.map(f => f.username), ['other_whale']);
+  const theirSessions = await fetch(API + '/api/sessions', { headers: { authorization: `Bearer ${otherKey}` } }).then(r => r.json());
+  assert.equal(theirSessions.sessions.length, 4);
+});
+
+test("live updates are not shared across performers", async () => {
+  const { ev, user } = sim;
+  const ctl = new AbortController();
+  const res = await fetch(`${API}/api/stream?k=${otherKey}`, { signal: ctl.signal });
+  assert.equal(res.status, 200);
+  const reader = res.body.getReader();
+  let got = '';
+  const pump = (async () => { try { for (;;) { const r = await reader.read(); if (r.done) break; got += Buffer.from(r.value).toString(); } } catch { /* aborted */ } })();
+  sim.push([ev('broadcastStart', { user: user('sim_room') }), ev('userEnter', { user: user('leak_larry') }), ev('broadcastStop', { user: user('sim_room') })]);
+  await settle();
+  ctl.abort(); await pump;
+  assert.match(got, /retry:/, 'the connection itself works');
+  assert.doesNotMatch(got, /leak_larry/, "another performer's panel never receives her events");
+});
+
+test('disconnect with delete wipes her data and only hers', async () => {
   const r = await call('/api/disconnect', { method: 'POST', body: JSON.stringify({ deleteData: true }) });
   assert.equal(r.status, 200);
-  for (const t of ['fans', 'events', 'feed', 'sessions']) assert.equal((await q(`select count(*)::int n from ${t}`)).rows[0].n, 0, t);
-  const p = (await q(`select cb_token_enc from performers`)).rows[0];
+  const hers = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
+  for (const t of ['fans', 'events', 'feed', 'sessions']) assert.equal((await q(`select count(*)::int n from ${t} where performer_id=$1`, [hers])).rows[0].n, 0, t);
+  const p = (await q(`select cb_token_enc from performers where id=$1`, [hers])).rows[0];
   assert.equal(p.cb_token_enc, null);
+  assert.equal((await q(`select count(*)::int n from fans where performer_id=$1`, [otherId])).rows[0].n, 1, "the other performer's fans are untouched");
+  assert.equal((await q(`select count(*)::int n from sessions where performer_id=$1`, [otherId])).rows[0].n, 4, "and their streams");
 });
 
 test('a bare token is turned into her Events API link', async () => {

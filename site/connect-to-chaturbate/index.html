@@ -27,6 +27,13 @@ button{font:inherit}
 header{position:sticky;top:0;z-index:5;background:rgba(22,12,38,.94);backdrop-filter:blur(8px);border-bottom:1px solid #33224f}
 header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:12px}
 .brand{font-weight:700;font-size:19px}
+header .hleft{display:flex;align-items:center;gap:14px}
+header .hright{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+header .brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:700;font-size:22px}
+nav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:15px}
+nav[hidden]{display:none}
+nav a.plain{color:var(--soft);text-decoration:none}
+header .btn{min-height:44px;padding:10px 20px;font-size:15px}
 .status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute)}
 .dot{width:10px;height:10px;border-radius:50%;background:#6b5a8a;flex:none}
 .dot.live{background:#f43f5e;box-shadow:0 0 0 4px rgba(244,63,94,.25)}
@@ -105,7 +112,18 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1
 .recap p{margin:12px 0 0;color:var(--soft)}
 .empty{color:var(--mute);text-align:center;padding:36px 10px}
 .box{background:var(--panel);border-radius:22px;padding:22px;margin-top:22px}
-h1{font-size:clamp(26px,6vw,34px);line-height:1.15;margin:0 0 10px}
+.wrap.connect-page{max-width:1040px}
+.connect-page .box{max-width:820px;margin-left:auto;margin-right:auto}
+h1{font-size:clamp(32px,5vw,50px);line-height:1.1;font-weight:700;margin:0 0 16px;text-wrap:balance}
+h2{font-size:clamp(26px,3.6vw,38px);line-height:1.15;font-weight:700;margin:0 0 12px;text-wrap:balance}
+.kicker{margin:0 0 14px;color:var(--pinkl);font-weight:600;font-size:15px}
+.sect{padding:48px 0;border-top:1px solid #2f1d50}
+.feat,.grid2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
+.grid2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--panel);border-radius:18px;padding:20px;border-left:0}
+.card h3{font-size:19px;margin:0 0 8px}
+.card p{font-size:15px;line-height:1.5;margin:0}
+@media (max-width:820px){.feat,.grid2{grid-template-columns:1fr}}
 .box p{color:var(--soft);margin:0 0 14px}
 ol{padding-left:22px;color:var(--soft);margin:0 0 16px}
 ol li{margin-bottom:8px}
@@ -185,9 +203,8 @@ details.stuck p{margin:8px 0 0;font-size:15px}
 </head>
 <body>
 <header><div class="wrap">
-  <span class="brand">StreamWing</span>
-  <span class="status"><span class="dot" id="dot"></span><span id="statusText">Loading</span></span>
-  <button class="menu" id="menuBtn" type="button" aria-label="Settings" hidden>⋯</button>
+  <div class="hleft"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg></a><span class="status"><span class="dot" id="dot"></span><span id="statusText">Loading</span></span></div>
+  <div class="hright"><nav id="pubNav" hidden><a class="plain" href="/how-it-works/">How it works</a><a class="plain" href="/pricing/">Pricing</a><a class="plain" href="/connect-to-chaturbate/">Connect</a><a class="plain" href="/privacy/">Privacy</a><a class="btn ghost" href="/#join">Get early access</a></nav><button class="menu" id="menuBtn" type="button" aria-label="Settings" hidden>⋯</button></div>
 </div></header>
 
 <main class="wrap" id="app"></main>
@@ -401,6 +418,8 @@ function noKey(msg) {
 }
 
 function connectScreen(me, pub) {
+  const pubNav = document.getElementById('pubNav'); if (pubNav) pubNav.hidden = false;
+  document.querySelectorAll('header .wrap, main.wrap').forEach(el => el.classList.add('connect-page'));
   setStatus('Not connected');
   const ta = h('textarea', { id: 'eventsUrl', placeholder: 'Paste the link from Chaturbate here', 'aria-label': 'The link from Chaturbate', autocomplete: 'off', spellcheck: 'false' });
   const msg = h('p', { class: 'msg', 'aria-live': 'polite' });
@@ -440,15 +459,19 @@ function connectScreen(me, pub) {
         h('div', {}, h('b', {}, 'events'), ' \u00b7 Events API'), h('div', { class: 'cbu' }, 'https://eventsapi.chaturbate.com/events/\u2026')),
       h('div', { class: 'cbtok', style: 'border-top:1px solid #ddd;padding-top:10px;margin-top:10px' },
         h('div', {}, h('b', {}, 'StreamWing'), ' \u00b7 ', h('span', { class: 'cbring' }, 'Events API (public)')),
-        h('div', { class: 'cbu cburl ring' }, 'https://eventsapi.chaturbate.com/events/' + me.username + '/\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022/'),
-        h('div', { style: 'margin-top:8px' }, h('span', { class: 'cbpill' }, 'right-click this link')))),
-    h('p', { class: 'cbcap' }, 'Your new token is the last row, named StreamWing. Check the Scope says Events API (public). Then right-click the link and choose Copy link address. Do not click the link. It opens a page of raw code. Older rows above it are from tokens you made before.'));
+        h('div', { class: 'cbu cburl ring' }, 'https://eventsapi.chaturbate.com/events/' + me.username + '/\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022/'))),
+    h('p', { class: 'cbcap' }, 'Find the row named StreamWing. Under Scope it should say Events API (public). Right-click the link and choose Copy link address. Do not click the link. It opens a page of raw code. Older rows above it are from tokens you made before.'));
   const pasteKids = pub
     ? [h('p', { style: 'margin-top:12px' }, 'You will paste your link here once you have your private StreamWing link.')]
     : [h('div', { style: 'margin-top:12px' }, ta), h('div', { style: 'margin-top:12px' }, btn), msg];
-  put(app, DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo. Paste anything to see what happens next.'), h('div', { class: 'box' },
+  put(app, DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo. Paste anything to see what happens next.'), h('div', {},
     h('h1', {}, pub ? 'Connect your Chaturbate room.' : 'Hi ' + me.displayName + '. One setup step.'),
-    h('p', {}, 'StreamWing reads what happens in your room. It never posts, messages or tips for you, and it never touches your account.'),
+    h('p', {}, 'StreamWing reads your Chaturbate room and tells you who is in it: regulars who came back, big tippers, and people with tokens who haven’t tipped you yet. It only reads. It never posts in your room, messages or tips for you, and it never touches your account.'),
+    h('div', { style: 'margin:18px 0' },
+      h('h2', { style: 'font-size:22px;margin:0 0 10px' }, 'Connect once. StreamWing remembers the rest.'),
+      h('p', {}, 'Watch the video, then follow the three steps below.'),
+      h('video', { controls: true, preload: 'metadata', poster: '/how-to-token-poster.jpg', style: 'width:100%;border-radius:14px;display:block' },
+        h('source', { src: '/how-to-token.mp4', type: 'video/mp4' }), 'Your browser cannot play this video.')),
     h('div', { class: 'steps' },
       step('1', 'Open your Chaturbate token page',
         pub ? h('p', {}, 'Be logged in to the account you stream from. A viewer account won’t work.') : h('p', {}, 'Be logged in as ', h('b', {}, me.username), ', the account you stream from. A viewer account won’t work.'),
@@ -456,13 +479,43 @@ function connectScreen(me, pub) {
       step('2', 'Make a token',
         h('p', {}, 'Type ', h('b', {}, 'StreamWing'), ' as the name. Chaturbate ticks Stats API for you, so untick it. Tick ', h('b', {}, 'only Events API (public)'), '. Leave Events API empty. Then click ', h('b', {}, 'Generate Auth Token'), '.'),
         formPic),
-      step('3', 'Copy your link and paste it here', linkPic, ...pasteKids)),
+      step('3', 'Copy your link and paste it here',
+        h('p', {}, h('b', {}, 'Right-click the long link'), '. You do not need to highlight it.'),
+        linkPic, ...pasteKids)),
     h('details', { class: 'stuck' }, h('summary', {}, 'Stuck? Common problems'),
       h('p', {}, h('b', {}, 'I see a login page, or the page won’t open. '), 'Log in to Chaturbate with the account you stream from, then open the token page again.'),
       h('p', {}, h('b', {}, 'StreamWing says the link is for someone else. '), 'You’re logged in to a different Chaturbate account than ' + me.username + '.'),
       h('p', {}, h('b', {}, 'StreamWing says Chaturbate didn’t accept it. '), 'The usual cause is a wrong box ticked. Make a new token with only Events API (public) ticked. You can delete old tokens on that same page.'),
       h('p', {}, h('b', {}, 'I made a token with Stats API ticked. '), 'Delete that token on the Chaturbate page, then make a new one with only Events API (public) ticked.'),
-      h('p', {}, h('b', {}, 'Still stuck? '), 'Email ', h('a', { href: 'mailto:quietquotient79@gmail.com' }, 'quietquotient79@gmail.com'), '.')),
+      h('p', {}, h('b', {}, 'Still stuck? '), 'Email ', h('a', { href: 'mailto:quietquotient79@gmail.com' }, 'quietquotient79@gmail.com'), ' or message us on Telegram at @couplefunchi.')),
+    h('section', { class: 'sect' },
+      h('p', { class: 'kicker' }, 'What it does'),
+      h('h2', {}, 'Six things StreamWing does, in plain words.'),
+      h('p', {}, 'Nothing here posts, sends or changes anything in your room.'),
+      h('div', { class: 'feat' },
+        h('div', { class: 'card' }, h('h3', {}, 'Remembers your regulars'), h('p', {}, 'StreamWing keeps a short record of people who visit your room: how often they come back and what they’ve tipped. When they arrive again, you see their card and a one-line note from last time.')),
+        h('div', { class: 'card' }, h('h3', {}, 'Calls out who’s back'), h('p', {}, 'When a regular, a big tipper, or someone with tokens but no tip yet arrives, your panel calls them out. Use it to say hello at the right moment. You choose what to say.')),
+        h('div', { class: 'card' }, h('h3', {}, 'Suggests a message'), h('p', {}, 'An optional small window beside your stream can suggest a short message when someone important arrives. You copy it and send it yourself. StreamWing never types or sends for you.')),
+        h('div', { class: 'card' }, h('h3', {}, 'Tracks each stream'), h('p', {}, 'Your panel shows tokens, tips and visitors for the stream you’re on, with a running tip log. Growth over time is on the way.')),
+        h('div', { class: 'card' }, h('h3', {}, 'Writes a recap'), h('p', {}, 'When a stream ends, StreamWing writes a short recap and a one-line note for the people who mattered. Those notes are there the next time they arrive, so you pick up where you left off. Notes are written after each stream ends, not during it.')),
+        h('div', { class: 'card' }, h('h3', {}, 'Stays read-only'), h('p', {}, 'StreamWing only reads public room events. It keeps the last five chat messages from each viewer so it can remember them, and it never stores private messages. Disconnecting removes your token, so StreamWing loses access straight away.')))),
+    h('section', { class: 'sect' },
+      h('p', { class: 'kicker' }, 'While you stream'),
+      h('h2', {}, 'Open StreamWing on your phone or a second screen.'),
+      h('p', {}, 'It shows callouts as people arrive, so you can say hello to the right person at the right moment. You type every message yourself.'),
+      h('div', { class: 'grid2' },
+        h('div', { class: 'card' }, h('h3', {}, 'It shows you'),
+          h('ul', { style: 'color:var(--soft);padding-left:20px;margin:0' },
+            h('li', {}, 'Regulars who came back'),
+            h('li', {}, 'Big tippers who are back in the room'),
+            h('li', {}, 'Viewers with tokens who haven’t tipped yet'),
+            h('li', {}, 'A running tip log and session totals'))))),
+    h('section', { class: 'sect' },
+      h('p', { class: 'kicker' }, 'Your control'),
+      h('h2', {}, 'Read-only, and you decide what happens next.'),
+      h('div', { class: 'grid2' },
+        h('div', { class: 'card' }, h('p', {}, 'StreamWing only reads public room events. It never posts, sends messages or touches your account.')),
+        h('div', { class: 'card' }, h('p', {}, 'Disconnect any time. Deleting the token on Chaturbate cuts StreamWing off straight away. Next stream, StreamWing already knows your regulars.')))),
     h('p', { class: 'note' }, 'That link is the key to your room’s events. Paste it only here. You can disconnect any time, and deleting the token on Chaturbate cuts StreamWing off straight away.')));
 }
 
@@ -952,6 +1005,8 @@ async function load() {
     return setTimeout(load, 5000);
   }
   if (!me.connected) return connectScreen(me);
+  document.querySelectorAll('.connect-page').forEach(el => el.classList.remove('connect-page'));
+  const pubNav2 = document.getElementById('pubNav'); if (pubNav2) pubNav2.hidden = true;
   const { items } = await api('/api/feed?limit=80');
   feedItems = items;
   panel(); stream();

@@ -540,19 +540,34 @@ test('a leave, chat or tip that arrives after she stopped does not open a phanto
   assert.equal(Number((await call('/api/fans/streamwingtester')).body.total_tips), tipsBefore + 15, 'a late tip still counts toward what the fan has given');
 });
 
+// Polls until cond() is true. A stopped poll loop only ends after its current long-poll, so fixed sleeps are flaky.
+async function waitFor(cond, what, ms = 15000) {
+  const until = Date.now() + ms;
+  while (!(await cond())) {
+    if (Date.now() > until) assert.fail(`timed out waiting: ${what}`);
+    await wait(100);
+  }
+}
+// Stops her poll loop and waits until it has really ended, so nothing writes her saved place behind our back.
+async function stopPolling(pid) {
+  const { stopLoop, isPolling } = await import('../src/poller.js');
+  stopLoop(pid);
+  await waitFor(() => !isPolling(pid), 'the old poll loop to end');
+}
+
 // Our place in the feed expires and Chaturbate hands us a fresh link: anything in the gap is never delivered.
 async function restartFeed() {
-  const { stopLoop, startLoop } = await import('../src/poller.js');
+  const { startLoop } = await import('../src/poller.js');
   const { encrypt } = await import('../src/crypto.js');
   const { config } = await import('../src/config.js');
   const pid = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
   const before = (await q(`select feed_started_at from performers where id=$1`, [pid])).rows[0].feed_started_at;
-  stopLoop(pid); await wait(1500);
+  await stopPolling(pid);
   await q(`update performers set next_url_enc=$2 where id=$1`, [pid, encrypt(`${sim.eventsUrl}?i=stale`, config.tokenKey)]);
   startLoop(pid);
-  await wait(500);
-  const after = (await q(`select feed_started_at from performers where id=$1`, [pid])).rows[0].feed_started_at;
-  assert.ok(after > before, 'the restart is recorded as a new start of the feed');
+  await waitFor(async () => (await q(`select feed_started_at from performers where id=$1`, [pid])).rows[0].feed_started_at > before,
+    'the restart is recorded as a new start of the feed');
+  await settle();
 }
 const streamRows = async () => (await q(`select s.id, s.ended_at from sessions s join performers p on p.id = s.performer_id where p.cb_username = 'sim_room' order by s.started_at`)).rows;
 const liveCard = async sid => (await q(`select data from feed where session_id=$1 and kind='live'`, [sid])).rows.map(r => r.data);
@@ -621,18 +636,19 @@ test('a stop with no stream open still means she is offline: a late chat or tip 
 test('a feed read again from the start after Chaturbate refused the saved place counts as a restart', async () => {
   // The saved place is refused (401), the poller drops it, and the next loop reads her base link again.
   // Anything in between was never delivered, so a broadcastStart may have been missed.
-  const { stopLoop, startLoop } = await import('../src/poller.js');
+  const { startLoop, isPolling } = await import('../src/poller.js');
   const { encrypt } = await import('../src/crypto.js');
   const { config } = await import('../src/config.js');
   const { ev, user } = sim;
   const pid = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
   assert.equal((await call('/api/me')).body.live, false, 'she stopped, and the stop was seen');
   const before = await streamRows();
-  stopLoop(pid); await wait(1500);
+  await stopPolling(pid);
   await q(`update performers set next_url_enc=$2 where id=$1`, [pid, encrypt(`${sim.base}/events/sim_room/not-the-token/`, config.tokenKey)]);
   startLoop(pid);
-  await wait(1000);
-  assert.match((await call('/api/me')).body.lastError || '', /rejected/, 'the refused place is reported');
+  await waitFor(async () => /rejected/.test((await call('/api/me')).body.lastError || ''), 'the refused place to be reported');
+  // The loop stops after a refusal; the supervisor may already have started it again from her base link.
+  await waitFor(async () => !isPolling(pid) || (await call('/api/me')).body.lastError === null, 'the refused loop to end');
   startLoop(pid); // what the supervisor does on its next tick
   await settle();
   // She went live while the feed was down: the first thing seen is a chat.

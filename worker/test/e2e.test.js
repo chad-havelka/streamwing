@@ -465,6 +465,8 @@ test('a real session captured from the Chaturbate testbed (Nov 2026) is understo
     fcAutoRenew: false, hasDarkmode: false, inPrivateShow: false, isBroadcasting: true, ...o });
   const TR = { colorGroup: 'tr', recentTips: 'some' };
   const E = (id, method, user, extra = {}) => ({ method, id, object: { broadcaster: 'sim_room', user, ...extra } });
+  // Connect now, mid-stream, so the first thing on the new connection is viewer activity.
+  assert.equal((await call('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: sim.eventsUrl }) })).status, 200);
   sim.push([
     E('1795666146613-0', 'unfollow', RU({})),
     E('1795666149785-0', 'follow', RU({ isFollower: true })),
@@ -497,17 +499,37 @@ test('a real session captured from the Chaturbate testbed (Nov 2026) is understo
   await settle();
 });
 
-test('a leave that arrives after she stopped does not open a phantom stream', async () => {
+test('a leave, chat or tip that arrives after she stopped does not open a phantom stream', async () => {
   // Real testbed behaviour: a lone userLeave from streamwingtester arrived with no stream running.
+  // Chat and tips can arrive after broadcastStop the same way.
   const { ev, user } = sim;
-  const streamsBefore = (await call('/api/streams')).body;
-  const count = a => (Array.isArray(a) ? a : (a.streams || [])).length;
-  sim.push([ev('userLeave', { user: user('late_leaver') })]);
-  await settle();
-  assert.equal(count((await call('/api/streams')).body), count(streamsBefore), 'no new stream');
+  const streams = async () => {
+    const r = await call('/api/sessions');
+    assert.equal(r.status, 200, 'the stream list endpoint answers');
+    assert.ok(Array.isArray(r.body.sessions) && r.body.sessions.length > 0, 'her past streams are listed');
+    return r.body.sessions.map(s => s.id);
+  };
+  const streamCount = async () => (await q(`select count(*)::int n from sessions s join performers p on p.id = s.performer_id where p.cb_username = 'sim_room'`)).rows[0].n;
+  const streamsBefore = await streams();
+  const countBefore = await streamCount();
+  assert.equal((await call('/api/me')).body.live, false, 'she has stopped');
+  const tipsBefore = Number((await call('/api/fans/streamwingtester')).body.total_tips);
+  const late = [
+    ['a lone leave', ev('userLeave', { user: user('late_leaver') })],
+    ['a late chat', ev('chatMessage', { user: user('late_lucy'), message: { message: 'bye!' } })],
+    ['a late tip', ev('tip', { user: user('streamwingtester', { colorGroup: 'tr', hasTokens: true, recentTips: 'some' }), tip: { isAnon: false, tokens: 15, message: 'gn' } })],
+  ];
+  for (const [what, e] of late) {
+    sim.push([e]);
+    await settle();
+    assert.deepEqual(await streams(), streamsBefore, `no new stream from ${what}`);
+    assert.equal(await streamCount(), countBefore, `no new stream row from ${what}`);
+    assert.equal((await call('/api/me')).body.live, false, `still offline after ${what}`);
+  }
   assert.equal((await call('/api/fans/late_leaver')).status, 404, 'no fan row from a lone leave');
   const live = (await q(`select count(*)::int n from sessions where ended_at is null`)).rows[0].n;
   assert.equal(live, 0, 'nothing left open');
+  assert.equal(Number((await call('/api/fans/streamwingtester')).body.total_tips), tipsBefore + 15, 'a late tip still counts toward what the fan has given');
 });
 
 test('a link that does not go to Chaturbate is refused, and a feed cannot send us to another host', async () => {

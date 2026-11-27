@@ -569,7 +569,7 @@ async function restartFeed() {
     'the restart is recorded as a new start of the feed');
   await settle();
 }
-const streamRows = async () => (await q(`select s.id, s.ended_at from sessions s join performers p on p.id = s.performer_id where p.cb_username = 'sim_room' order by s.started_at`)).rows;
+const streamRows = async () => (await q(`select s.id, s.ended_at, s.confirmed from sessions s join performers p on p.id = s.performer_id where p.cb_username = 'sim_room' order by s.started_at`)).rows;
 const liveCard = async sid => (await q(`select data from feed where session_id=$1 and kind='live'`, [sid])).rows.map(r => r.data);
 
 test('after the feed restarts, a stream whose start fell in the gap is picked up once, and its stop still blocks stragglers', async () => {
@@ -582,7 +582,10 @@ test('after the feed restarts, a stream whose start fell in the gap is picked up
   let rows = await streamRows();
   assert.equal(rows.length, before.length + 1, 'the stream she is in is picked up');
   const sid = rows.at(-1).id;
-  assert.equal((await call('/api/me')).body.live, true, 'she is shown live');
+  const me = (await call('/api/me')).body;
+  assert.equal(me.live, true, 'the stream is open and collecting');
+  assert.equal(me.broadcast, 'unconfirmed', 'shown as unconfirmed, not as confirmed live: no broadcastStart was seen');
+  assert.equal(rows.at(-1).confirmed, false, 'the stream is stored as unconfirmed');
   assert.deepEqual(await liveCard(sid), [{ joinedMidStream: true }], 'marked as joined mid-stream, not as "you went live"');
   await pushDelivered([ev('tip', { user: user('gap_gina', { hasTokens: true }), tip: { isAnon: false, tokens: 20, message: '' } }),
     ev('userEnter', { user: user('gap_gary') })]);
@@ -590,6 +593,9 @@ test('after the feed restarts, a stream whose start fell in the gap is picked up
   assert.equal(rows.length, before.length + 1, 'later activity joins the same stream');
   assert.equal(Number((await call('/api/me')).body.session.tokens), 20, 'the tip counts toward the stream that was picked up');
   await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
+  assert.equal((await streamRows()).find(r => r.id === sid).confirmed, true, 'her broadcastStop confirms the stream was real');
+  const recap = (await q(`select data from feed where session_id=$1 and kind='recap'`, [sid])).rows[0].data;
+  assert.equal(recap.confirmed, true);
   await pushDelivered([ev('chatMessage', { user: user('gap_gina'), message: { message: 'bye' } }),
     ev('tip', { user: user('gap_gina', { hasTokens: true }), tip: { isAnon: false, tokens: 5, message: '' } })]);
   rows = await streamRows();
@@ -598,10 +604,11 @@ test('after the feed restarts, a stream whose start fell in the gap is picked up
   assert.equal((await call('/api/me')).body.live, false);
 });
 
-test('known limit: a straggler right after a feed restart opens one stream, marked as joined mid-stream, until the next stop', async () => {
+test('known limit: a straggler right after a feed restart opens one stream, kept apart as unconfirmed, until she next goes live', async () => {
   // The Events API has no "is she live" field, so after a gap a straggler from a stream that has ended
   // arrives exactly like the first chat of a stream whose broadcastStart fell in the gap (the test above).
   // Picking it up is the safer mistake: the other choice drops a real stream with its recap and notes.
+  // The stream is stored and shown as unconfirmed, its events are kept, and analytics leave it out.
   // This test pins how far the mistake can go. Change it only when Chaturbate gives a reliable live signal.
   const { ev, user } = sim;
   assert.equal((await call('/api/me')).body.live, false, 'she stopped, and the stop was seen');
@@ -612,11 +619,27 @@ test('known limit: a straggler right after a feed restart opens one stream, mark
     ev('userLeave', { user: user('late_lena') })]);
   const rows = await streamRows();
   assert.equal(rows.length, before.length + 1, 'at most one stream, however many stragglers');
-  assert.deepEqual(await liveCard(rows.at(-1).id), [{ joinedMidStream: true }], 'shown as "connected while you were live", never "you went live"');
+  const phantom = rows.at(-1);
+  assert.deepEqual(await liveCard(phantom.id), [{ joinedMidStream: true }], 'never shown as "you went live"');
+  assert.equal(phantom.confirmed, false, 'stored as unconfirmed');
+  assert.equal((await call('/api/me')).body.broadcast, 'unconfirmed', 'the panel is told her live status is unconfirmed');
+  // The next thing Chaturbate reports is her going live again, which ends the unconfirmed stream.
+  await pushDelivered([ev('broadcastStart', { user: user('sim_room') })]);
+  assert.equal((await call('/api/me')).body.broadcast, 'live', 'a broadcastStart is confirmed live');
   await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
   await pushDelivered([ev('chatMessage', { user: user('late_lena'), message: { message: 'still here?' } })]);
-  assert.equal((await streamRows()).length, before.length + 1, 'once a stop is seen, stragglers are blocked again');
-  assert.equal((await call('/api/me')).body.live, false);
+  const after = await streamRows();
+  assert.equal(after.length, before.length + 2, 'once a stop is seen, stragglers are blocked again');
+  assert.equal(after.find(r => r.id === phantom.id).confirmed, false, 'still unconfirmed: no stop arrived while it was open');
+  assert.equal((await call('/api/me')).body.broadcast, 'offline');
+  const g = (await call('/api/growth')).body;
+  const verified = g.streams.filter(x => x.confirmed);
+  assert.equal(g.streams.length - verified.length, g.unconfirmed, 'unconfirmed streams are listed and counted apart');
+  assert.ok(g.unconfirmed >= 1);
+  assert.equal(g.recent.n, Math.min(5, verified.length), 'averages use verified streams only');
+  const recap = (await q(`select data from feed where session_id=$1 and kind='recap'`, [after.at(-1).id])).rows[0].data;
+  assert.notEqual(new Date(recap.previous.startedAt).getTime(), new Date((await q(`select started_at from sessions where id=$1`, [phantom.id])).rows[0].started_at).getTime(),
+    'the recap compares with the last verified stream, not the unconfirmed one');
 });
 
 test('a stop with no stream open still means she is offline: a late chat or tip after it opens nothing', async () => {

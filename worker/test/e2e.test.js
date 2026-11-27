@@ -551,8 +551,8 @@ async function waitFor(cond, what, ms = 15000) {
 // Stops her poll loop and waits until it has really ended, so nothing writes her saved place behind our back.
 async function stopPolling(pid) {
   const { stopLoop, isPolling } = await import('../src/poller.js');
-  stopLoop(pid);
-  await waitFor(() => !isPolling(pid), 'the old poll loop to end');
+  // Stop whatever loop is running on each check: the supervisor may start a new one in between.
+  await waitFor(() => { stopLoop(pid); return !isPolling(pid); }, 'the old poll loop to end');
 }
 
 // Our place in the feed expires and Chaturbate hands us a fresh link: anything in the gap is never delivered.

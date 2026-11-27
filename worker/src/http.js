@@ -115,7 +115,7 @@ export function startHttp() {
         stopLoop(p.id);
         if (deleteData) {
           await tx(async c => {
-            for (const t of ['feed', 'events', 'fans', 'ai_calls']) await c.query(`delete from ${t} where performer_id=$1`, [p.id]);
+            for (const t of ['feed', 'events', 'fans', 'ai_calls', 'set_aside_events']) await c.query(`delete from ${t} where performer_id=$1`, [p.id]);
             await c.query(`delete from sessions where performer_id=$1`, [p.id]);
           });
         }

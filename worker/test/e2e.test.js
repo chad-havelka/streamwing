@@ -793,3 +793,41 @@ test('fan memory: delete everything removes the memory and the record of AI requ
   assert.equal((await q(`select count(*)::int n from fans where performer_id=$1`, [m.pid])).rows[0].n, 0);
   m.sim.close();
 });
+
+// ---------------------------------------------------------------------------------------------
+// An event that cannot be stored is set aside. The room does not stop.
+// ---------------------------------------------------------------------------------------------
+test('a bad event is set aside and everything after it still shows', async () => {
+  const { newAccessKey, hashKey } = await import('../src/crypto.js');
+  const k = newAccessKey();
+  const bsim = await createSim({ username: 'bad_room', token: 'badtoken789' });
+  const pid = (await q(`insert into performers (cb_username, access_key_hash) values ('bad_room',$1) returning id`, [hashKey(k)])).rows[0].id;
+  const bcall = (path, opts = {}) => fetch(API + path, { ...opts, headers: { authorization: `Bearer ${k}`, 'content-type': 'application/json' } }).then(async r => ({ status: r.status, body: await r.json() }));
+  assert.equal((await bcall('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: bsim.eventsUrl }) })).status, 200);
+  const { ev, user } = bsim;
+  bsim.push([ev('broadcastStart', {}), ev('userEnter', { user: user('before_bad') }),
+    ev('tip', { user: user('before_bad'), tip: { tokens: 5, message: 'null \u0000 byte', isAnon: false } }),
+    ev('tip', { user: user('too_big'), tip: { tokens: 3000000000, message: '', isAnon: false } }),
+    ev('userEnter', { user: user('after_bad') }),
+    ev('tip', { user: user('after_bad'), tip: { tokens: 7, message: '', isAnon: false } })]);
+  await settle();
+  const shown = (await bcall('/api/feed?limit=50')).body.items.map(i => `${i.kind}:${i.username}`);
+  assert.ok(shown.includes('new_viewer:after_bad'), 'the viewer after the bad events is shown');
+  assert.ok(shown.some(s => s.endsWith('tip:after_bad')), 'and so is his tip');
+  const aside = (await q(`select method, username, error from set_aside_events where performer_id=$1 order by id`, [pid])).rows;
+  assert.equal(aside.length, 2, 'both bad events are on record');
+  assert.deepEqual(aside.map(a => a.username), ['before_bad', 'too_big']);
+  assert.equal((await q(`select last_error from performers where id=$1`, [pid])).rows[0].last_error, null, 'the room carries no error');
+  assert.equal((await bcall('/api/me')).body.session.tokens, 7, 'only the good tip is counted');
+  bsim.close();
+});
+
+test('trouble that is not about one event still stops the batch so it is retried', async () => {
+  const { aboutThisEvent } = await import('../src/poller.js');
+  assert.equal(aboutThisEvent(Object.assign(new Error('x'), { code: '22003' })), true, 'a number too big for its column');
+  assert.equal(aboutThisEvent(Object.assign(new Error('x'), { code: '22P05' })), true, 'a character the database cannot hold');
+  assert.equal(aboutThisEvent(new TypeError('x')), true, 'a shape the code did not expect');
+  assert.equal(aboutThisEvent(Object.assign(new Error('x'), { code: '57P01' })), false, 'the database shutting down');
+  assert.equal(aboutThisEvent(Object.assign(new Error('x'), { code: 'ECONNREFUSED' })), false, 'the database unreachable');
+  assert.equal(aboutThisEvent(new Error('x')), false, 'anything unknown');
+});

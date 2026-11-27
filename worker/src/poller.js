@@ -10,6 +10,13 @@ import { writeNotesForSession, writeMemoryForSession } from './ai.js';
 const loops = new Map(); // performerId -> { stop }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// True when an error comes from the content of one event: bad data for a column (Postgres classes 22 and 23)
+// or a shape the code did not expect. False for trouble that will pass, like a lost database connection.
+export function aboutThisEvent(err) {
+  if (typeof err?.code === 'string' && /^(22|23)/.test(err.code)) return true;
+  return err instanceof TypeError || err instanceof RangeError;
+}
+
 async function runLoop(performerId, state) {
   let backoff = 1000;
   let restarts = 0;
@@ -31,7 +38,20 @@ async function runLoop(performerId, state) {
       for (const raw of events) {
         const ev = normalizeEvent(raw);
         if (!ev.id || !ev.method) continue;
-        const out = await tx(c => processEvent(c, performer, ev));
+        let out;
+        try {
+          out = await tx(c => processEvent(c, performer, ev));
+        } catch (err) {
+          // One event that cannot be stored must not stop the room. Set it aside and carry on.
+          // Anything that is not about this one event (the database being down, say) still stops the batch so it is retried.
+          if (!aboutThisEvent(err)) throw err;
+          await q(
+            `insert into set_aside_events (performer_id, cb_event_id, method, username, error) values ($1,$2,$3,$4,$5)
+             on conflict (performer_id, cb_event_id) do nothing`,
+            [performerId, String(ev.id).slice(0, 200), String(ev.method).slice(0, 60), ev.user?.username ? String(ev.user.username).replace(/\u0000/g, '').slice(0, 100) : null, String(err.message).replace(/\u0000/g, '').slice(0, 300)]);
+          console.error(`[poll ${performer.cb_username}] set aside one ${ev.method} event: ${err.message}`);
+          continue;
+        }
         if (!out.duplicate) for (const item of out.items) {
           publish(performerId, item);
           // When a stream ends, write the AI notes in the background. It never holds up the feed.

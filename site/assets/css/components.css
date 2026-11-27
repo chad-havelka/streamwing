@@ -4,6 +4,7 @@ header .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:spac
 .brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:700;font-size:22px}
 nav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:15px}
 nav a.plain{color:var(--soft);text-decoration:none}
+nav a[aria-current=page]{color:var(--ink);font-weight:600;text-decoration:none}
 header .btn{min-height:44px;padding:10px 20px;font-size:15px}
 
 /* Buttons. Early access is the ghost style everywhere. */
@@ -22,14 +23,23 @@ details.site-menu summary span::before{top:-6px}
 details.site-menu summary span::after{top:6px}
 details.site-menu[open] nav.sheet{display:flex}
 
-/* Phones: hamburger menu, smaller buttons, no wrapped button text */
-@media (max-width:560px){header .wrap{flex-wrap:nowrap}header .hleft{min-width:0}
-  header .wrap{padding-block:14px;align-items:center}
+/* Narrow screens (760px and under): the links fold into the menu button. */
+@media (max-width:760px){
+  header .wrap{flex-wrap:nowrap;padding-block:14px;align-items:center}
+  header .hleft{min-width:0}
   nav.desk{display:none}
   details.site-menu{display:block;position:relative}
   details.site-menu nav.sheet{position:absolute;right:0;top:52px;z-index:5;width:240px;flex-direction:column;gap:4px;padding:10px;background:var(--panel);border:2px solid var(--line);border-radius:16px}
   details.site-menu nav.sheet a{display:block;min-height:44px;padding:10px 12px;border-radius:10px;color:var(--soft);text-decoration:none;font-size:16px;line-height:24px}
   details.site-menu nav.sheet a.btn{display:flex;color:var(--deep);font-weight:600;text-align:center;margin-top:6px}
+}
+/* Between the menu and the full header: a little less space so the header stays on one row. */
+@media (min-width:761px) and (max-width:900px){
+  nav{gap:8px 16px}
+  header .btn{padding:10px 16px}
+}
+/* Phones: smaller buttons, no wrapped button text */
+@media (max-width:560px){
   .btn{min-height:44px;padding:10px 18px;font-size:15px;white-space:nowrap}
   header .btn{min-height:44px;padding:10px 18px;font-size:15px}
   .ctas .btn,form .btn{width:100%}

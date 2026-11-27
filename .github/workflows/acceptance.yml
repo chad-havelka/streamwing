@@ -48,3 +48,14 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Run acceptance tests with isolated PostgreSQL
         run: node --test --test-concurrency=1 --test-force-exit test/*.test.js
+      - name: Run all original Owl evaluation scenarios
+        env:
+          EVAL_DATABASE_URL: postgres://acceptance:acceptance@127.0.0.1:5432/streamwing_acceptance
+        run: node test/run-owl-eval.mjs
+      - name: Upload Owl evaluation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owl-evaluation-results
+          path: worker/test-results/owl-eval/
+          if-no-files-found: error

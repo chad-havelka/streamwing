@@ -52,7 +52,7 @@ before(async () => {
   await wait(300);
 });
 
-after(async () => { aiServer.close(); clearInterval(timer); server.close(); sim.close(); setTimeout(() => process.exit(0), 200); });
+after(async () => { aiServer.close(); clearInterval(timer); server.close(); sim.close(); /* Let the test runner report failures; CI closes lingering handles. */ });
 
 test('bad link and bad key are refused', async () => {
   const r = await fetch(API + '/api/me', { headers: { authorization: 'Bearer nope-nope-nope-nope-nope' } });

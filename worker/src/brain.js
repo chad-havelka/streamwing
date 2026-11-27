@@ -15,6 +15,16 @@ async function openSession(c, performerId) {
   return { session: n.rows[0], opened: true };
 }
 
+// She is offline for sure when, with no stream open, we saw a stream end after we started reading this feed.
+// If the feed restarted since, a broadcastStart could have been missed, so viewer activity may mean she is live.
+async function stoppedOnThisFeed(c, performerId) {
+  const r = await c.query(
+    `select 1 from performers p where p.id=$1 and exists (
+       select 1 from sessions s where s.performer_id=p.id and s.ended_at >= coalesce(p.feed_started_at, '-infinity'))`,
+    [performerId]);
+  return !!r.rows[0];
+}
+
 async function closeSession(c, performerId) {
   const r = await c.query(
     `update sessions set ended_at=now() where performer_id=$1 and ended_at is null returning *`, [performerId]);
@@ -99,17 +109,23 @@ export async function processEvent(c, performer, ev) {
 
   if (ev.method === 'roomSubjectChange' || isOwner) return { items };
 
-  // A leave on its own never means she's live: it can arrive after she stopped.
-  // With no open stream there's nothing to update, so don't open one or add a fan.
-  if (ev.method === 'userLeave') {
-    const open = await c.query(`select 1 from sessions where performer_id=$1 and ended_at is null limit 1`, [pid]);
-    if (!open.rows[0]) return { items };
+  const open = await c.query(`select id from sessions where performer_id=$1 and ended_at is null order by started_at desc limit 1`, [pid]);
+  let sid = open.rows[0]?.id || null;
+  if (!sid) {
+    // A leave on its own never means she's live: it can arrive after she stopped.
+    // With no open stream there's nothing to update, so don't open one or add a fan.
+    if (ev.method === 'userLeave') return { items };
+    if (await stoppedOnThisFeed(c, pid)) {
+      // Chat, tips and the rest can also arrive after broadcastStop. They update the fan, never open a stream.
+      // An enter into a room that is offline is not a visit.
+      if (ev.method === 'userEnter') return { items };
+    } else {
+      // Viewer activity with no stop seen on this feed means she's live and we connected mid-stream.
+      const { session } = await openSession(c, pid);
+      items.push(await addFeed(c, pid, session.id, 'live', null, { joinedMidStream: true }));
+      sid = session.id;
+    }
   }
-
-  // Any viewer activity means she's live, even if we connected mid-stream.
-  const { session, opened } = await openSession(c, pid);
-  if (opened) items.push(await addFeed(c, pid, session.id, 'live', null, { joinedMidStream: true }));
-  const sid = session.id;
 
   const before = await getFan(c, pid, uname);
   let fan = await touchFan(c, pid, ev.user);
@@ -119,6 +135,7 @@ export async function processEvent(c, performer, ev) {
   const newToRoom = !before || (before.visits === 0 && Number(before.tip_count) === 0 && Number(before.messages_count) === 0);
   // Mark them as seen in this session, and count them the first time they show up in it.
   const seen = async (lightBlue) => {
+    if (!sid) return false;
     const r = await c.query(
       `insert into session_fans (session_id, username, was_light_blue) values ($1,$2,$3)
        on conflict (session_id, username) do update set in_room = true,
@@ -178,15 +195,18 @@ export async function processEvent(c, performer, ev) {
            first_tip_at = coalesce(first_tip_at, now()), last_seen = now()
          where performer_id=$1 and username=$2 returning ${FAN_COLS}`, [pid, uname, tokens]);
       fan = r.rows[0];
-      await seen(wasLightBlue);
-      const sf = await c.query(
-        `update session_fans set tipped = tipped + $3 where session_id=$1 and username=$2
-         returning tipped - $3 as before, was_light_blue`, [sid, uname, tokens]);
-      const firstTipThisSession = Number(sf.rows[0].before) === 0;
-      const converted = firstTipThisSession && sf.rows[0].was_light_blue && firstTipEver;
-      await c.query(
-        `update sessions set tokens = tokens + $2, tippers = tippers + $3, light_blues_converted = light_blues_converted + $4 where id=$1`,
-        [sid, tokens, firstTipThisSession ? 1 : 0, converted ? 1 : 0]);
+      let converted = false;
+      if (sid) {
+        await seen(wasLightBlue);
+        const sf = await c.query(
+          `update session_fans set tipped = tipped + $3 where session_id=$1 and username=$2
+           returning tipped - $3 as before, was_light_blue`, [sid, uname, tokens]);
+        const firstTipThisSession = Number(sf.rows[0].before) === 0;
+        converted = firstTipThisSession && sf.rows[0].was_light_blue && firstTipEver;
+        await c.query(
+          `update sessions set tokens = tokens + $2, tippers = tippers + $3, light_blues_converted = light_blues_converted + $4 where id=$1`,
+          [sid, tokens, firstTipThisSession ? 1 : 0, converted ? 1 : 0]);
+      }
       items.push(await addFeed(c, pid, sid, firstTipEver ? 'first_tip' : 'tip', uname,
         { fan, tokens, message: ev.tip?.message || '', isAnon: !!ev.tip?.isAnon, converted }));
       break;
@@ -195,14 +215,14 @@ export async function processEvent(c, performer, ev) {
     case 'mediaPurchase': {
       const tokens = ev.media?.tokens || 0;
       await seen(false);
-      await c.query(`update sessions set tokens = tokens + $2 where id=$1`, [sid, tokens]);
+      if (sid) await c.query(`update sessions set tokens = tokens + $2 where id=$1`, [sid, tokens]);
       items.push(await addFeed(c, pid, sid, 'media', uname, { fan, tokens, name: ev.media?.name, type: ev.media?.type }));
       break;
     }
 
     case 'follow':
       await c.query(`update fans set is_follower = true where performer_id=$1 and username=$2`, [pid, uname]);
-      await c.query(`update sessions set new_followers = new_followers + 1 where id=$1`, [sid]);
+      if (sid) await c.query(`update sessions set new_followers = new_followers + 1 where id=$1`, [sid]);
       fan = await getFan(c, pid, uname);
       items.push(await addFeed(c, pid, sid, 'follow', uname, { fan }));
       break;
@@ -213,14 +233,14 @@ export async function processEvent(c, performer, ev) {
 
     case 'fanclubJoin':
       await c.query(`update fans set in_fanclub = true where performer_id=$1 and username=$2`, [pid, uname]);
-      await c.query(`update sessions set fanclub_joins = fanclub_joins + 1 where id=$1`, [sid]);
+      if (sid) await c.query(`update sessions set fanclub_joins = fanclub_joins + 1 where id=$1`, [sid]);
       fan = await getFan(c, pid, uname);
       items.push(await addFeed(c, pid, sid, 'fanclub', uname, { fan }));
       break;
 
     case 'chatMessage': {
       const text = (ev.message?.message || '').slice(0, 500);
-      await c.query(`update sessions set messages = messages + 1 where id=$1`, [sid]);
+      if (sid) await c.query(`update sessions set messages = messages + 1 where id=$1`, [sid]);
       const r = await c.query(
         `update fans set last_message = $3, last_message_at = now(), messages_count = messages_count + 1, last_seen = now(),
            recent_messages = (

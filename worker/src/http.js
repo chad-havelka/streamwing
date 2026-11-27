@@ -104,7 +104,7 @@ export function startHttp() {
           if (e instanceof CbError && e.auth) return send(res, 400, { error: "Chaturbate didn't accept that link. The usual cause is a wrong box ticked. Make a new token with only Events API (public) ticked, then copy the link that starts with https://eventsapi.chaturbate.com" });
           return send(res, 502, { error: "Couldn't reach Chaturbate just now. Try again in a minute." });
         }
-        await q(`update performers set cb_token_enc=$2, next_url_enc=null, connected_at=now(), last_error=null where id=$1`,
+        await q(`update performers set cb_token_enc=$2, next_url_enc=null, connected_at=now(), feed_started_at=now(), last_error=null where id=$1`,
           [p.id, encrypt(base, config.tokenKey)]);
         startLoop(p.id);
         return send(res, 200, { ok: true });

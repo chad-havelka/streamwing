@@ -65,11 +65,11 @@ export async function openAccount(input, ip) {
   const key = newAccessKey();
   let id;
   if (p) {
-    await q(`update performers set access_key_hash=$2, cb_token_enc=$3, next_url_enc=null, connected_at=now(), last_error=null where id=$1`,
+    await q(`update performers set access_key_hash=$2, cb_token_enc=$3, next_url_enc=null, connected_at=now(), feed_started_at=now(), last_error=null where id=$1`,
       [p.id, hashKey(key), encrypt(base, config.tokenKey)]);
     id = p.id;
   } else {
-    const ins = await q(`insert into performers (cb_username, access_key_hash, cb_token_enc, connected_at) values ($1,$2,$3,now()) returning id`,
+    const ins = await q(`insert into performers (cb_username, access_key_hash, cb_token_enc, connected_at, feed_started_at) values ($1,$2,$3,now(),now()) returning id`,
       [username, hashKey(key), encrypt(base, config.tokenKey)]);
     id = ins.rows[0].id;
   }

@@ -43,7 +43,7 @@ before(async () => {
   await migrate();
   const { newAccessKey, hashKey } = await import('../src/crypto.js');
   key = newAccessKey();
-  await q(`insert into performers (cb_username, display_name, access_key_hash) values ('sim_room','Sim',$1)`, [hashKey(key)]);
+  await q(`insert into performers (cb_username, display_name, access_key_hash, ai_notes) values ('sim_room','Sim',$1, true)`, [hashKey(key)]);
   sim = await createSim();
   const { startHttp } = await import('../src/http.js');
   const { startSupervisor } = await import('../src/poller.js');
@@ -359,7 +359,7 @@ test('media, fan club, unfollows, leaving and repeat tips are all counted proper
   assert.deepEqual(recap.topTippers.map(t => [t.username, Number(t.tipped)]), [['ann_a', 20]]);
 });
 
-test('Claude notes switch off with no key, and respect the per-stream cap', async () => {
+test('Claude notes need the key and her switch, and respect the per-stream cap', async () => {
   await wait(1500); // let the notes for the stream that just ended finish
   const { config } = await import('../src/config.js');
   const { writeNotesForSession } = await import('../src/ai.js');
@@ -369,11 +369,21 @@ test('Claude notes switch off with no key, and respect the per-stream cap', asyn
   config.aiKey = '';
   try { assert.deepEqual(await writeNotesForSession(pid, sid), { skipped: 'no key' }); } finally { config.aiKey = 'test-key'; }
   assert.equal(aiCalls.length, base, 'no key, no calls to Claude');
+  // Her switch is off by default: no calls even with a key.
+  await q(`update performers set ai_notes=false where id=$1`, [pid]);
+  assert.deepEqual(await writeNotesForSession(pid, sid), { skipped: 'off' });
+  assert.equal(aiCalls.length, base, 'switch off, no calls to Claude');
+  await q(`update performers set ai_notes=true where id=$1`, [pid]);
   config.aiNotesPerStream = 1;
   try { await writeNotesForSession(pid, sid); } finally { config.aiNotesPerStream = 40; }
   assert.equal(aiCalls.length, base + 1, 'capped at one fan');
   await writeNotesForSession(pid, sid);
   assert.equal(aiCalls.length, base + 3, 'ann tipped and bob chatted, so both are asked about');
+  // The panel's switch goes through the route and shows on /api/me.
+  assert.equal((await call('/api/ai-notes', { method: 'POST', body: JSON.stringify({ on: false }) })).body.aiNotes, false);
+  assert.equal((await call('/api/me')).body.aiNotes, false);
+  assert.equal((await call('/api/ai-notes', { method: 'POST', body: JSON.stringify({ on: true }) })).body.aiNotes, true);
+  assert.equal((await call('/api/me')).body.aiNotes, true);
 });
 
 test('callout rules: every kind, at its boundary', async () => {

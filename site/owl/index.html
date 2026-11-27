@@ -226,6 +226,12 @@ details.stuck p{margin:8px 0 0;font-size:15px}
 <div class="sheet" id="sheet" hidden><div class="in" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
   <h2 id="sheetTitle">Settings</h2>
   <p class="note" id="sheetInfo"></p>
+  <div class="aibox">
+    <h3>AI fan notes</h3>
+    <p class="note">Off until you turn them on. When on, Claude writes one short line about each fan after a stream. Claude gets only: the fan's username, days in your room, tokens tipped, biggest tip, fan club status, follow status, whether they have tokens, their last five public chat messages, and your own note. Private messages are never sent.</p>
+    <div class="btns"><button class="btn ghost" type="button" id="aiBtn">Turn AI fan notes on</button></div>
+    <p class="note" id="aiState"></p>
+  </div>
   <div class="btns">
     <button class="btn ghost" type="button" id="discBtn">Disconnect Chaturbate</button>
     <button class="btn danger" type="button" id="wipeBtn">Disconnect and delete everything StreamWing knows</button>
@@ -346,12 +352,13 @@ function demoStep([kind, username, extra = {}]) {
   return item;
 }
 function demoMe() {
-  return { username: 'yourname', displayName: 'there', connected: demo.connected, polling: true, lastError: null,
+  return { username: 'yourname', displayName: 'there', connected: demo.connected, polling: true, lastError: null, aiNotes: demo.aiNotes === true,
     live: demo.live, session: demo.live ? demo.session : null, totals: { fans: 214, tippers: 37, light_blues: 58 } };
 }
 async function demoApi(path, opts) {
   await new Promise(r => setTimeout(r, path === '/api/connect' ? 900 : 60));
   if (path === '/api/me') return demoMe();
+  if (path === '/api/ai-notes') { demo.aiNotes = JSON.parse(opts.body || '{}').on === true; return { aiNotes: demo.aiNotes }; }
   if (path === '/api/connect') {
     const v = JSON.parse(opts.body || '{}').eventsUrl || '';
     if (!v.trim()) throw new Error('Paste the link from Chaturbate here.');
@@ -1125,6 +1132,18 @@ async function load() {
 // Settings sheet
 $('menuBtn').addEventListener('click', () => { $('sheetInfo').textContent = me ? `Connected as ${me.username}. StreamWing remembers ${n(me.totals.fans)} people from your room.` : ''; $('sheetMsg').textContent = ''; $('sheet').hidden = false; });
 $('closeSheet').addEventListener('click', () => { $('sheet').hidden = true; });
+// ---------- AI fan notes switch: off until she turns it on ----------
+function paintAi() {
+  const on = !!(me && me.aiNotes);
+  $('aiBtn').textContent = on ? 'Turn AI fan notes off' : 'Turn AI fan notes on';
+  $('aiState').textContent = on ? 'AI fan notes are on. They are written after each stream.' : 'AI fan notes are off.';
+}
+$('menuBtn').addEventListener('click', paintAi);
+$('aiBtn').addEventListener('click', async () => {
+  const next = !(me && me.aiNotes);
+  try { await api('/api/ai-notes', { method: 'POST', body: JSON.stringify({ on: next }) }); if (me) me.aiNotes = next; paintAi(); $('sheetMsg').className = 'msg'; $('sheetMsg').textContent = next ? 'AI fan notes turned on.' : 'AI fan notes turned off.'; }
+  catch (e) { $('sheetMsg').className = 'msg err'; $('sheetMsg').textContent = e.message; }
+});
 async function disconnect(deleteData) {
   if (deleteData && !confirm('Delete everything StreamWing knows about your room? This can’t be undone.')) return;
   try { await api('/api/disconnect', { method: 'POST', body: JSON.stringify({ deleteData }) }); $('sheet').hidden = true; if (es) es.close(); load(); }

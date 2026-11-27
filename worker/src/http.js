@@ -60,6 +60,7 @@ async function status(p) {
     connected: !!p.cb_token_enc,
     polling: isPolling(p.id),
     lastEventAt: p.last_event_at, lastPollAt: p.last_poll_at, lastError: p.last_error,
+    aiNotes: !!p.ai_notes,
     live: !!(session && !session.ended_at),
     session,
     totals: counts.rows[0],
@@ -230,6 +231,13 @@ export function startHttp() {
         if (timezone) { try { new Intl.DateTimeFormat('en-US', { timeZone: String(timezone) }); tz = String(timezone); } catch { return send(res, 400, { error: 'bad timezone' }); } }
         await q(`update performers set timezone=$2 where id=$1`, [p.id, tz]);
         return send(res, 200, { timezone: tz });
+      }
+
+      if (req.method === 'POST' && path === '/api/ai-notes') {
+        const { on } = await readJson(req);
+        const v = on === true;
+        await q(`update performers set ai_notes=$2 where id=$1`, [p.id, v]);
+        return send(res, 200, { aiNotes: v });
       }
 
       if (req.method === 'GET' && path === '/api/sessions') {

@@ -1,5 +1,6 @@
 // The one-line note StreamWing writes about each fan, with Claude.
-// Runs after a stream ends, for the fans who chatted or tipped in it. Off when no API key is set.
+// Runs after a stream ends, for the fans who chatted or tipped in it. Off unless the performer turns it on
+// (performers.ai_notes) and an API key is set.
 // What's sent: the fan's username, their tips and visits with her, the last few things they said in
 // her public chat, and her own note about them. Private messages are never stored, so never sent.
 import { config } from './config.js';
@@ -45,6 +46,10 @@ export async function askClaude(facts) {
 // Writes notes for the fans who chatted or tipped in one stream. Never throws.
 export async function writeNotesForSession(performerId, sessionId) {
   if (!config.aiKey) return { skipped: 'no key' };
+  let on = false;
+  try { on = !!(await q(`select ai_notes from performers where id=$1`, [performerId])).rows[0]?.ai_notes; }
+  catch (e) { console.error('[ai]', e.message); return { skipped: 'error' }; }
+  if (!on) return { skipped: 'off' };
   let written = 0;
   try {
     const r = await q(

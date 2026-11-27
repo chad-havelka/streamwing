@@ -532,6 +532,77 @@ test('a leave, chat or tip that arrives after she stopped does not open a phanto
   assert.equal(Number((await call('/api/fans/streamwingtester')).body.total_tips), tipsBefore + 15, 'a late tip still counts toward what the fan has given');
 });
 
+// Our place in the feed expires and Chaturbate hands us a fresh link: anything in the gap is never delivered.
+async function restartFeed() {
+  const { stopLoop, startLoop } = await import('../src/poller.js');
+  const { encrypt } = await import('../src/crypto.js');
+  const { config } = await import('../src/config.js');
+  const pid = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
+  const before = (await q(`select feed_started_at from performers where id=$1`, [pid])).rows[0].feed_started_at;
+  stopLoop(pid); await wait(1500);
+  await q(`update performers set next_url_enc=$2 where id=$1`, [pid, encrypt(`${sim.eventsUrl}?i=stale`, config.tokenKey)]);
+  startLoop(pid);
+  await wait(500);
+  const after = (await q(`select feed_started_at from performers where id=$1`, [pid])).rows[0].feed_started_at;
+  assert.ok(after > before, 'the restart is recorded as a new start of the feed');
+}
+const streamRows = async () => (await q(`select s.id, s.ended_at from sessions s join performers p on p.id = s.performer_id where p.cb_username = 'sim_room' order by s.started_at`)).rows;
+const liveCard = async sid => (await q(`select data from feed where session_id=$1 and kind='live'`, [sid])).rows.map(r => r.data);
+
+test('after the feed restarts, a stream whose start fell in the gap is picked up once, and its stop still blocks stragglers', async () => {
+  const { ev, user } = sim;
+  assert.equal((await call('/api/me')).body.live, false, 'she is offline before the gap');
+  const before = await streamRows();
+  await restartFeed();
+  // She went live during the gap: broadcastStart was never delivered, the first thing seen is a chat.
+  sim.push([ev('chatMessage', { user: user('gap_gina'), message: { message: 'hi!' } })]);
+  await settle();
+  let rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'the stream she is in is picked up');
+  const sid = rows.at(-1).id;
+  assert.equal((await call('/api/me')).body.live, true, 'she is shown live');
+  assert.deepEqual(await liveCard(sid), [{ joinedMidStream: true }], 'marked as joined mid-stream, not as "you went live"');
+  sim.push([ev('tip', { user: user('gap_gina', { hasTokens: true }), tip: { isAnon: false, tokens: 20, message: '' } }),
+    ev('userEnter', { user: user('gap_gary') })]);
+  await settle();
+  rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'later activity joins the same stream');
+  assert.equal(Number((await call('/api/me')).body.session.tokens), 20, 'the tip counts toward the stream that was picked up');
+  sim.push([ev('broadcastStop', { user: user('sim_room') })]);
+  await settle();
+  sim.push([ev('chatMessage', { user: user('gap_gina'), message: { message: 'bye' } }),
+    ev('tip', { user: user('gap_gina', { hasTokens: true }), tip: { isAnon: false, tokens: 5, message: '' } })]);
+  await settle();
+  rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'a stop seen on the new feed stops stragglers opening another stream');
+  assert.ok(rows.every(r => r.ended_at), 'nothing left open');
+  assert.equal((await call('/api/me')).body.live, false);
+});
+
+test('known limit: a straggler right after a feed restart opens one stream, marked as joined mid-stream, until the next stop', async () => {
+  // The Events API has no "is she live" field, so after a gap a straggler from a stream that has ended
+  // arrives exactly like the first chat of a stream whose broadcastStart fell in the gap (the test above).
+  // Picking it up is the safer mistake: the other choice drops a real stream with its recap and notes.
+  // This test pins how far the mistake can go. Change it only when Chaturbate gives a reliable live signal.
+  const { ev, user } = sim;
+  assert.equal((await call('/api/me')).body.live, false, 'she stopped, and the stop was seen');
+  const before = await streamRows();
+  await restartFeed();
+  sim.push([ev('chatMessage', { user: user('late_lena'), message: { message: 'gn' } }),
+    ev('tip', { user: user('late_lena', { hasTokens: true }), tip: { isAnon: false, tokens: 3, message: '' } }),
+    ev('userLeave', { user: user('late_lena') })]);
+  await settle();
+  const rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'at most one stream, however many stragglers');
+  assert.deepEqual(await liveCard(rows.at(-1).id), [{ joinedMidStream: true }], 'shown as "connected while you were live", never "you went live"');
+  sim.push([ev('broadcastStop', { user: user('sim_room') })]);
+  await settle();
+  sim.push([ev('chatMessage', { user: user('late_lena'), message: { message: 'still here?' } })]);
+  await settle();
+  assert.equal((await streamRows()).length, before.length + 1, 'once a stop is seen, stragglers are blocked again');
+  assert.equal((await call('/api/me')).body.live, false);
+});
+
 test('a link that does not go to Chaturbate is refused, and a feed cannot send us to another host', async () => {
   const { parseEventsUrl, isChaturbateHost, sameHost } = await import('../src/cb.js');
   const saved = process.env.ALLOW_HTTP_EVENTS; delete process.env.ALLOW_HTTP_EVENTS;

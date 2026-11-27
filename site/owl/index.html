@@ -652,7 +652,8 @@ async function renderGrowth() {
     if (tab !== 'growth') return;
     if (!g.streams.length) return list.replaceChildren(h('p', { class: 'empty' }, 'Your growth shows up here once you finish your first stream. Each stream adds a point to the chart.'));
     const all = g.streams;                       // oldest first
-    const recent = all.slice(-5), before = all.slice(-10, -5);
+    const verified = all.filter(x => x.confirmed !== false);  // unconfirmed streams stay out of the averages
+    const recent = verified.slice(-5), before = verified.slice(-10, -5);
     const avgOf = (a, f) => { const v = a.map(f).filter(x => x != null); return v.length ? v.reduce((t, x) => t + x, 0) / v.length : null; };
     const backOf = x => x.visitors ? Math.round(100 * x.returning / x.visitors) : null;
     const METRICS = {
@@ -746,14 +747,15 @@ async function renderStreams() {
     if (tab !== 'streams') return;
     if (!sessions.length) return list.replaceChildren(h('p', { class: 'empty' }, 'Your streams show up here, each compared with the one before it.'));
     list.replaceChildren(...sessions.map((s, i) => {
-      const p = sessions[i + 1] || null;
+      const p = sessions.slice(i + 1).find(x => x.confirmed !== false) || null;  // compare with a verified stream
       const cell = (val, prevVal, label) => h('div', {}, h('b', {}, n(val)), h('span', {}, label), p && deltaEl(val, prevVal));
       return h('div', { class: 'streamcard' },
-        h('h3', {}, s.ended_at ? `${when(s.started_at)} · ${dur(s.started_at, s.ended_at)}` : `Live now · ${dur(s.started_at)}`),
+        h('h3', {}, (s.ended_at ? `${when(s.started_at)} · ${dur(s.started_at, s.ended_at)}` : `${s.confirmed === false ? 'Activity now' : 'Live now'} · ${dur(s.started_at)}`)
+          + (s.confirmed === false ? ' · not confirmed live, left out of comparisons' : '')),
         h('div', { class: 'grid' },
           cell(s.tokens, p?.tokens, 'tokens'), cell(s.tippers, p?.tippers, 'tippers'), cell(s.unique_visitors, p?.unique_visitors, 'visitors'),
           cell(s.returning_visitors, p?.returning_visitors, 'came back'), cell(s.light_blues_converted, p?.light_blues_converted, 'blues tipped'), cell(s.new_followers, p?.new_followers, 'new followers')));
-    }), h('p', { class: 'note', style: 'text-align:center' }, 'Green and red show the change from the stream before.'));
+    }), h('p', { class: 'note', style: 'text-align:center' }, 'Green and red show the change from the last confirmed stream before.'));
   } catch (e) { list.replaceChildren(h('p', { class: 'empty' }, e.message)); }
 }
 

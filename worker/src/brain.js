@@ -8,11 +8,19 @@ const FAN_COLS = `username, first_seen, last_seen, visits, visit_days, total_tip
 
 export const isLightBlue = fan => !!fan && fan.has_tokens === true && Number(fan.total_tips) === 0;
 
-async function openSession(c, performerId) {
+async function openSession(c, performerId, midStream = false) {
   const r = await c.query(`select * from sessions where performer_id=$1 and ended_at is null order by started_at desc limit 1`, [performerId]);
   if (r.rows[0]) return { session: r.rows[0], opened: false };
-  const n = await c.query(`insert into sessions (performer_id) values ($1) returning *`, [performerId]);
+  const n = await c.query(`insert into sessions (performer_id, joined_mid_stream) values ($1,$2) returning *`, [performerId, midStream]);
   return { session: n.rows[0], opened: true };
+}
+
+// How many streams StreamWing has watched from start to finish for this performer.
+// Until it has watched enough, it has no history to back "new viewer" or "first tip ever".
+export async function streamsWatched(c, performerId) {
+  const r = await c.query(
+    `select count(*)::int n from sessions where performer_id=$1 and ended_at is not null and not joined_mid_stream`, [performerId]);
+  return r.rows[0].n;
 }
 
 async function closeSession(c, performerId) {
@@ -87,7 +95,9 @@ export async function processEvent(c, performer, ev) {
   if (ev.method === 'broadcastStart') {
     await closeSession(c, pid);
     const { session } = await openSession(c, pid);
-    items.push(await addFeed(c, pid, session.id, 'live', null, {}));
+    const watched = await streamsWatched(c, pid);
+    items.push(await addFeed(c, pid, session.id, 'live', null,
+      watched < config.learningStreams ? { learning: true, streamsWatched: watched, streamsNeeded: config.learningStreams } : {}));
     return { items };
   }
 
@@ -107,9 +117,15 @@ export async function processEvent(c, performer, ev) {
   }
 
   // Any viewer activity means she's live, even if we connected mid-stream.
-  const { session, opened } = await openSession(c, pid);
-  if (opened) items.push(await addFeed(c, pid, session.id, 'live', null, { joinedMidStream: true }));
+  const { session, opened } = await openSession(c, pid, true);
+  const watched = await streamsWatched(c, pid);
+  const learning = watched < config.learningStreams;
+  if (opened) items.push(await addFeed(c, pid, session.id, 'live', null,
+    { joinedMidStream: true, ...(learning ? { learning: true, streamsWatched: watched, streamsNeeded: config.learningStreams } : {}) }));
   const sid = session.id;
+  // StreamWing only knows what happened while it was connected. In its first few streams, and in any stream
+  // it joined partway through, "new" and "first tip ever" would be claims about history it never saw.
+  const unsure = learning || session.joined_mid_stream;
 
   const before = await getFan(c, pid, uname);
   let fan = await touchFan(c, pid, ev.user);
@@ -157,7 +173,7 @@ export async function processEvent(c, performer, ev) {
            (select count(*) from session_fans where session_id = s.id and in_room)) where id=$1`, [sid]);
       if (!isRevisit) {
         const kind = enterCallout(before, fan, firstVisit);
-        items.push(await addFeed(c, pid, sid, kind, uname, { fan, lightBlue: lb }));
+        items.push(await addFeed(c, pid, sid, kind, uname, { fan, lightBlue: lb, ...(unsure ? { unsure: true } : {}) }));
       }
       break;
     }
@@ -183,12 +199,13 @@ export async function processEvent(c, performer, ev) {
         `update session_fans set tipped = tipped + $3 where session_id=$1 and username=$2
          returning tipped - $3 as before, was_light_blue`, [sid, uname, tokens]);
       const firstTipThisSession = Number(sf.rows[0].before) === 0;
-      const converted = firstTipThisSession && sf.rows[0].was_light_blue && firstTipEver;
+      // A light blue only counts as converted when StreamWing has the history to know they never tipped before.
+      const converted = firstTipThisSession && sf.rows[0].was_light_blue && firstTipEver && !unsure;
       await c.query(
         `update sessions set tokens = tokens + $2, tippers = tippers + $3, light_blues_converted = light_blues_converted + $4 where id=$1`,
         [sid, tokens, firstTipThisSession ? 1 : 0, converted ? 1 : 0]);
       items.push(await addFeed(c, pid, sid, firstTipEver ? 'first_tip' : 'tip', uname,
-        { fan, tokens, message: ev.tip?.message || '', isAnon: !!ev.tip?.isAnon, converted }));
+        { fan, tokens, message: ev.tip?.message || '', isAnon: !!ev.tip?.isAnon, converted, ...(unsure && firstTipEver ? { unsure: true } : {}) }));
       break;
     }
 
@@ -244,7 +261,13 @@ export async function processEvent(c, performer, ev) {
 export async function buildRecap(c, s) {
   const top = await c.query(
     `select username, tipped from session_fans where session_id=$1 and tipped > 0 order by tipped desc limit 5`, [s.id]);
-  const converted = await c.query(
+  // Streams fully watched before this one. Below the learning number, this stream's "new", "came back"
+  // and light blue figures only cover what StreamWing has seen so far.
+  const before = await c.query(
+    `select count(*)::int n from sessions where performer_id=$1 and ended_at is not null and not joined_mid_stream and started_at < $2`,
+    [s.performer_id, s.started_at]);
+  const unsure = before.rows[0].n < config.learningStreams || s.joined_mid_stream;
+  const converted = unsure ? { rows: [] } : await c.query(
     `select sf.username from session_fans sf join fans f on f.performer_id=$2 and f.username=sf.username
      where sf.session_id=$1 and sf.was_light_blue and sf.tipped > 0 and f.tip_count >= 1
        and f.first_tip_at >= $3`, [s.id, s.performer_id, s.started_at]);
@@ -269,5 +292,9 @@ export async function buildRecap(c, s) {
     newFollowers: s.new_followers, fanclubJoins: s.fanclub_joins, peakInRoom: s.peak_in_room,
     topTippers: top.rows, convertedFans: converted.rows.map(r => r.username),
     lightBluesNotYet: missed.rows.map(r => r.username),
+    joinedMidStream: !!s.joined_mid_stream,
+    learning: before.rows[0].n < config.learningStreams,
+    streamsWatched: before.rows[0].n + (s.ended_at && !s.joined_mid_stream ? 1 : 0),
+    streamsNeeded: config.learningStreams,
   };
 }

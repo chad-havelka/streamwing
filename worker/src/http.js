@@ -7,7 +7,7 @@ import { encrypt, hashKey } from './crypto.js';
 import { parseEventsUrl, poll, CbError } from './cb.js';
 import { subscribe } from './bus.js';
 import { startLoop, stopLoop, isPolling } from './poller.js';
-import { buildRecap } from './brain.js';
+import { buildRecap, streamsWatched } from './brain.js';
 import { recoverLink, openAccount } from './recover.js';
 import { handleResearchPublic, handleResearchAdmin } from './research.js';
 
@@ -54,7 +54,10 @@ async function status(p) {
     `select count(*)::int as fans, count(*) filter (where total_tips > 0)::int as tippers,
             count(*) filter (where has_tokens and total_tips = 0)::int as light_blues
      from fans where performer_id=$1`, [p.id]);
+  const watched = await streamsWatched({ query: (t, v) => q(t, v) }, p.id);
   return {
+    learning: watched < config.learningStreams || !!(session && !session.ended_at && session.joined_mid_stream),
+    streamsWatched: watched, streamsNeeded: config.learningStreams,
     username: p.cb_username,
     displayName: p.display_name || p.cb_username,
     connected: !!p.cb_token_enc,

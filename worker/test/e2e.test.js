@@ -12,6 +12,8 @@ process.env.TOKEN_KEY = crypto.randomBytes(32).toString('base64');
 process.env.PORT = '8799';
 process.env.ALLOW_HTTP_EVENTS = '1';
 process.env.POLL_TIMEOUT_SEC = '1';
+// Most tests describe a room StreamWing already knows. The cold start tests at the end set this themselves.
+process.env.LEARNING_STREAMS = '0';
 process.env.ANTHROPIC_API_KEY = 'test-key';
 process.env.ANTHROPIC_BASE_URL = 'http://127.0.0.1:8797';
 
@@ -671,4 +673,84 @@ test('old raw events expire after the retention period, but tips stay', async ()
   await purgeOldEvents(30);
   const left = (await q(`select cb_event_id from events where cb_event_id in ('old-follow','old-tip','new-follow') order by 1`)).rows.map(r => r.cb_event_id);
   assert.deepEqual(left, ['new-follow', 'old-tip']);
+});
+
+// ---- Cold start: StreamWing only says what it has seen ----
+
+async function coldRoom(name) {
+  const { tx } = await import('../src/db.js');
+  const { processEvent } = await import('../src/brain.js');
+  const { normalizeEvent } = await import('../src/cb.js');
+  const { hashKey, newAccessKey } = await import('../src/crypto.js');
+  const performer = (await q(`insert into performers (cb_username, access_key_hash) values ($1,$2) returning *`, [name, hashKey(newAccessKey())])).rows[0];
+  let seq = 0;
+  const send = async (method, object = {}) => {
+    const out = await tx(c => processEvent(c, performer, normalizeEvent({ method, id: `${name}-${++seq}`, object: { broadcaster: name, ...object } })));
+    return out.items || [];
+  };
+  return { performer, send, user: sim.user };
+}
+
+test('connected partway through a stream: a tip is not called the first ever, and nothing is called a conversion', async () => {
+  const { config } = await import('../src/config.js');
+  config.learningStreams = 3;
+  try {
+    const { performer, send, user } = await coldRoom('cold_mid');
+    const tester = user('streamwingtester', { colorGroup: 'lightblue', hasTokens: true });
+    // He tipped 100 before StreamWing connected. StreamWing never saw it. This is the first thing it sees.
+    const [live, tip] = await send('tip', { user: tester, tip: { tokens: 33, isAnon: false, message: '' } });
+    assert.equal(live.kind, 'live');
+    assert.equal(live.data.joinedMidStream, true);
+    assert.equal(live.data.learning, true);
+    assert.equal(tip.kind, 'first_tip');
+    assert.equal(tip.data.unsure, true, 'the panel is told this is only the first tip StreamWing has seen');
+    assert.equal(tip.data.converted, false);
+    const [recap] = await send('broadcastStop');
+    assert.equal(recap.data.joinedMidStream, true);
+    assert.equal(recap.data.learning, true);
+    assert.equal(recap.data.lightBluesConverted, 0);
+    assert.deepEqual(recap.data.convertedFans, []);
+    assert.equal(recap.data.streamsWatched, 0, 'a stream joined partway through is not a fully watched stream');
+    assert.equal(recap.data.tokens, 33, 'the tokens it did see still count');
+    const { streamsWatched } = await import('../src/brain.js');
+    assert.equal(await streamsWatched({ query: (t, v) => q(t, v) }, performer.id), 0);
+  } finally { config.learningStreams = 0; }
+});
+
+test('first three full streams: arrivals are marked as only what StreamWing has seen; after that it says new and first tip ever', async () => {
+  const { config } = await import('../src/config.js');
+  config.learningStreams = 3;
+  try {
+    const { send, user } = await coldRoom('cold_full');
+    for (let i = 1; i <= 3; i++) {
+      const [live] = await send('broadcastStart');
+      assert.deepEqual(live.data, { learning: true, streamsWatched: i - 1, streamsNeeded: 3 });
+      const [enter] = await send('userEnter', { user: user(`regular_${i}`, { hasTokens: true, colorGroup: 'lightblue' }) });
+      assert.equal(enter.kind, 'new_with_tokens');
+      assert.equal(enter.data.unsure, true);
+      const [tip] = await send('tip', { user: user(`regular_${i}`, { hasTokens: true }), tip: { tokens: 10 } });
+      assert.equal(tip.data.unsure, true);
+      assert.equal(tip.data.converted, false);
+      const [recap] = await send('broadcastStop');
+      assert.equal(recap.data.learning, true);
+      assert.equal(recap.data.streamsWatched, i);
+    }
+    // Stream 4: StreamWing has watched three full streams.
+    const [live] = await send('broadcastStart');
+    assert.deepEqual(live.data, {});
+    const [enter] = await send('userEnter', { user: user('truly_new', { hasTokens: true, colorGroup: 'lightblue' }) });
+    assert.equal(enter.kind, 'new_with_tokens');
+    assert.equal(enter.data.unsure, undefined);
+    const [tip] = await send('tip', { user: user('truly_new', { hasTokens: true }), tip: { tokens: 10 } });
+    assert.equal(tip.kind, 'first_tip');
+    assert.equal(tip.data.unsure, undefined);
+    assert.equal(tip.data.converted, true);
+    // A second tip from someone seen during learning is a plain tip with no hedge.
+    const [again] = await send('tip', { user: user('regular_1', { hasTokens: true }), tip: { tokens: 5 } });
+    assert.equal(again.kind, 'tip');
+    assert.equal(again.data.unsure, undefined);
+    const [recap] = await send('broadcastStop');
+    assert.equal(recap.data.learning, false);
+    assert.deepEqual(recap.data.convertedFans, ['truly_new']);
+  } finally { config.learningStreams = 0; }
 });

@@ -575,21 +575,30 @@ const KIND = {
   new_with_tokens: ['k-lb', 'New, has tokens'],
   first_tip:       ['k-win', 'First tip ever'],
 };
+// StreamWing only knows what it has seen. In its first few streams, and in a stream it joined partway through,
+// the worker marks a callout "unsure" and the wording stops claiming history.
+const KIND_UNSURE = {
+  light_blue_back: 'Back, has tokens, no tips seen yet',
+  new_with_tokens: 'Has tokens, first time seen',
+  first_tip:       'First tip seen',
+};
+const learningLine = d => d.learning ? `Learning your room: stream ${Math.min((d.streamsWatched || 0) + 1, d.streamsNeeded || 3)} of ${d.streamsNeeded || 3}` : '';
 const ROW = {
-  new_viewer: f => ['New viewer ', h('b', {}, f.username)],
+  new_viewer: f => [f.data.unsure ? 'First time seen ' : 'New viewer ', h('b', {}, f.username)],
   returning:  f => ['Back again ', h('b', {}, f.username), ` · ${nth(f.data.fan?.visit_days || 2)} day`],
   tip:        f => [h('b', {}, f.username), ` tipped ${n(f.data.tokens)}`, f.data.isAnon ? ' anonymously' : '', f.data.fan ? ` · ${n(f.data.fan.total_tips)} total` : ''],
   follow:     f => [h('b', {}, f.username), ' followed you'],
   fanclub:    f => [h('b', {}, f.username), ' joined your fan club'],
   media:      f => [h('b', {}, f.username), ` bought ${f.data.name || 'media'} for ${n(f.data.tokens)}`],
-  live:       f => [f.data.joinedMidStream ? 'Connected while you were live' : 'You went live'],
+  live:       f => [f.data.joinedMidStream ? "Connected while you were live. Tips and visits from before this weren't seen." : 'You went live',
+                    !f.data.joinedMidStream && learningLine(f.data) ? ' · ' + learningLine(f.data) : ''],
 };
 
-function facts(fan) {
+function facts(fan, unsure) {
   if (!fan) return '';
   const bits = [];
-  if (Number(fan.total_tips) > 0) bits.push(`tipped you ${n(fan.total_tips)}`); else bits.push('never tipped you');
-  bits.push(fan.visit_days > 1 ? `${nth(fan.visit_days)} day here` : 'first day here');
+  if (Number(fan.total_tips) > 0) bits.push(`tipped you ${n(fan.total_tips)}`); else bits.push(unsure ? 'no tips seen yet' : 'never tipped you');
+  bits.push(fan.visit_days > 1 ? `${nth(fan.visit_days)} day here` : unsure ? 'first day seen' : 'first day here');
   if (fan.visit_days > 1 && fan.last_tip_at) bits.push(`last tip ${sinceDay(fan.last_tip_at)}`);
   if (fan.in_fanclub) bits.push('fan club');
   else if (fan.is_follower) bits.push('follows you');
@@ -599,12 +608,13 @@ function facts(fan) {
 function card(f) {
   const [cls, label] = KIND[f.kind];
   const fan = f.data.fan || {};
-  let headline = label, extra = '';
+  const unsure = !!f.data.unsure;
+  let headline = (unsure && KIND_UNSURE[f.kind]) || label, extra = '';
   if (f.kind === 'first_tip') { extra = `${n(f.data.tokens)} tokens` + (f.data.converted ? ' · light blue converted' : '') + (f.data.isAnon ? ' · tipped anonymously' : ''); }
   return h('div', { class: 'card ' + cls, 'data-user': f.username, 'data-session': f.session_id || '' },
     h('div', { class: 'top' }, h('span', { class: 'label' }, headline), h('span', { class: 'when' }, ago(f.created_at))),
     h('div', { class: 'name' }, f.username),
-    h('div', { class: 'facts' }, extra || facts(fan)),
+    h('div', { class: 'facts' }, extra || facts(fan, unsure)),
     fan.note ? h('div', { class: 'ainote' }, h('b', {}, 'Remember'), fan.note) : null,
     h('div', { class: 'said' }, fan.last_message ? `“${fan.last_message}”` : ''));
 }
@@ -621,6 +631,8 @@ function recapCard(r) {
        [n(r.returningVisitors), 'came back'], [`${n(r.lightBluesConverted)} of ${n(r.lightBluesSeen)}`, 'light blues tipped'], [n(r.newFollowers), 'new followers']]
         .map(([b, s]) => h('div', {}, h('b', {}, b), h('span', {}, s)))),
     parts.map(p => h('p', {}, p)),
+    r.joinedMidStream ? h('p', {}, 'StreamWing connected partway through this stream. These figures cover only the part it saw.')
+      : r.learning ? h('p', {}, `StreamWing is still learning your room: ${n(r.streamsWatched)} of ${n(r.streamsNeeded)} streams watched. "Came back" and "light blues tipped" only count what it has seen so far.`) : null,
     r.previous && h('p', { class: 'vs' }, 'Compared with your last stream: ' + [
       ['tokens', r.tokens, r.previous.tokens], ['came back', r.returningVisitors, r.previous.returningVisitors],
       ['visitors', r.uniqueVisitors, r.previous.uniqueVisitors], ['light blues tipped', r.lightBluesConverted, r.previous.lightBluesConverted],
@@ -762,7 +774,7 @@ let fanQuery = '', fanTimer = null;
 function fanRow(f, slip) {
   const sub = slip
     ? `missed your last ${f.missed_streams} streams · ${f.visit_days} ${f.visit_days === 1 ? 'day' : 'days'} here`
-    : `${f.visit_days > 1 ? nth(f.visit_days) + ' day' : 'first day'} · ${ago(f.last_seen) ? 'last here ' + ago(f.last_seen) : 'seen recently'}${f.owner_note ? ' · has a note' : ''}`;
+    : `${f.visit_days > 1 ? nth(f.visit_days) + ' day' : me?.learning ? 'first day seen' : 'first day'} · ${ago(f.last_seen) ? 'last here ' + ago(f.last_seen) : 'seen recently'}${f.owner_note ? ' · has a note' : ''}`;
   return h('div', { class: 'fanrow' + (slip ? ' slip' : ''), 'data-user': f.username },
     h('div', { class: 'who' }, h('b', {}, f.username), h('span', {}, sub)),
     h('div', { class: 'amt' }, Number(f.total_tips) ? n(f.total_tips) : '\u2013', h('span', {}, 'tipped')));
@@ -876,8 +888,8 @@ async function renderRoom() {
     if (!fans.length) return list.replaceChildren(h('p', { class: 'empty' }, me.live ? "Nobody's in the room right now." : "You're offline. When you go live, the people in your room show up here."));
     list.replaceChildren(...fans.map(fan => {
       const kind = Number(fan.total_tips) >= 100 ? 'big_tipper_back' : Number(fan.total_tips) > 0 ? 'tipper_back' : fan.visit_days >= 3 ? 'regular_back' : fan.has_tokens ? 'light_blue_back' : null;
-      if (!kind) return h('div', { class: 'row', 'data-user': fan.username }, h('b', {}, fan.username), fan.visit_days > 1 ? ` · ${nth(fan.visit_days)} day` : ' · new');
-      return card({ kind, username: fan.username, created_at: fan.last_seen, data: { fan } });
+      if (!kind) return h('div', { class: 'row', 'data-user': fan.username }, h('b', {}, fan.username), fan.visit_days > 1 ? ` · ${nth(fan.visit_days)} day` : me.learning ? ' · first time seen' : ' · new');
+      return card({ kind, username: fan.username, created_at: fan.last_seen, data: { fan, unsure: !!me.learning } });
     }));
   } catch (e) { list.replaceChildren(h('p', { class: 'empty' }, e.message)); }
 }
@@ -959,8 +971,11 @@ const COACH_KINDS = { big_tipper_back: 0, first_tip: 1, tipper_back: 2, light_bl
 const COACH_SHORT = { big_tipper_back: 'is back, a big tipper', first_tip: 'tipped for the first time', tipper_back: 'is back', light_blue_back: 'is back with tokens', new_with_tokens: 'is new, has tokens', regular_back: 'is here' };
 const coach = { queue: [], handled: new Set(), pip: null, collapsed: false, note: '', noteT: null };
 const COACH_W = 360, COACH_H_OPEN = 420, COACH_H_BAR = 96;
+const COACH_SHORT_UNSURE = { first_tip: 'tipped', new_with_tokens: 'has tokens' };
 function coachMessage(q) {
   const u = q.username;
+  // While StreamWing is unsure, never suggest a welcome that treats someone as new: she may have known them for months.
+  if (q.unsure && q.kind === 'new_with_tokens') return `Hi ${u}, glad you're here. How's your night going?`;
   return ({
     big_tipper_back: `Hey ${u}! So good to see you back. Thank you for everything you do for this room. How's your week going?`,
     first_tip: `${u}, thank you so much for the tip! It really made my night.`,
@@ -973,7 +988,7 @@ function coachMessage(q) {
 function coachAdd(item) {
   if (!(item.kind in COACH_KINDS) || !item.username) return;
   if (coach.handled.has(item.username) || coach.queue.some(q => q.username === item.username)) return;
-  coach.queue.push({ username: item.username, kind: item.kind, fan: item.data.fan || {}, tokens: item.data.tokens });
+  coach.queue.push({ username: item.username, kind: item.kind, fan: item.data.fan || {}, tokens: item.data.tokens, unsure: !!item.data.unsure });
   coach.queue.sort((a, b) => COACH_KINDS[a.kind] - COACH_KINDS[b.kind]);
   coachDraw();
 }
@@ -1005,7 +1020,7 @@ function coachView(win) {
   if (coach.pip && coach.collapsed) {
     return h('div', { class: 'cbar' },
       h('div', { class: 't' }, coach.note ? coach.note
-        : q ? [h('span', { class: 'cdot' }), h('b', {}, q.username), ' ' + COACH_SHORT[q.kind], coach.queue.length > 1 ? h('span', {}, ` · ${coach.queue.length - 1} more`) : null]
+        : q ? [h('span', { class: 'cdot' }), h('b', {}, q.username), ' ' + ((q.unsure && COACH_SHORT_UNSURE[q.kind]) || COACH_SHORT[q.kind]), coach.queue.length > 1 ? h('span', {}, ` · ${coach.queue.length - 1} more`) : null]
         : [h('span', { class: 'cdot off' }), h('span', {}, 'Nothing to nudge')]),
       h('button', { type: 'button', class: 'main small', onclick: () => { coach.collapsed = false; coachResize(win); coachDraw(); } }, 'Open'));
   }

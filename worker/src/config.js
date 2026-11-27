@@ -34,6 +34,8 @@ export const config = {
   regularDays: Number(env.REGULAR_DAYS || 3),
   // Re-entering the room within this many minutes doesn't count as a new visit.
   revisitMinutes: Number(env.REVISIT_MINUTES || 30),
+  // Fully watched streams before StreamWing says "new" or "first tip ever". Until then it only says what it has seen.
+  learningStreams: Number(env.LEARNING_STREAMS || 3),
   // Railway's private network doesn't use SSL; anything else does unless told otherwise.
   // The one-line AI note per fan. Off until ANTHROPIC_API_KEY is set.
   aiKey: env.ANTHROPIC_API_KEY || '',

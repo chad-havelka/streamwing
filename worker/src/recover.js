@@ -60,7 +60,7 @@ export async function openAccount(input, ip) {
   const r = await q(`select id, cb_token_enc from performers where lower(cb_username)=lower($1)`, [username]);
   const p = r.rows[0];
   if (p && p.cb_token_enc && !same(decrypt(p.cb_token_enc, config.tokenKey), base)) {
-    throw Object.assign(new Error('This room already has a StreamWing account. Use your private link, or get a new one from the lost-link page.'), { status: 400 });
+    throw Object.assign(new Error('This room already has a StreamWing account. Use your StreamWing link, or get a new one from the lost-link page.'), { status: 400 });
   }
   const key = newAccessKey();
   let id;

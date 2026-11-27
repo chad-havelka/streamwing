@@ -637,6 +637,12 @@ test('known limit: a straggler right after a feed restart opens one stream, kept
   assert.equal(g.streams.length - verified.length, g.unconfirmed, 'unconfirmed streams are listed and counted apart');
   assert.ok(g.unconfirmed >= 1);
   assert.equal(g.recent.n, Math.min(5, verified.length), 'averages use verified streams only');
+  const avgs = a => ({ tokens: Math.round(a.reduce((t, x) => t + x.tokens, 0) / a.length), visitors: Math.round(a.reduce((t, x) => t + x.visitors, 0) / a.length),
+    messages: Math.round(a.reduce((t, x) => t + x.messages, 0) / a.length) });
+  assert.ok(g.streams.slice(-5).some(x => !x.confirmed), 'the unconfirmed stream is among the last five, so including it would change the averages');
+  assert.notDeepEqual(avgs(g.streams.slice(-5)), avgs(verified.slice(-5)), 'the test can tell the two apart');
+  const { tokens, visitors, messages } = g.recent;
+  assert.deepEqual({ tokens, visitors, messages }, avgs(verified.slice(-5)), 'recent averages are over the last five verified streams');
   const recap = (await q(`select data from feed where session_id=$1 and kind='recap'`, [after.at(-1).id])).rows[0].data;
   assert.notEqual(new Date(recap.previous.startedAt).getTime(), new Date((await q(`select started_at from sessions where id=$1`, [phantom.id])).rows[0].started_at).getTime(),
     'the recap compares with the last verified stream, not the unconfirmed one');

@@ -62,6 +62,8 @@ async function status(p) {
     lastEventAt: p.last_event_at, lastPollAt: p.last_poll_at, lastError: p.last_error,
     aiNotes: !!p.ai_notes,
     live: !!(session && !session.ended_at),
+    // 'unconfirmed': a stream is open from viewer activity, but Chaturbate hasn't reported a start or stop for it.
+    broadcast: !(session && !session.ended_at) ? 'offline' : session.confirmed ? 'live' : 'unconfirmed',
     session,
     totals: counts.rows[0],
   };
@@ -155,7 +157,7 @@ export function startHttp() {
         const r = await q(
           `select * from (
              select ${FAN_FIELDS.split(',').map(f => 'f.' + f.trim()).join(', ')},
-               (select count(*)::int from sessions s where s.performer_id = f.performer_id and s.started_at > f.last_seen) as missed_streams
+               (select count(*)::int from sessions s where s.performer_id = f.performer_id and s.confirmed and s.started_at > f.last_seen) as missed_streams
              from fans f where f.performer_id=$1 and (f.total_tips > 0 or f.visit_days >= $2)) x
            where missed_streams >= 3
            order by total_tips desc, visit_days desc limit 30`, [p.id, config.regularDays]);
@@ -165,16 +167,19 @@ export function startHttp() {
       // Every stream, newest first, so the panel can compare each with the one before.
       if (req.method === 'GET' && path === '/api/growth') {
         const r = await q(
-          `select started_at, ended_at, tokens, tippers, unique_visitors, returning_visitors, light_blues_converted, messages, peak_in_room
+          `select started_at, ended_at, tokens, tippers, unique_visitors, returning_visitors, light_blues_converted, messages, peak_in_room, confirmed
            from sessions where performer_id=$1 and ended_at is not null order by started_at desc limit 30`, [p.id]);
         const streams = r.rows.reverse().map(x => ({
           at: x.started_at, minutes: Math.round((new Date(x.ended_at) - new Date(x.started_at)) / 60000),
           tokens: x.tokens, tippers: x.tippers, visitors: x.unique_visitors, returning: x.returning_visitors,
-          blues_converted: x.light_blues_converted, messages: x.messages, peak: x.peak_in_room }));
+          blues_converted: x.light_blues_converted, messages: x.messages, peak: x.peak_in_room, confirmed: x.confirmed }));
         const avg = a => a.length ? Math.round(a.reduce((t, v) => t + v, 0) / a.length) : null;
         const share = a => { const v = a.reduce((t, x) => t + x.visitors, 0); return v ? Math.round(100 * a.reduce((t, x) => t + x.returning, 0) / v) : null; };
         const summarize = a => ({ n: a.length, tokens: avg(a.map(x => x.tokens)), visitors: avg(a.map(x => x.visitors)), messages: avg(a.map(x => x.messages)), returning_share: share(a) });
-        return send(res, 200, { streams, recent: summarize(streams.slice(-5)), previous: summarize(streams.slice(-10, -5)) });
+        // Unconfirmed streams are listed but left out of the averages.
+        const verified = streams.filter(x => x.confirmed);
+        return send(res, 200, { streams, unconfirmed: streams.length - verified.length,
+          recent: summarize(verified.slice(-5)), previous: summarize(verified.slice(-10, -5)) });
       }
 
       if (req.method === 'GET' && path === '/api/brief') {
@@ -182,7 +187,7 @@ export function startHttp() {
         const tz = pr.rows[0]?.timezone || 'UTC';
         const today = (await q(`select to_char(now() at time zone $1, 'YYYY-MM-DD') d`, [tz])).rows[0].d;
         const days = (await q(
-          `select distinct to_char(started_at at time zone $2, 'YYYY-MM-DD') d from sessions where performer_id=$1 order by d desc limit 90`,
+          `select distinct to_char(started_at at time zone $2, 'YYYY-MM-DD') d from sessions where performer_id=$1 and confirmed order by d desc limit 90`,
           [p.id, tz])).rows.map(x => x.d);
         const back = d => new Date(Date.parse(d + 'T00:00:00Z') - 86400000).toISOString().slice(0, 10);
         let cursor = days.includes(today) ? today : back(today);
@@ -190,7 +195,7 @@ export function startHttp() {
         while (days.includes(cursor)) { streak++; cursor = back(cursor); }
         const yesterday = back(today);
         const last = (await q(
-          `select started_at, messages, tokens, unique_visitors from sessions where performer_id=$1 and ended_at is not null order by started_at desc limit 6`,
+          `select started_at, messages, tokens, unique_visitors from sessions where performer_id=$1 and ended_at is not null and confirmed order by started_at desc limit 6`,
           [p.id])).rows;
         const items = [];
         if (streak >= 2) items.push({ kind: 'streak', text: `${streak} days in a row streaming. Keep it going.` });

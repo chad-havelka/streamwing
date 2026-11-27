@@ -353,7 +353,7 @@ function demoStep([kind, username, extra = {}]) {
 }
 function demoMe() {
   return { username: 'yourname', displayName: 'there', connected: demo.connected, polling: true, lastError: null, aiNotes: demo.aiNotes === true,
-    live: demo.live, session: demo.live ? demo.session : null, totals: { fans: 214, tippers: 37, light_blues: 58 } };
+    live: demo.live, broadcast: demo.live ? 'live' : 'offline', session: demo.live ? demo.session : null, totals: { fans: 214, tippers: 37, light_blues: 58 } };
 }
 async function demoApi(path, opts) {
   await new Promise(r => setTimeout(r, path === '/api/connect' ? 900 : 60));
@@ -582,7 +582,7 @@ const ROW = {
   follow:     f => [h('b', {}, f.username), ' followed you'],
   fanclub:    f => [h('b', {}, f.username), ' joined your fan club'],
   media:      f => [h('b', {}, f.username), ` bought ${f.data.name || 'media'} for ${n(f.data.tokens)}`],
-  live:       f => [f.data.joinedMidStream ? 'Connected while you were live' : 'You went live'],
+  live:       f => [f.data.joinedMidStream ? 'Activity in your room. Chaturbate hasn\u2019t confirmed you\u2019re live' : 'You went live'],
 };
 
 function facts(fan) {
@@ -915,7 +915,9 @@ function okDraw() {
   if (!justConnected || !me) { el.hidden = true; return; }
   el.hidden = false;
   const fans = me.totals && me.totals.fans || 0;
-  const line = me.live
+  const line = me.broadcast === 'unconfirmed'
+    ? 'StreamWing is seeing activity in your room, but Chaturbate hasn\u2019t confirmed you\u2019re live.'
+    : me.live
     ? (fans ? 'You\u2019re live. StreamWing has seen ' + fans + (fans === 1 ? ' person' : ' people') + ' in your room so far.' : 'You\u2019re live. Waiting for the first person to come through\u2026')
     : 'You\u2019re offline right now. Go live and this fills in on its own.';
   const checked = me.lastPollAt ? (ago(me.lastPollAt) === 'now' ? 'Checked with Chaturbate just now.' : 'Last checked with Chaturbate ' + ago(me.lastPollAt) + ' ago.') : 'Checking with Chaturbate\u2026';
@@ -947,6 +949,7 @@ function updateStatus() {
   keepAwake();
   if (!me) return;
   if (me.lastError) return setStatus('Needs attention');
+  if (me.broadcast === 'unconfirmed') return setStatus('Live not confirmed', 'ok');
   if (me.live) return setStatus('Live', 'live');
   setStatus('Connected', 'ok');
 }

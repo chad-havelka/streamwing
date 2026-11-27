@@ -8,10 +8,10 @@ const FAN_COLS = `username, first_seen, last_seen, visits, visit_days, total_tip
 
 export const isLightBlue = fan => !!fan && fan.has_tokens === true && Number(fan.total_tips) === 0;
 
-async function openSession(c, performerId) {
+async function openSession(c, performerId, confirmed = true) {
   const r = await c.query(`select * from sessions where performer_id=$1 and ended_at is null order by started_at desc limit 1`, [performerId]);
   if (r.rows[0]) return { session: r.rows[0], opened: false };
-  const n = await c.query(`insert into sessions (performer_id) values ($1) returning *`, [performerId]);
+  const n = await c.query(`insert into sessions (performer_id, confirmed) values ($1, $2) returning *`, [performerId, confirmed]);
   return { session: n.rows[0], opened: true };
 }
 
@@ -101,6 +101,8 @@ export async function processEvent(c, performer, ev) {
 
   if (ev.method === 'broadcastStop') {
     await c.query(`update performers set last_stop_at=now() where id=$1`, [pid]);
+    // A stop proves she was broadcasting in the stream that is open, even if we never saw it start.
+    await c.query(`update sessions set confirmed=true where performer_id=$1 and ended_at is null`, [pid]);
     const ended = await closeSession(c, pid);
     if (ended) items.push(await addFeed(c, pid, ended.id, 'recap', null, await buildRecap(c, ended)));
     return { items };
@@ -119,8 +121,9 @@ export async function processEvent(c, performer, ev) {
       // An enter into a room that is offline is not a visit.
       if (ev.method === 'userEnter') return { items };
     } else {
-      // Viewer activity with no stop seen on this feed means she's live and we connected mid-stream.
-      const { session } = await openSession(c, pid);
+      // Viewer activity with no stop seen on this feed usually means she's live and we connected mid-stream,
+      // but after a feed gap it can be a late event from an ended stream. Keep it, marked unconfirmed.
+      const { session } = await openSession(c, pid, false);
       items.push(await addFeed(c, pid, session.id, 'live', null, { joinedMidStream: true }));
       sid = session.id;
     }
@@ -272,7 +275,7 @@ export async function buildRecap(c, s) {
   const mins = Math.round((new Date(s.ended_at || Date.now()) - new Date(s.started_at)) / 60000);
   // The stream before this one, so she can see whether things moved.
   const prev = await c.query(
-    `select * from sessions where performer_id=$1 and started_at < $2 and ended_at is not null order by started_at desc limit 1`,
+    `select * from sessions where performer_id=$1 and started_at < $2 and ended_at is not null and confirmed order by started_at desc limit 1`,
     [s.performer_id, s.started_at]);
   const p = prev.rows[0];
   return {
@@ -281,6 +284,7 @@ export async function buildRecap(c, s) {
       returningVisitors: p.returning_visitors, lightBluesSeen: p.light_blues_seen, lightBluesConverted: p.light_blues_converted,
       newFollowers: p.new_followers,
     } : null,
+    confirmed: s.confirmed,
     minutes: mins,
     tokens: s.tokens, tippers: s.tippers,
     uniqueVisitors: s.unique_visitors, newVisitors: s.new_visitors, returningVisitors: s.returning_visitors,

@@ -48,7 +48,7 @@ async function runLoop(performerId, state) {
     } catch (err) {
       if (err.auth) {
         // Token deleted or wrong. Stop until she reconnects; don't hammer Chaturbate.
-        await q(`update performers set last_error=$2, next_url_enc=null where id=$1`,
+        await q(`update performers set last_error=$2, next_url_enc=null, feed_started_at=now() where id=$1`,
           [performerId, 'Chaturbate rejected the saved link. It may have been deleted. Reconnect Chaturbate.']);
         publish(performerId, { kind: 'status', transient: true, data: { error: 'token_rejected' } });
         break;
@@ -56,14 +56,14 @@ async function runLoop(performerId, state) {
       // Our place in the feed got too old (worker was down a while). Chaturbate sends a fresh link: use it.
       const fresh = err.restartUrl && restartFor(err.restartUrl, url);
       if (fresh) {
-        await q(`update performers set next_url_enc=$2, last_error=null where id=$1`, [performerId, encrypt(fresh, config.tokenKey)]);
+        await q(`update performers set next_url_enc=$2, feed_started_at=now(), last_error=null where id=$1`, [performerId, encrypt(fresh, config.tokenKey)]);
         console.log(`[poll ${performer.cb_username}] saved place was too old; restarted from Chaturbate's fresh link`);
         if (++restarts > 3) await sleep(backoff); // never spin if it keeps happening
         continue;
       }
       // A stale cursor can 404; fall back to the base URL once.
       if (err.status === 404 && performer.next_url_enc) {
-        await q(`update performers set next_url_enc=null where id=$1`, [performerId]);
+        await q(`update performers set next_url_enc=null, feed_started_at=now() where id=$1`, [performerId]);
         continue;
       }
       console.error(`[poll ${performer.cb_username}]`, err.message);

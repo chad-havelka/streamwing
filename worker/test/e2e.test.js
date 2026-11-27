@@ -465,6 +465,8 @@ test('a real session captured from the Chaturbate testbed (Nov 2026) is understo
     fcAutoRenew: false, hasDarkmode: false, inPrivateShow: false, isBroadcasting: true, ...o });
   const TR = { colorGroup: 'tr', recentTips: 'some' };
   const E = (id, method, user, extra = {}) => ({ method, id, object: { broadcaster: 'sim_room', user, ...extra } });
+  // Connect now, mid-stream, so the first thing on the new connection is viewer activity.
+  assert.equal((await call('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: sim.eventsUrl }) })).status, 200);
   sim.push([
     E('1795666146613-0', 'unfollow', RU({})),
     E('1795666149785-0', 'follow', RU({ isFollower: true })),
@@ -497,17 +499,194 @@ test('a real session captured from the Chaturbate testbed (Nov 2026) is understo
   await settle();
 });
 
-test('a leave that arrives after she stopped does not open a phantom stream', async () => {
-  // Real testbed behaviour: a lone userLeave from streamwingtester arrived with no stream running.
-  const { ev, user } = sim;
-  const streamsBefore = (await call('/api/streams')).body;
-  const count = a => (Array.isArray(a) ? a : (a.streams || [])).length;
-  sim.push([ev('userLeave', { user: user('late_leaver') })]);
+// Pushes events and checks the worker really took them in, so "nothing happened" can't pass because nothing arrived.
+async function pushDelivered(events) {
+  sim.push(events);
   await settle();
-  assert.equal(count((await call('/api/streams')).body), count(streamsBefore), 'no new stream');
+  const ids = events.map(e => e.id);
+  const got = (await q(`select cb_event_id from events where cb_event_id = any($1)`, [ids])).rows.map(r => r.cb_event_id);
+  assert.deepEqual(got.sort(), [...ids].sort(), 'the worker received every event');
+}
+
+test('a leave, chat or tip that arrives after she stopped does not open a phantom stream', async () => {
+  // Real testbed behaviour: a lone userLeave from streamwingtester arrived with no stream running.
+  // Chat and tips can arrive after broadcastStop the same way.
+  const { ev, user } = sim;
+  const streams = async () => {
+    const r = await call('/api/sessions');
+    assert.equal(r.status, 200, 'the stream list endpoint answers');
+    assert.ok(Array.isArray(r.body.sessions) && r.body.sessions.length > 0, 'her past streams are listed');
+    return r.body.sessions.map(s => s.id);
+  };
+  const streamCount = async () => (await q(`select count(*)::int n from sessions s join performers p on p.id = s.performer_id where p.cb_username = 'sim_room'`)).rows[0].n;
+  const streamsBefore = await streams();
+  const countBefore = await streamCount();
+  assert.equal((await call('/api/me')).body.live, false, 'she has stopped');
+  const tipsBefore = Number((await call('/api/fans/streamwingtester')).body.total_tips);
+  const late = [
+    ['a lone leave', ev('userLeave', { user: user('late_leaver') })],
+    ['a late chat', ev('chatMessage', { user: user('late_lucy'), message: { message: 'bye!' } })],
+    ['a late tip', ev('tip', { user: user('streamwingtester', { colorGroup: 'tr', hasTokens: true, recentTips: 'some' }), tip: { isAnon: false, tokens: 15, message: 'gn' } })],
+  ];
+  for (const [what, e] of late) {
+    await pushDelivered([e]);
+    assert.deepEqual(await streams(), streamsBefore, `no new stream from ${what}`);
+    assert.equal(await streamCount(), countBefore, `no new stream row from ${what}`);
+    assert.equal((await call('/api/me')).body.live, false, `still offline after ${what}`);
+  }
   assert.equal((await call('/api/fans/late_leaver')).status, 404, 'no fan row from a lone leave');
   const live = (await q(`select count(*)::int n from sessions where ended_at is null`)).rows[0].n;
   assert.equal(live, 0, 'nothing left open');
+  assert.equal(Number((await call('/api/fans/streamwingtester')).body.total_tips), tipsBefore + 15, 'a late tip still counts toward what the fan has given');
+});
+
+// Polls until cond() is true. A stopped poll loop only ends after its current long-poll, so fixed sleeps are flaky.
+async function waitFor(cond, what, ms = 15000) {
+  const until = Date.now() + ms;
+  while (!(await cond())) {
+    if (Date.now() > until) assert.fail(`timed out waiting: ${what}`);
+    await wait(100);
+  }
+}
+// Stops her poll loop and waits until it has really ended, so nothing writes her saved place behind our back.
+async function stopPolling(pid) {
+  const { stopLoop, isPolling } = await import('../src/poller.js');
+  // Stop whatever loop is running on each check: the supervisor may start a new one in between.
+  await waitFor(() => { stopLoop(pid); return !isPolling(pid); }, 'the old poll loop to end');
+}
+
+// Our place in the feed expires and Chaturbate hands us a fresh link: anything in the gap is never delivered.
+async function restartFeed() {
+  const { startLoop } = await import('../src/poller.js');
+  const { encrypt } = await import('../src/crypto.js');
+  const { config } = await import('../src/config.js');
+  const pid = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
+  const before = (await q(`select feed_started_at from performers where id=$1`, [pid])).rows[0].feed_started_at;
+  await stopPolling(pid);
+  await q(`update performers set next_url_enc=$2 where id=$1`, [pid, encrypt(`${sim.eventsUrl}?i=stale`, config.tokenKey)]);
+  startLoop(pid);
+  await waitFor(async () => (await q(`select feed_started_at from performers where id=$1`, [pid])).rows[0].feed_started_at > before,
+    'the restart is recorded as a new start of the feed');
+  await settle();
+}
+const streamRows = async () => (await q(`select s.id, s.ended_at, s.confirmed from sessions s join performers p on p.id = s.performer_id where p.cb_username = 'sim_room' order by s.started_at`)).rows;
+const liveCard = async sid => (await q(`select data from feed where session_id=$1 and kind='live'`, [sid])).rows.map(r => r.data);
+
+test('after the feed restarts, a stream whose start fell in the gap is picked up once, and its stop still blocks stragglers', async () => {
+  const { ev, user } = sim;
+  assert.equal((await call('/api/me')).body.live, false, 'she is offline before the gap');
+  const before = await streamRows();
+  await restartFeed();
+  // She went live during the gap: broadcastStart was never delivered, the first thing seen is a chat.
+  await pushDelivered([ev('chatMessage', { user: user('gap_gina'), message: { message: 'hi!' } })]);
+  let rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'the stream she is in is picked up');
+  const sid = rows.at(-1).id;
+  const me = (await call('/api/me')).body;
+  assert.equal(me.live, true, 'the stream is open and collecting');
+  assert.equal(me.broadcast, 'unconfirmed', 'shown as unconfirmed, not as confirmed live: no broadcastStart was seen');
+  assert.equal(rows.at(-1).confirmed, false, 'the stream is stored as unconfirmed');
+  assert.deepEqual(await liveCard(sid), [{ joinedMidStream: true }], 'marked as joined mid-stream, not as "you went live"');
+  await pushDelivered([ev('tip', { user: user('gap_gina', { hasTokens: true }), tip: { isAnon: false, tokens: 20, message: '' } }),
+    ev('userEnter', { user: user('gap_gary') })]);
+  rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'later activity joins the same stream');
+  assert.equal(Number((await call('/api/me')).body.session.tokens), 20, 'the tip counts toward the stream that was picked up');
+  await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
+  assert.equal((await streamRows()).find(r => r.id === sid).confirmed, true, 'her broadcastStop confirms the stream was real');
+  const recap = (await q(`select data from feed where session_id=$1 and kind='recap'`, [sid])).rows[0].data;
+  assert.equal(recap.confirmed, true);
+  await pushDelivered([ev('chatMessage', { user: user('gap_gina'), message: { message: 'bye' } }),
+    ev('tip', { user: user('gap_gina', { hasTokens: true }), tip: { isAnon: false, tokens: 5, message: '' } })]);
+  rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'a stop seen on the new feed stops stragglers opening another stream');
+  assert.ok(rows.every(r => r.ended_at), 'nothing left open');
+  assert.equal((await call('/api/me')).body.live, false);
+});
+
+test('known limit: a straggler right after a feed restart opens one stream, kept apart as unconfirmed, until she next goes live', async () => {
+  // The Events API has no "is she live" field, so after a gap a straggler from a stream that has ended
+  // arrives exactly like the first chat of a stream whose broadcastStart fell in the gap (the test above).
+  // Picking it up is the safer mistake: the other choice drops a real stream with its recap and notes.
+  // The stream is stored and shown as unconfirmed, its events are kept, and analytics leave it out.
+  // This test pins how far the mistake can go. Change it only when Chaturbate gives a reliable live signal.
+  const { ev, user } = sim;
+  assert.equal((await call('/api/me')).body.live, false, 'she stopped, and the stop was seen');
+  const before = await streamRows();
+  await restartFeed();
+  await pushDelivered([ev('chatMessage', { user: user('late_lena'), message: { message: 'gn' } }),
+    ev('tip', { user: user('late_lena', { hasTokens: true }), tip: { isAnon: false, tokens: 3, message: '' } }),
+    ev('userLeave', { user: user('late_lena') })]);
+  const rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'at most one stream, however many stragglers');
+  const phantom = rows.at(-1);
+  assert.deepEqual(await liveCard(phantom.id), [{ joinedMidStream: true }], 'never shown as "you went live"');
+  assert.equal(phantom.confirmed, false, 'stored as unconfirmed');
+  assert.equal((await call('/api/me')).body.broadcast, 'unconfirmed', 'the panel is told her live status is unconfirmed');
+  // The next thing Chaturbate reports is her going live again, which ends the unconfirmed stream.
+  await pushDelivered([ev('broadcastStart', { user: user('sim_room') })]);
+  assert.equal((await call('/api/me')).body.broadcast, 'live', 'a broadcastStart is confirmed live');
+  await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
+  await pushDelivered([ev('chatMessage', { user: user('late_lena'), message: { message: 'still here?' } })]);
+  const after = await streamRows();
+  assert.equal(after.length, before.length + 2, 'once a stop is seen, stragglers are blocked again');
+  assert.equal(after.find(r => r.id === phantom.id).confirmed, false, 'still unconfirmed: no stop arrived while it was open');
+  assert.equal((await call('/api/me')).body.broadcast, 'offline');
+  const g = (await call('/api/growth')).body;
+  const verified = g.streams.filter(x => x.confirmed);
+  assert.equal(g.streams.length - verified.length, g.unconfirmed, 'unconfirmed streams are listed and counted apart');
+  assert.ok(g.unconfirmed >= 1);
+  assert.equal(g.recent.n, Math.min(5, verified.length), 'averages use verified streams only');
+  const avgs = a => ({ tokens: Math.round(a.reduce((t, x) => t + x.tokens, 0) / a.length), visitors: Math.round(a.reduce((t, x) => t + x.visitors, 0) / a.length),
+    messages: Math.round(a.reduce((t, x) => t + x.messages, 0) / a.length) });
+  assert.ok(g.streams.slice(-5).some(x => !x.confirmed), 'the unconfirmed stream is among the last five, so including it would change the averages');
+  assert.notDeepEqual(avgs(g.streams.slice(-5)), avgs(verified.slice(-5)), 'the test can tell the two apart');
+  const { tokens, visitors, messages } = g.recent;
+  assert.deepEqual({ tokens, visitors, messages }, avgs(verified.slice(-5)), 'recent averages are over the last five verified streams');
+  const recap = (await q(`select data from feed where session_id=$1 and kind='recap'`, [after.at(-1).id])).rows[0].data;
+  assert.notEqual(new Date(recap.previous.startedAt).getTime(), new Date((await q(`select started_at from sessions where id=$1`, [phantom.id])).rows[0].started_at).getTime(),
+    'the recap compares with the last verified stream, not the unconfirmed one');
+});
+
+test('a stop with no stream open still means she is offline: a late chat or tip after it opens nothing', async () => {
+  // She connects StreamWing while live with nobody chatting, then stops: the stop arrives with no stream open.
+  const { ev, user } = sim;
+  assert.equal((await call('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: sim.eventsUrl }) })).status, 200);
+  await settle();
+  const before = await streamRows();
+  assert.ok(before.every(r => r.ended_at), 'no stream open');
+  await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
+  await pushDelivered([ev('chatMessage', { user: user('quiet_quinn'), message: { message: 'bye' } }),
+    ev('tip', { user: user('quiet_quinn', { hasTokens: true }), tip: { isAnon: false, tokens: 4, message: '' } })]);
+  assert.equal((await streamRows()).length, before.length, 'no stream from activity after the stop');
+  assert.equal((await call('/api/me')).body.live, false);
+});
+
+test('a feed read again from the start after Chaturbate refused the saved place counts as a restart', async () => {
+  // The saved place is refused (401), the poller drops it, and the next loop reads her base link again.
+  // Anything in between was never delivered, so a broadcastStart may have been missed.
+  const { startLoop, isPolling } = await import('../src/poller.js');
+  const { encrypt } = await import('../src/crypto.js');
+  const { config } = await import('../src/config.js');
+  const { ev, user } = sim;
+  const pid = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
+  assert.equal((await call('/api/me')).body.live, false, 'she stopped, and the stop was seen');
+  const before = await streamRows();
+  await stopPolling(pid);
+  await q(`update performers set next_url_enc=$2 where id=$1`, [pid, encrypt(`${sim.base}/events/sim_room/not-the-token/`, config.tokenKey)]);
+  startLoop(pid);
+  await waitFor(async () => /rejected/.test((await call('/api/me')).body.lastError || ''), 'the refused place to be reported');
+  // The loop stops after a refusal; the supervisor may already have started it again from her base link.
+  await waitFor(async () => !isPolling(pid) || (await call('/api/me')).body.lastError === null, 'the refused loop to end');
+  startLoop(pid); // what the supervisor does on its next tick
+  await settle();
+  // She went live while the feed was down: the first thing seen is a chat.
+  await pushDelivered([ev('chatMessage', { user: user('back_bea'), message: { message: 'hey' } })]);
+  const rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'the stream she is in is picked up');
+  assert.deepEqual(await liveCard(rows.at(-1).id), [{ joinedMidStream: true }]);
+  await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
+  assert.equal((await call('/api/me')).body.live, false);
 });
 
 test('a link that does not go to Chaturbate is refused, and a feed cannot send us to another host', async () => {

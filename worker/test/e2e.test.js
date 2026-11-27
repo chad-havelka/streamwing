@@ -499,6 +499,15 @@ test('a real session captured from the Chaturbate testbed (Nov 2026) is understo
   await settle();
 });
 
+// Pushes events and checks the worker really took them in, so "nothing happened" can't pass because nothing arrived.
+async function pushDelivered(events) {
+  sim.push(events);
+  await settle();
+  const ids = events.map(e => e.id);
+  const got = (await q(`select cb_event_id from events where cb_event_id = any($1)`, [ids])).rows.map(r => r.cb_event_id);
+  assert.deepEqual(got.sort(), [...ids].sort(), 'the worker received every event');
+}
+
 test('a leave, chat or tip that arrives after she stopped does not open a phantom stream', async () => {
   // Real testbed behaviour: a lone userLeave from streamwingtester arrived with no stream running.
   // Chat and tips can arrive after broadcastStop the same way.
@@ -520,8 +529,7 @@ test('a leave, chat or tip that arrives after she stopped does not open a phanto
     ['a late tip', ev('tip', { user: user('streamwingtester', { colorGroup: 'tr', hasTokens: true, recentTips: 'some' }), tip: { isAnon: false, tokens: 15, message: 'gn' } })],
   ];
   for (const [what, e] of late) {
-    sim.push([e]);
-    await settle();
+    await pushDelivered([e]);
     assert.deepEqual(await streams(), streamsBefore, `no new stream from ${what}`);
     assert.equal(await streamCount(), countBefore, `no new stream row from ${what}`);
     assert.equal((await call('/api/me')).body.live, false, `still offline after ${what}`);
@@ -555,24 +563,20 @@ test('after the feed restarts, a stream whose start fell in the gap is picked up
   const before = await streamRows();
   await restartFeed();
   // She went live during the gap: broadcastStart was never delivered, the first thing seen is a chat.
-  sim.push([ev('chatMessage', { user: user('gap_gina'), message: { message: 'hi!' } })]);
-  await settle();
+  await pushDelivered([ev('chatMessage', { user: user('gap_gina'), message: { message: 'hi!' } })]);
   let rows = await streamRows();
   assert.equal(rows.length, before.length + 1, 'the stream she is in is picked up');
   const sid = rows.at(-1).id;
   assert.equal((await call('/api/me')).body.live, true, 'she is shown live');
   assert.deepEqual(await liveCard(sid), [{ joinedMidStream: true }], 'marked as joined mid-stream, not as "you went live"');
-  sim.push([ev('tip', { user: user('gap_gina', { hasTokens: true }), tip: { isAnon: false, tokens: 20, message: '' } }),
+  await pushDelivered([ev('tip', { user: user('gap_gina', { hasTokens: true }), tip: { isAnon: false, tokens: 20, message: '' } }),
     ev('userEnter', { user: user('gap_gary') })]);
-  await settle();
   rows = await streamRows();
   assert.equal(rows.length, before.length + 1, 'later activity joins the same stream');
   assert.equal(Number((await call('/api/me')).body.session.tokens), 20, 'the tip counts toward the stream that was picked up');
-  sim.push([ev('broadcastStop', { user: user('sim_room') })]);
-  await settle();
-  sim.push([ev('chatMessage', { user: user('gap_gina'), message: { message: 'bye' } }),
+  await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
+  await pushDelivered([ev('chatMessage', { user: user('gap_gina'), message: { message: 'bye' } }),
     ev('tip', { user: user('gap_gina', { hasTokens: true }), tip: { isAnon: false, tokens: 5, message: '' } })]);
-  await settle();
   rows = await streamRows();
   assert.equal(rows.length, before.length + 1, 'a stop seen on the new feed stops stragglers opening another stream');
   assert.ok(rows.every(r => r.ended_at), 'nothing left open');
@@ -588,18 +592,55 @@ test('known limit: a straggler right after a feed restart opens one stream, mark
   assert.equal((await call('/api/me')).body.live, false, 'she stopped, and the stop was seen');
   const before = await streamRows();
   await restartFeed();
-  sim.push([ev('chatMessage', { user: user('late_lena'), message: { message: 'gn' } }),
+  await pushDelivered([ev('chatMessage', { user: user('late_lena'), message: { message: 'gn' } }),
     ev('tip', { user: user('late_lena', { hasTokens: true }), tip: { isAnon: false, tokens: 3, message: '' } }),
     ev('userLeave', { user: user('late_lena') })]);
-  await settle();
   const rows = await streamRows();
   assert.equal(rows.length, before.length + 1, 'at most one stream, however many stragglers');
   assert.deepEqual(await liveCard(rows.at(-1).id), [{ joinedMidStream: true }], 'shown as "connected while you were live", never "you went live"');
-  sim.push([ev('broadcastStop', { user: user('sim_room') })]);
-  await settle();
-  sim.push([ev('chatMessage', { user: user('late_lena'), message: { message: 'still here?' } })]);
-  await settle();
+  await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
+  await pushDelivered([ev('chatMessage', { user: user('late_lena'), message: { message: 'still here?' } })]);
   assert.equal((await streamRows()).length, before.length + 1, 'once a stop is seen, stragglers are blocked again');
+  assert.equal((await call('/api/me')).body.live, false);
+});
+
+test('a stop with no stream open still means she is offline: a late chat or tip after it opens nothing', async () => {
+  // She connects StreamWing while live with nobody chatting, then stops: the stop arrives with no stream open.
+  const { ev, user } = sim;
+  assert.equal((await call('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: sim.eventsUrl }) })).status, 200);
+  await settle();
+  const before = await streamRows();
+  assert.ok(before.every(r => r.ended_at), 'no stream open');
+  await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
+  await pushDelivered([ev('chatMessage', { user: user('quiet_quinn'), message: { message: 'bye' } }),
+    ev('tip', { user: user('quiet_quinn', { hasTokens: true }), tip: { isAnon: false, tokens: 4, message: '' } })]);
+  assert.equal((await streamRows()).length, before.length, 'no stream from activity after the stop');
+  assert.equal((await call('/api/me')).body.live, false);
+});
+
+test('a feed read again from the start after Chaturbate refused the saved place counts as a restart', async () => {
+  // The saved place is refused (401), the poller drops it, and the next loop reads her base link again.
+  // Anything in between was never delivered, so a broadcastStart may have been missed.
+  const { stopLoop, startLoop } = await import('../src/poller.js');
+  const { encrypt } = await import('../src/crypto.js');
+  const { config } = await import('../src/config.js');
+  const { ev, user } = sim;
+  const pid = (await q(`select id from performers where cb_username='sim_room'`)).rows[0].id;
+  assert.equal((await call('/api/me')).body.live, false, 'she stopped, and the stop was seen');
+  const before = await streamRows();
+  stopLoop(pid); await wait(1500);
+  await q(`update performers set next_url_enc=$2 where id=$1`, [pid, encrypt(`${sim.base}/events/sim_room/not-the-token/`, config.tokenKey)]);
+  startLoop(pid);
+  await wait(1000);
+  assert.match((await call('/api/me')).body.lastError || '', /rejected/, 'the refused place is reported');
+  startLoop(pid); // what the supervisor does on its next tick
+  await settle();
+  // She went live while the feed was down: the first thing seen is a chat.
+  await pushDelivered([ev('chatMessage', { user: user('back_bea'), message: { message: 'hey' } })]);
+  const rows = await streamRows();
+  assert.equal(rows.length, before.length + 1, 'the stream she is in is picked up');
+  assert.deepEqual(await liveCard(rows.at(-1).id), [{ joinedMidStream: true }]);
+  await pushDelivered([ev('broadcastStop', { user: user('sim_room') })]);
   assert.equal((await call('/api/me')).body.live, false);
 });
 

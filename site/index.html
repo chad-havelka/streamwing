@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StreamWing</title>
+<meta name="description" content="StreamWing sits beside you while you're live on Chaturbate. It tells you who just walked in, how often they've been back and what they've tipped.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/theme-night-plum.css">
@@ -30,11 +31,6 @@ html{scroll-padding-top:16px}
 .bub{position:absolute;background:var(--panel2);border:1px solid var(--edge);border-radius:18px;padding:10px 16px;font-size:15px;max-width:72%}
 .bub b{color:var(--pinkl)}
 @media(prefers-reduced-motion:no-preference){.bub{animation:pop .5s ease-out both}.bub:nth-of-type(2){animation-delay:.5s}.bub:nth-of-type(3){animation-delay:1s}@keyframes pop{from{opacity:0;transform:translateY(10px)}}}
-.light{background:var(--light-bg);color:var(--light-ink);padding-block:var(--sp-section)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:var(--sp-grid);margin-top:var(--sp-lead)}
-.card{background:var(--card);border:1px solid var(--light-line);border-radius:24px;padding:var(--sp-card)}
-.card h3{margin:18px 0 8px;font-size:21px;font-weight:600}
-.card p{margin:0;color:var(--light-soft)}
 .promo{padding-block:8px var(--sp-section)}
 .promo .wrap{max-width:1000px;text-align:center}
 .promo video{display:block;width:100%;height:auto;aspect-ratio:16/9;margin-top:28px;border-radius:24px;border:1px solid var(--line);background:#000}
@@ -94,11 +90,6 @@ td.t{white-space:nowrap;color:var(--mute)}
 .bub-1{left:20px;top:28px}
 .bub-2{right:20px;top:92px}
 .bub-3{left:20px;top:156px}
-.light-top{border-top:1px solid var(--light-line)}
-.grid-tight{margin-top:24px}
-.fine{margin:12px 0 0;font-size:15px;color:var(--light-accent)}
-.note-light{margin-top:24px;color:var(--light-soft)}
-.light-link{color:var(--light-accent)}
 .icon-gap{margin-top:16px}
 .f-gap{margin-top:14px}
 .sub-tight{margin-top:8px}
@@ -107,6 +98,9 @@ td.t{white-space:nowrap;color:var(--mute)}
 .btn-gap{margin-top:28px}
 .count{color:var(--mute);font-weight:500}
 .btn-sm{min-height:44px;padding:10px 20px;font-size:15px}
+.hero .note{margin-top:16px;font-size:15px}
+.ctas.center{justify-content:center}
+.signoff .ask{display:inline-block;margin-top:20px;font-size:16px}
 .td-mute{color:var(--mute)}
 @media(max-width:600px){.stage{height:420px}.stage svg{width:240px;height:252px;margin-left:-120px}table{font-size:13px}}
 </style>
@@ -119,10 +113,17 @@ td.t{white-space:nowrap;color:var(--mute)}
 <main id="top">
 <section class="wrap hero">
 <div class="copy">
-<p class="kicker">Your AI camming assistant</p>
-<h1>Regulars want to be remembered. New fans want a hello.</h1>
-<p class="lead">StreamWing sits beside you while you're live on Chaturbate. It tells you who just walked in, how often they've been back and what they've tipped, so you can stay on camera and in the moment.</p>
-<div class="ctas"><a class="btn" data-cta href="/connect-to-chaturbate/">Connect your room</a><a class="btn ghost" href="#features">See what it does</a></div><p class="note">No account. No email. Paste one link from Chaturbate.</p>
+<p class="kicker">Your AI streaming assistant</p>
+<h1 id="hl" data-hl="7">Regulars want to be remembered. New fans want a hello.</h1>
+<script>
+/* Rotating headline. One of seven per page load. Add ?hl=3 to the address to see a given one.
+   The number shown is kept on the h1 as data-hl, ready for counting. */
+(function(){var H=[[1,'\u201cRemember me from Tuesday?\u201d Now you do.'],[2,'Your biggest tipper just walked in. Did you see?'],[3,'They have tokens. They haven\u2019t tipped. Do you know who?'],[4,'A regular stopped coming. Did you notice when?'],[5,'A few viewers and a few tippers? You can\u2019t lose one.'],[6,'You can\u2019t perform and read every username.'],[7,'Regulars want to be remembered. New fans want a hello.']];
+var q=/[?&]hl=([1-7])\b/.exec(location.search),p=q?H[q[1]-1]:H[Math.floor(Math.random()*H.length)],e=document.getElementById('hl');
+e.textContent=p[1];e.setAttribute('data-hl',p[0]);})();
+</script>
+<p class="lead">StreamWing sits beside you while you're live on Chaturbate. It tells you who just walked in, how often they've been back and what they've tipped.</p>
+<div class="ctas"><a class="btn" data-cta href="/connect-to-chaturbate/">Connect your room</a><a class="btn ghost" href="/owl/#demo">Try the practice room</a></div><p class="note">Free during early access. No account, no email. It only reads your room.</p>
 </div>
 <div class="stage">
 <div class="disc"></div>
@@ -155,29 +156,27 @@ td.t{white-space:nowrap;color:var(--mute)}
 </div></section>
 
 <section class="light" id="features"><div class="wrap">
-<h2>What StreamWing handles while you're live</h2>
+<h2>What StreamWing does while you're live</h2>
 <div class="grid" id="feats"></div>
+<p class="more"><a href="/how-it-works/">See everything it does</a></p>
 </div></section>
 
-<section class="light light-top" id="privacy"><div class="wrap">
+<section class="light" id="privacy"><div class="wrap">
 <h2>Your room's data, your call</h2>
-<p>Seven things we do with your room's data, and what each one means for you.</p>
-<div class="grid grid-tight">
-<div class="card"><h3>We only read your room</h3><p>StreamWing reads your room's events through a link you create. It can't post, tip or message anyone as you.</p><p class="fine"><b>What it means for you:</b> Nobody speaks in your room under your name. Delete the link on Chaturbate and StreamWing loses access to your room.</p></div>
-<div class="card"><h3>We keep what your panel shows</h3><p>Each regular's username, when they visited, what they tipped, whether they follow you or are in your fan club, and their last five public chat messages.</p><p class="fine"><b>What it means for you:</b> Your history with a regular is there when you need it. We never store what a private message says.</p></div>
-<div class="card"><h3>Your room link is encrypted</h3><p>The Chaturbate link you paste is stored encrypted, not as plain text.</p><p class="fine"><b>What it means for you:</b> A copy of our database alone doesn't reveal your room link.</p></div>
-<div class="card"><h3>AI fan notes are coming soon</h3><p>They'll be off until you turn them on.</p><p class="fine"><b>What it means for you:</b> Nothing about your fans goes to an AI service today.</p></div>
-<div class="card"><h3>We don't sell your fans' data</h3><p>We don't sell it, and we don't share it with advertisers. Our team opens your data only to fix a problem the service has.</p><p class="fine"><b>What it means for you:</b> Your fan list stays your business record, not a product we sell.</p></div>
-<div class="card"><h3>Delete everything in one step</h3><p>Disconnect and delete removes everything StreamWing holds about your room. It can't be undone.</p><p class="fine"><b>What it means for you:</b> You can leave at any time. Your fan records and history are gone. Your account record stays until you ask us to remove it.</p></div>
-<div class="card"><h3>No automatic deletion</h3><p>We keep fan records until you delete them. Nothing deletes them on a timer.</p><p class="fine"><b>What it means for you:</b> A regular's history is what makes the notes and birthdays work. A timer would throw it away.</p></div>
+<div class="grid three">
+<div class="card"><h3>It only reads</h3><p>StreamWing can't post, tip or message as you.</p></div>
+<div class="card"><h3>You can stop any time</h3><p>Delete the link on Chaturbate and StreamWing loses access.</p></div>
+<div class="card"><h3>We don't sell your fans' data</h3><p>We don't sell it, and we don't share it with advertisers.</p></div>
 </div>
-<p class="note note-light">Full detail is in our <a class="light-link" href="/privacy">privacy policy</a>.</p>
+<p class="more"><a href="/privacy/">What we keep, and how to delete it</a></p>
 </div></section>
 
 <section class="signoff"><div class="wrap">
 <svg width="120" height="126" viewBox="0 0 400 420" aria-hidden="true"><path d="M95 135 L78 58 L152 112Z M305 135 L322 58 L248 112Z" fill="#7c5cc4"/><ellipse cx="200" cy="250" rx="132" ry="150" fill="#7c5cc4"/><ellipse cx="200" cy="292" rx="86" ry="100" fill="#c4b5fd"/><circle cx="150" cy="190" r="58" fill="#f3eeff"/><circle cx="250" cy="190" r="58" fill="#f3eeff"/><path d="M120 196 Q150 170 180 196 M220 196 Q250 170 280 196" stroke="#1a0f2e" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M186 226 L214 226 L200 256Z" fill="#f5a524"/><path d="M76 205 C76 48 324 48 324 205" stroke="#e879f9" stroke-width="14" fill="none" stroke-linecap="round"/><rect x="58" y="182" width="34" height="62" rx="14" fill="#e879f9"/><rect x="308" y="182" width="34" height="62" rx="14" fill="#e879f9"/></svg>
 <div><p>Have a good stream.<br>I'll meet some of your fans.</p>
 <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" class="icon-gap"><path d="M12 21C5 15.5 2 12 2 8a5 5 0 0 1 10-1 5 5 0 0 1 10 1c0 4-3 7.5-10 13z" fill="#e879f9"/></svg>
+<div class="ctas center"><a class="btn" data-cta href="/connect-to-chaturbate/">Connect your room</a></div>
+<a class="ask" href="#join">Questions? Ask us.</a>
 <div class="share" id="signoffShare"><p class="lbl">Know a streamer who'd want this?</p></div></div>
 </div></section>
 
@@ -206,7 +205,7 @@ td.t{white-space:nowrap;color:var(--mute)}
 <label class="f f-gap" for="reachVal"><span id="reachLabel">Email address</span>
 <input id="reachVal" type="text" maxlength="120" autocomplete="off" placeholder="you@example.com">
 </label>
-<label class="check" id="waWrap" hidden><input type="checkbox" id="waOk"><span>Yes, StreamWing can message me on WhatsApp about StreamWing. You can stop anytime. See our <a href="/privacy">privacy policy</a>.</span></label>
+<label class="check" id="waWrap" hidden><input type="checkbox" id="waOk"><span>Yes, StreamWing can message me on WhatsApp about StreamWing. You can stop anytime. See our <a href="/privacy/">privacy policy</a>.</span></label>
 </fieldset>
 <p class="note">We'll only use this to reach you about StreamWing.</p>
 <p class="msg" id="msg" role="status" aria-live="polite"></p>
@@ -256,20 +255,16 @@ td.t{white-space:nowrap;color:var(--mute)}
 <form name="pain-survey" data-netlify="true" netlify-honeypot="bot-field" hidden>
 <input name="bot-field"><input name="lead-id"><input name="streamer-name"><input name="hours"><input name="audience"><input name="setup"><input name="hardest"><input name="growth"><input name="most-wanted"><input name="tools"><input name="pay-model"><input name="country"><input name="next-stream"><input name="referral"><input name="wish"><input name="completed">
 </form>
-
-<section class="faq" id="faq"><div class="wrap"><h2>Questions streamers ask</h2><div class="faq-list"><details><summary>Does StreamWing post or message in my room?</summary><p>No. It reads public room events from Chaturbate. It never posts, messages or sends anything in your name.</p></details><details><summary>Are AI fan notes on?</summary><p>AI fan notes are coming soon. They'll be off until you turn them on.</p></details><details><summary>How long do you keep fan records?</summary><p>Until you delete them. Nothing deletes them on a timer. You can disconnect and delete everything StreamWing knows about your room in one step.</p></details><details><summary>What happens when I disconnect?</summary><p>Deleting the access token on Chaturbate cuts StreamWing off.</p></details><details><summary>What do I need to connect my room?</summary><p>A Chaturbate account. You make one access token, tick only the public box, and paste the link in. No invite, no account, no email. Nothing to install.</p></details><details><summary>Can a viewer ask for their data to be removed?</summary><p>Yes. They can write to us and we delete their record by hand. There is no form yet.</p></details><details><summary>What does it cost?</summary><p>Pricing isn't final yet. StreamWing is in early access while we build.</p></details></div></div></section>
 <!-- chrome:footer --><footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/research/">Research</a></div></div></footer><!-- /chrome:footer -->
 
 <script>
 {
 const REF=(()=>{try{const q=new URLSearchParams(location.search).get('ref');if(q){const c=q.replace(/[^\w-]/g,'').slice(0,40);if(c){localStorage.setItem('sw_ref',c);return c}}return localStorage.getItem('sw_ref')||''}catch(e){return ''}})();
 const CARDS=[
-["Remembers your regulars","Visit days, tips and your own note on each fan, kept across streams.",'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M18 11.5c-1.2-1-2.5-2-2.5-3.3a1.5 1.5 0 0 1 2.5-1.1 1.5 1.5 0 0 1 2.5 1.1c0 1.3-1.3 2.3-2.5 3.3z"/>'],
-["Calls out who's back","A feed line when a regular, a big tipper or a new fan walks in.",'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>'],
-["Suggests a line you send yourself","A fixed greeting for the fan who just arrived. You copy it into chat.",'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'],
-["Tracks each stream","Arrivals, leaves, tips and follows while you're live.",'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'],
-["Writes a recap","A summary in your feed after each stream.",'<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/>'],
-["Shows who's slipping away","Fans who used to come back and haven't lately.",'<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/>']];
+["Remembers your regulars","Visits, tips and your own notes, kept from stream to stream.",'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M18 11.5c-1.2-1-2.5-2-2.5-3.3a1.5 1.5 0 0 1 2.5-1.1 1.5 1.5 0 0 1 2.5 1.1c0 1.3-1.3 2.3-2.5 3.3z"/>'],
+["Calls out who's back","A callout when a regular, a big tipper or a new fan walks in.",'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>'],
+["Suggests a message","A greeting you can copy and send yourself.",'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'],
+["Recaps your stream","A summary of the stream, after you finish.",'<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/>']];
 const FEATS=[
 ["Fan Management","Remembers your fans and preferences",'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M18 11.5c-1.2-1-2.5-2-2.5-3.3a1.5 1.5 0 0 1 2.5-1.1 1.5 1.5 0 0 1 2.5 1.1c0 1.3-1.3 2.3-2.5 3.3z"/>'],
 ["Stream Preparation","Plan sessions, goals and announcements",'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 15h3"/>'],

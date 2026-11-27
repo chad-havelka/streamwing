@@ -61,3 +61,19 @@ footer .links a:hover{color:var(--ink)}
 .vid.is-paused .vid-play{display:flex}
 .vid-play:focus-visible{outline:3px solid var(--pinkl,#f0abfc);outline-offset:4px}
 @media (max-width:560px){.vid-play{width:68px;height:68px}}
+
+/* Light band: a light section holding a grid of cards.
+   Used by the home page (what it does, trust) and the privacy page (data summary).
+   Everything is scoped under .light so it cannot collide with a page's own .card. */
+.light{background:var(--light-bg);color:var(--light-ink);padding-block:var(--sp-section)}
+.light + .light{border-top:1px solid var(--light-line)}
+.light p{color:inherit}
+.light a:not(.btn){color:var(--light-accent)}
+.light .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:var(--sp-grid);margin-top:var(--sp-lead)}
+.light .grid.three{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.light .card{background:var(--card);border:1px solid var(--light-line);border-radius:24px;padding:var(--sp-card)}
+.light .card h3{margin:18px 0 8px;font-size:21px;font-weight:600;line-height:1.3}
+.light .card h3:first-child{margin-top:0}
+.light .card p{margin:0;color:var(--light-soft)}
+.light .card p.fine{margin-top:12px;font-size:15px}
+.light .more{margin:var(--sp-lead) 0 0;font-weight:600}

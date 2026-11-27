@@ -212,7 +212,7 @@ details.stuck p{margin:8px 0 0;font-size:15px}
 <script src="/assets/js/video.js"></script>
 </head>
 <body><a class="skip" href="#app">Skip to content</a>
-<!-- chrome:header --><header><div class="wrap"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a><nav class="desk"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/research/">Research</a><a class="btn ghost" data-cta href="/#join">Get early access</a></nav><details class="site-menu"><summary aria-label="Open menu"><span></span></summary><nav class="sheet" aria-label="Main"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/research/">Research</a><a class="btn" data-cta href="/#join">Get early access</a></nav></details></div><script>(function(){var m=document.querySelector('details.site-menu');if(!m)return;document.addEventListener('click',function(e){if(m.open&&!m.contains(e.target))m.open=false;});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.open){m.open=false;m.querySelector('summary').focus();}});})();</script></header><!-- /chrome:header -->
+<!-- chrome:header --><header><div class="wrap"><a class="brand" href="/"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a><nav class="desk"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/research/">Research</a><a class="btn ghost" data-cta href="/connect-to-chaturbate/">Connect your room</a></nav><details class="site-menu"><summary aria-label="Open menu"><span></span></summary><nav class="sheet" aria-label="Main"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/research/">Research</a><a class="btn" data-cta href="/connect-to-chaturbate/">Connect your room</a></nav></details></div><script>(function(){var m=document.querySelector('details.site-menu');if(!m)return;document.addEventListener('click',function(e){if(m.open&&!m.contains(e.target))m.open=false;});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.open){m.open=false;m.querySelector('summary').focus();}});})();</script></header><!-- /chrome:header -->
 
 <main class="wrap" id="app"></main>
 <!-- chrome:footer --><footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/research/">Research</a></div></div></footer><!-- /chrome:footer -->
@@ -426,8 +426,8 @@ function noKey(msg) {
   setStatus('Not signed in');
   app.replaceChildren(h('div', { class: 'box' },
     h('h1', {}, 'The StreamWing bot opens here.'),
-    h('p', {}, msg || "Open this page from your private StreamWing link. If you don't have one yet, get on the early-access list and we'll send it."),
-    h('a', { class: 'btn', href: '/#join' }, 'Get early access')));
+    h('p', {}, msg || "Paste your Chaturbate link to connect your room. No invite, no account, no email."),
+    h('a', { class: 'btn', href: '/connect-to-chaturbate/' }, 'Connect your room')));
 }
 
 function connectScreen(me, pub) {
@@ -1096,7 +1096,7 @@ async function load() {
   if (!key) return connectScreen({ displayName: 'there', username: 'your_username' }, true);
   try { me = await api('/api/me'); }
   catch (e) {
-    if (e.status === 401) { try { localStorage.removeItem('sw_k'); } catch (x) {} return noKey("This link isn't working anymore. Ask StreamWing for a new one."); }
+    if (e.status === 401) { try { localStorage.removeItem('sw_k'); } catch (x) {} return noKey("This link isn't working anymore. Paste your Chaturbate link to get a new one."); }
     setStatus('Offline'); app.replaceChildren(h('p', { class: 'empty' }, "Can't reach StreamWing right now. It will keep trying."));
     return setTimeout(load, 5000);
   }

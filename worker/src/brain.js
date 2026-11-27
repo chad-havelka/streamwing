@@ -15,13 +15,11 @@ async function openSession(c, performerId) {
   return { session: n.rows[0], opened: true };
 }
 
-// She is offline for sure when, with no stream open, we saw a stream end after we started reading this feed.
+// She is offline for sure when, with no stream open, we saw a broadcastStop after we started reading this feed.
 // If the feed restarted since, a broadcastStart could have been missed, so viewer activity may mean she is live.
 async function stoppedOnThisFeed(c, performerId) {
   const r = await c.query(
-    `select 1 from performers p where p.id=$1 and exists (
-       select 1 from sessions s where s.performer_id=p.id and s.ended_at >= coalesce(p.feed_started_at, '-infinity'))`,
-    [performerId]);
+    `select 1 from performers where id=$1 and last_stop_at >= coalesce(feed_started_at, '-infinity')`, [performerId]);
   return !!r.rows[0];
 }
 
@@ -102,6 +100,7 @@ export async function processEvent(c, performer, ev) {
   }
 
   if (ev.method === 'broadcastStop') {
+    await c.query(`update performers set last_stop_at=now() where id=$1`, [pid]);
     const ended = await closeSession(c, pid);
     if (ended) items.push(await addFeed(c, pid, ended.id, 'recap', null, await buildRecap(c, ended)));
     return { items };

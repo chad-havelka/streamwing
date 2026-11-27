@@ -10,11 +10,29 @@ header .btn{min-height:44px;padding:10px 20px;font-size:15px}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 26px;border-radius:999px;border:0;background:var(--pink);color:var(--deep);font:600 17px Poppins,system-ui,sans-serif;text-decoration:none;cursor:pointer}
 .btn.ghost{background:none;color:var(--ink);border:2px solid var(--line)}
 
-/* Phones: header stacks the links and button under the logo */
-@media (max-width:560px){
-  header .wrap{padding-block:14px}
-  nav{width:100%;justify-content:space-between;gap:10px 14px;font-size:14px}
-  header .btn{min-height:40px;padding:8px 16px;font-size:14px}
+/* Menu: the hamburger only shows on phones. Desktop keeps the links in the header. */
+details.site-menu{display:none}
+details.site-menu nav.sheet{display:none}
+details.site-menu summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:var(--panel)}
+details.site-menu summary::-webkit-details-marker{display:none}
+details.site-menu summary span,details.site-menu summary span::before,details.site-menu summary span::after{display:block;width:18px;height:2px;background:var(--ink);border-radius:2px}
+details.site-menu summary span{position:relative}
+details.site-menu summary span::before,details.site-menu summary span::after{content:"";position:absolute;left:0}
+details.site-menu summary span::before{top:-6px}
+details.site-menu summary span::after{top:6px}
+details.site-menu[open] nav.sheet{display:flex}
+
+/* Phones: hamburger menu, smaller buttons, no wrapped button text */
+@media (max-width:560px){header .wrap{flex-wrap:nowrap}header .hleft{min-width:0}
+  header .wrap{padding-block:14px;align-items:center}
+  nav.desk{display:none}
+  details.site-menu{display:block;position:relative}
+  details.site-menu nav.sheet{position:absolute;right:0;top:52px;z-index:5;width:240px;flex-direction:column;gap:4px;padding:10px;background:var(--panel);border:2px solid var(--line);border-radius:16px}
+  details.site-menu nav.sheet a{display:block;min-height:44px;padding:10px 12px;border-radius:10px;color:var(--soft);text-decoration:none;font-size:16px;line-height:24px}
+  details.site-menu nav.sheet a.btn{display:flex;color:var(--deep);font-weight:600;text-align:center;margin-top:6px}
+  .btn{min-height:44px;padding:10px 18px;font-size:15px;white-space:nowrap}
+  header .btn{min-height:44px;padding:10px 18px;font-size:15px}
+  .ctas .btn,form .btn{width:100%}
 }
 
 /* Footer: same on every page */
@@ -36,3 +54,10 @@ footer .links a:hover{color:var(--ink)}
 
 /* Performer call to action: set by cta.js once a room is connected in this browser */
 .btn.cta-performer{background:var(--cta-performer);border-color:var(--cta-performer);color:var(--deep)}
+
+/* Big play button: centred on a paused video (see assets/js/video.js) */
+.vid{position:relative}
+.vid-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:84px;height:84px;border-radius:50%;border:0;background:var(--pink,#e879f9);color:var(--deep,#1a0f2e);display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.4);padding:0}
+.vid.is-paused .vid-play{display:flex}
+.vid-play:focus-visible{outline:3px solid var(--pinkl,#f0abfc);outline-offset:4px}
+@media (max-width:560px){.vid-play{width:68px;height:68px}}

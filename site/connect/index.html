@@ -44,7 +44,7 @@ main.wrap{padding-top:var(--sp-top);padding-bottom:var(--sp-section)}
     <a class="brand" href="/"><svg width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a>
     <span class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></span>
   </div>
-  <div class="hright"><a class="btn ghost" id="dashLink" href="/connect-to-chaturbate/" hidden>Open dashboard</a><details class="site-menu"><summary aria-label="Open menu"><span></span></summary><nav class="sheet" aria-label="Main"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a class="btn" data-cta href="/#join">Get early access</a></nav></details></div>
+  <div class="hright"><a class="btn ghost" id="dashLink" href="/owl/" hidden>Open StreamWing</a><details class="site-menu"><summary aria-label="Open menu"><span></span></summary><nav class="sheet" aria-label="Main"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a class="btn" data-cta href="/#join">Get early access</a></nav></details></div>
 </div></header><script>(function(){var m=document.querySelector('details.site-menu');if(!m)return;document.addEventListener('click',function(e){if(m.open&&!m.contains(e.target))m.open=false;});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.open){m.open=false;m.querySelector('summary').focus();}});})();</script>
 
 <main class="wrap" id="main">
@@ -88,7 +88,8 @@ main.wrap{padding-top:var(--sp-top);padding-bottom:var(--sp-section)}
 
 <script>
 const API = 'https://streamwing-production.up.railway.app';
-const LINK_OK = /^https:\/\/eventsapi\.chaturbate\.com\/events\//;
+// Chaturbate's live site, and its testbed so changes can be checked before a streamer sees them.
+const LINK_OK = /^https:\/\/(eventsapi\.chaturbate\.com|events\.testbed\.cb\.dev)\/events\//;
 let key = '';
 try {
   const m = location.hash.match(/k=([\w-]{20,})/);
@@ -114,8 +115,8 @@ async function api(path, opts = {}) {
   if (!r.ok) throw Object.assign(new Error(body.error || 'Something went wrong.'), { status: r.status });
   return body;
 }
-function goDashboard() {
-  location.href = '/connect-to-chaturbate/#k=' + key;
+function openStreamWing() {
+  location.href = '/owl/#k=' + key;
 }
 // No private link yet (or the saved one is for another room): the Chaturbate link creates the account and gives us our key.
 async function openAccountFor(link) {
@@ -138,7 +139,7 @@ async function openAccountFor(link) {
     if (me.connected) {
       setStatus('Connected', true);
       $('dashLink').hidden = false;
-      $('dashLink').href = '/connect-to-chaturbate/#k=' + key;
+      $('dashLink').href = '/owl/#k=' + key;
     }
   } catch (e) {
     if (e.status === 401) {
@@ -174,8 +175,8 @@ async function connect() {
       await openAccountFor(link);
     }
     setStatus('Connected', true);
-    say('Connected. Opening your dashboard…');
-    goDashboard();
+    say('Connected. Opening StreamWing…');
+    openStreamWing();
   } catch (e) {
     say(e.message, true);
   } finally {

@@ -50,7 +50,7 @@ main.wrap{padding-top:var(--sp-top);padding-bottom:var(--sp-section)}
     <a class="brand" href="/"><svg width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 29 C8 22 3 16 6 10 C8 6 13 6 17 11 C21 6 26 6 28 10 C31 16 26 22 17 29Z" fill="#e879f9"/><path d="M6 10 C2 8 1 4 3 2 C6 4 7 7 6 10Z M28 10 C32 8 33 4 31 2 C28 4 27 7 28 10Z" fill="#c4b5fd"/></svg>StreamWing</a>
     <span class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></span>
   </div>
-  <div class="hright"><a class="btn ghost" id="dashLink" href="/connect-to-chaturbate/" hidden>Open dashboard</a><details class="site-menu"><summary aria-label="Open menu"><span></span></summary><nav class="sheet" aria-label="Main"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/research/">Research</a><a class="btn" data-cta href="/connect-to-chaturbate/">Connect your room</a></nav></details></div>
+  <div class="hright"><a class="btn ghost" id="dashLink" href="/owl/" hidden>Open StreamWing</a><details class="site-menu"><summary aria-label="Open menu"><span></span></summary><nav class="sheet" aria-label="Main"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/research/">Research</a><a class="btn" data-cta href="/connect-to-chaturbate/">Connect your room</a></nav></details></div>
 </div></header><script>(function(){var m=document.querySelector('details.site-menu');if(!m)return;document.addEventListener('click',function(e){if(m.open&&!m.contains(e.target))m.open=false;});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.open){m.open=false;m.querySelector('summary').focus();}});})();</script>
 
 <main class="wrap" id="main">
@@ -89,16 +89,17 @@ main.wrap{padding-top:var(--sp-top);padding-bottom:var(--sp-section)}
 
     <div class="result" id="result" hidden>
       <h2>Your new private link</h2>
-      <p>Save this link somewhere safe. Anyone with it can open your dashboard. The old link no longer works.</p>
+      <p>Save this link somewhere safe. Anyone with it can open StreamWing for your room. The old link no longer works.</p>
       <textarea id="newLink" readonly aria-label="Your new private link"></textarea>
-      <div class="row"><button class="btn ghost" type="button" id="copyBtn">Copy link</button><a class="btn" id="openBtn" href="/connect/">Open setup page</a></div>
+      <div class="row"><button class="btn ghost" type="button" id="copyBtn">Copy link</button><a class="btn" id="openBtn" href="/owl/">Open StreamWing</a></div>
     </div>
   </div>
 </main>
 
 <script>
 const API = 'https://streamwing-production.up.railway.app';
-const LINK_OK = /^https:\/\/eventsapi\.chaturbate\.com\/events\//;
+// Chaturbate's live site, and its testbed so changes can be checked before a streamer sees them.
+const LINK_OK = /^https:\/\/(eventsapi\.chaturbate\.com|events\.testbed\.cb\.dev)\/events\//;
 const $ = id => document.getElementById(id);
 const ta = $('eventsUrl'), msg = $('msg'), btn = $('getBtn');
 let busy = false;
@@ -119,8 +120,11 @@ async function getLink() {
     const r = await fetch(API + '/api/recover-link', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventsUrl: link }) });
     const body = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(body.error || 'Something went wrong. Try again.');
-    $('newLink').value = body.link;
-    $('openBtn').href = '/connect/#k=' + body.link.split('#k=')[1];
+    // Her StreamWing link opens StreamWing itself, at /owl/.
+    const key = body.link.split('#k=')[1];
+    try { localStorage.setItem('sw_k', key); } catch (e) {}
+    $('newLink').value = location.origin + '/owl/#k=' + key;
+    $('openBtn').href = '/owl/#k=' + key;
     $('result').hidden = false;
     say('Your new link is ready. Save it before you leave this page.');
     ta.value = '';

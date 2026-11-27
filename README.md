@@ -12,7 +12,8 @@ StreamWing.studio            the company and the suite
 ├── CleverGURL               short links and landing pages
 └── the site
     ├── /                    home, sells the bot
-    ├── /start               opens the bot
+    ├── /connect-to-chaturbate   setup: connect a Chaturbate room
+    ├── /owl                 StreamWing itself (/start forwards here)
     ├── /invite/<code>       referral links
     └── /privacy, /terms     required for opt-in, WhatsApp review and trust
 ```

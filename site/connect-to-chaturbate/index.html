@@ -5,12 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#160c26">
 <title>Connect your Chaturbate room to StreamWing</title>
-<link rel="manifest" href="/start/manifest.webmanifest">
-<link rel="apple-touch-icon" href="/start/icon-180.png">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="StreamWing">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>
+// Setup only. StreamWing itself lives at /owl/.
+// A visit that carries a StreamWing key in the address, or a browser that has one saved, is sent on to /owl/.
+// Keep this for as long as saved links in the old form /connect-to-chaturbate/#k=... exist.
+(function () {
+  if (location.hash === '#demo') return location.replace('/owl/#demo');
+  var m = location.hash.match(/k=([\w-]{20,})/), k = m ? m[1] : '';
+  if (!k) try { k = localStorage.getItem('sw_k') || ''; } catch (e) {}
+  if (k) location.replace('/owl/#k=' + k);
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/theme-night-plum.css">
@@ -18,116 +24,14 @@
 <link rel="stylesheet" href="/assets/css/base.css">
 <link rel="stylesheet" href="/assets/css/components.css">
 <style>
-/* The StreamWing panel. Built to be read at a glance from a phone or second screen while she's live.
-   She never has to type anything during a stream. */
+/* The setup page: connect a Chaturbate room. StreamWing itself is at /owl/. */
 *{box-sizing:border-box;min-width:0}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Poppins,system-ui,sans-serif}
 button{font:inherit}
 .wrap{max-width:1040px;margin:0 auto;padding:0 max(4vw,14px) 40px}
 header{position:sticky;top:0;z-index:5;background:rgba(22,12,38,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
 header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:12px}
-.status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute)}
-body:not(.keyed) .status{display:none}
-body:not(.app-mode) .menu{display:none}
-body.app-mode nav{display:none}
-body.app-mode footer{display:none}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--dot-off);flex:none}
-.dot.live{background:var(--live);box-shadow:0 0 0 4px var(--live-halo)}
-.dot.ok{background:var(--green)}
-.menu{background:none;border:2px solid var(--line);color:var(--ink);font:600 15px Poppins,system-ui,sans-serif;line-height:1;padding:9px 16px;cursor:pointer;border-radius:999px;min-height:40px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
-.stat{background:var(--panel);border-radius:16px;padding:10px 8px;text-align:center}
-.stat b{display:block;font-size:22px;line-height:1.1}
-.stat span{font-size:14px;color:var(--mute)}
-.tabs{display:flex;gap:6px;margin:6px 0 12px;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{flex:1 0 auto;white-space:nowrap;min-height:44px;padding:0 12px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--soft);font-weight:600;font-size:15px;cursor:pointer}
-[data-user]:not([data-user='']){cursor:pointer}
-.sec{margin:18px 0 8px;font-size:14px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--mute)}
-.sec:first-child{margin-top:4px}
-.fanrow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--panel)}
-.fanrow .who{flex:1}
-.fanrow .who b{display:block;font-size:17px;word-break:break-word}
-.fanrow .who span{font-size:14px;color:var(--mute)}
-.fanrow .amt{font-weight:700;font-size:17px;text-align:right}
-.fanrow .amt span{display:block;font-size:14px;font-weight:400;color:var(--mute)}
-.fanrow.slip{border-left:6px solid var(--gold)}
-.search{width:100%;font:16px Poppins,system-ui,sans-serif;padding:12px 16px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);min-height:48px}
-.streamcard{background:var(--panel);border-radius:18px;padding:14px 16px;overflow-x:auto}
-.gcards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}
-.gcard{background:var(--panel);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
-.gcard span{font-size:14px;color:var(--mute)}
-.gcard b{font-size:26px;font-weight:700}
-.gcard small{font-size:14px}
-.gcard .gup{color:var(--green)}
-.gcard .gdown{color:var(--err)}
-.gcard .spark{margin-top:6px}
-.ghead h2{font-size:clamp(24px,3.4vw,34px);margin:0 0 6px}
-.ghead p{margin:0 0 4px;color:var(--soft)}
-.gthead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-.gthead span{font-size:14px;color:var(--mute)}
-.gtable{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
-.gtable th,.gtable td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line)}
-.gtable th:first-child,.gtable td:first-child{text-align:left}
-.gtable th{font-size:14px;color:var(--mute);font-weight:600}
-@media (max-width:820px){.gcards{grid-template-columns:repeat(2,1fr)}.gtable th,.gtable td{padding:7px 4px;font-size:14px}}
-.streamcard h3{margin:0 0 10px;font-size:16px;font-weight:600}
-.streamcard .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.streamcard .grid div{background:var(--bg);border-radius:12px;padding:8px;text-align:center}
-.streamcard .grid b{display:block;font-size:19px}
-.streamcard .grid span{font-size:14px;color:var(--mute)}
-.d{display:block;font-size:14px;font-weight:600;margin-top:2px}
-.d.up{color:var(--green)} .d.down{color:var(--err)} .d.same{color:var(--mute)}
-.vs{margin:12px 0 0;font-size:14px;color:var(--soft)}
-.prof .in{max-height:88vh;overflow:auto}
-.prof .pname{font-size:28px;font-weight:700;line-height:1.15;margin:0 0 6px;word-break:break-word}
-.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.badge{font-size:14px;padding:4px 10px;border-radius:999px;background:var(--panel2);color:var(--soft)}
-.badge.lb{background:#12324a;color:var(--blue)} .badge.gold{background:#3a2a0c;color:var(--gold)}
-.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pgrid div{background:var(--bg);border-radius:12px;padding:10px 6px;text-align:center}
-.pgrid b{display:block;font-size:20px}
-.pgrid span{font-size:14px;color:var(--mute)}
-.seen{margin:10px 0 0;font-size:14px;color:var(--mute)}
-.notebox textarea{font:15px/1.45 Poppins,system-ui,sans-serif;min-height:80px}
-.notebox .btnrow{display:flex;align-items:center;gap:12px;margin-top:10px}
-.notebox .btnrow .btn{min-height:44px;padding:10px 20px}
-.plist{display:flex;flex-direction:column;gap:6px}
-.plist div{display:flex;gap:10px;padding:8px 12px;border-radius:12px;background:var(--bg);font-size:15px;color:var(--soft)}
-.plist div .t{margin-left:auto;flex:none;font-size:14px;color:var(--mute)}
-.tabs button[aria-selected=true]{background:var(--pink);border-color:var(--pink);color:var(--deep)}
-.list{display:flex;flex-direction:column;gap:10px}
-.card{background:var(--panel);border-radius:18px;padding:14px 16px;border-left:6px solid var(--line)}
-.card .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.card .label{font-size:14px;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
-.card .when{font-size:14px;color:var(--mute);flex:none}
-.card .name{font-size:24px;font-weight:700;line-height:1.15;margin:2px 0 4px;word-break:break-word}
-.card .facts{font-size:15px;color:var(--soft)}
-.card .said{margin-top:6px;font-size:15px;color:var(--ink);font-style:italic}
-.card .said:empty{display:none}
-.card.gone{opacity:.45}
-.ainote{margin-top:6px;font-size:15px;color:var(--pinkl)}
-.ainote b{font-weight:600;color:var(--mute);margin-right:4px}
-.k-big{border-left-color:var(--gold)} .k-big .label{color:var(--gold)}
-.k-tipper{border-left-color:var(--pink)} .k-tipper .label{color:var(--pinkl)}
-.k-regular{border-left-color:var(--green)} .k-regular .label{color:var(--green)}
-.k-lb{border-left-color:var(--blue)} .k-lb .label{color:var(--blue)}
-.k-win{border-left-color:var(--gold);background:linear-gradient(90deg,rgba(251,191,36,.16),var(--panel) 60%)} .k-win .label{color:var(--gold)}
-.row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:14px;background:rgba(34,20,58,.55);font-size:15px;color:var(--soft)}
-.row b{color:var(--ink);font-weight:600}
-.row .when{margin-left:auto;font-size:14px;color:var(--mute)}
-.recap{background:var(--panel2);border-radius:20px;padding:18px}
-.recap h3{margin:0 0 10px;font-size:20px}
-.recap .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.recap .grid div{background:var(--panel);border-radius:14px;padding:10px;text-align:center}
-.recap .grid b{display:block;font-size:22px}
-.recap .grid span{font-size:14px;color:var(--mute)}
-.recap p{margin:12px 0 0;color:var(--soft)}
-.empty{color:var(--mute);text-align:center;padding:36px 10px}
-.box{background:var(--panel);border-radius:22px;padding:22px;margin-top:22px}
-.wrap.connect-page{max-width:1040px}
-main.wrap.connect-page{padding-top:var(--sp-top)}
-.connect-page .box{max-width:820px;margin-left:auto;margin-right:auto}
+main.wrap{padding-top:var(--sp-top)}
 .sect{padding:48px 0;border-top:1px solid var(--panel2)}
 .feat,.grid2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
 .grid2{grid-template-columns:repeat(2,1fr)}
@@ -135,79 +39,20 @@ main.wrap.connect-page{padding-top:var(--sp-top)}
 .card h3{font-size:19px;margin:0 0 8px}
 .card p{font-size:15px;line-height:1.5;margin:0}
 @media (max-width:820px){.feat,.grid2{grid-template-columns:1fr}}
-.box p{color:var(--soft);margin:0 0 14px}
-ol{padding-left:22px;color:var(--soft);margin:0 0 16px}
-ol li{margin-bottom:8px}
-.btn.danger{background:none;color:var(--err);border:2px solid #7f3a4a}
 textarea{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);min-height:84px;resize:vertical}
 .msg{min-height:1.4em;margin:10px 0 0;font-size:15px}
 .msg.err{color:var(--err)}
 .note{font-size:14px;color:var(--mute)}
-.sheet{position:fixed;inset:0;z-index:20;background:rgba(10,5,20,.7);display:flex;align-items:flex-end;justify-content:center}
-.sheet[hidden]{display:none}
-.sheet .in{background:var(--panel);width:100%;max-width:720px;border-radius:24px 24px 0 0;padding:22px max(5vw,18px) calc(22px + env(safe-area-inset-bottom))}
-.sheet .in h2{margin:0 0 6px;font-size:20px}
-.sheet .in .btns{display:flex;flex-direction:column;gap:10px;margin-top:16px}
-.banner{margin-top:12px;padding:12px 14px;border-radius:14px;background:#3b1830;color:var(--err);font-size:15px}
-.banner[hidden]{display:none}
-.okcard{margin-top:12px;padding:14px 16px;border-radius:18px;background:#143127;border:2px solid #86efac;font-size:15px}
-.okcard b{display:block;font-size:17px;margin-bottom:4px;color:#d9fbe4}
-.okcard p{margin:4px 0 0;color:#d8cdf0}
-.okcard .btn{margin-top:10px;padding:8px 16px;font-size:15px}
-.linkbtn{background:none;border:0;padding:0;color:var(--pinkl);text-decoration:underline;font:inherit;cursor:pointer}
-.tip{margin-top:12px;font-size:14px;color:var(--mute);text-align:center}
-
 .steps{display:flex;flex-direction:column;gap:14px;margin:18px 0}
 .step{background:var(--panel2);border-radius:18px;padding:16px;display:flex;gap:14px;align-items:flex-start}
 .step .n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--pink);color:var(--deep);font-weight:700;display:grid;place-items:center}
 .step .body{flex:1}
 .step h2{font-size:18px;margin:0 0 4px}
 .step p{margin:0 0 10px}
-.cbpage{background:#fff;color:#222;border-radius:10px;padding:14px 16px;font:14px/1.4 Arial,Helvetica,sans-serif;margin-top:6px}
-.cbpage .cbrow{display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap}
-.cbpage .cblab{width:92px;text-align:right;color:#444;flex:none}
-.cbpage .cbfield{border:2px solid #4a90d9;border-radius:4px;padding:3px 8px;min-width:150px}
-.cbpage .cbbox{width:16px;height:16px;border:1px solid var(--mute);border-radius:3px;display:inline-block;background:#fff;text-align:center;font-size:12px;line-height:14px;color:#fff;flex:none}
-.cbpage .cbbox.on{background:var(--check);border-color:var(--check)}
-.cbpage .cbstrike{text-decoration:line-through;color:var(--mute)}
-.cbpage .cbring{outline:3px solid #e879f9;outline-offset:4px;border-radius:6px}
-.cbpage .cbtok{font-size:13px}
-.cbpage .cbu{margin-top:4px;font-size:12px;word-break:break-all;color:var(--link-url)}
-.cbpage .cbleave{color:var(--mute);font-size:12px;font-style:italic}
-.cbpage .cbpill{background:#e879f9;color:#1a0f2e;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
-.cbpage .cbgen{background:var(--action);color:var(--deep);border-radius:4px;padding:6px 14px;display:inline-block;font-weight:600}
-.cbpage table{border-collapse:collapse;width:100%;font-size:13px}
-.cbpage th{text-align:left;border-bottom:2px solid #333;padding:4px 6px}
-.cbpage td{padding:6px;vertical-align:top}.cbpage td:nth-child(1),.cbpage td:nth-child(2),.cbpage th{white-space:nowrap}.cbpage td:nth-child(3){word-break:break-all}
-.cbpage .cburl{color:var(--link-url)}
 .cbcap{font-size:14px;color:var(--mute);margin:6px 0 0}
 details.stuck{margin:6px 0 16px;color:var(--soft)}
 details.stuck summary{cursor:pointer;font-weight:600;color:var(--pinkl)}
 details.stuck p{margin:8px 0 0;font-size:15px}
-</style>
-<style id="coachCss">
-.coach{font-family:Poppins,system-ui,sans-serif;color:var(--ink);box-sizing:border-box}
-.coach *{box-sizing:border-box}
-.coach.inline{margin:12px 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
-.coach.pipbody{background:var(--bg);min-height:100vh;padding:12px}
-.coach .chead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;color:var(--mute);margin-bottom:8px}
-.coach .chead b{color:var(--ink);font-weight:600}
-.coach .cname{font-size:18px;font-weight:600}
-.coach .cwhy{font-size:14px;color:var(--pink);margin-top:2px}
-.coach .cfacts{font-size:14px;color:var(--mute);margin-top:2px}
-.coach .cmsg{margin:10px 0;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:15px;line-height:1.4;color:var(--soft);user-select:text}
-.coach .crow{display:flex;gap:8px;flex-wrap:wrap}
-.coach button{font:inherit;font-size:14px;font-weight:600;min-height:40px;padding:8px 16px;border-radius:999px;border:2px solid var(--line);background:none;color:var(--ink);cursor:pointer}
-.coach button.main{background:var(--pink);border-color:var(--pink);color:var(--deep)}
-.coach button.small{min-height:32px;padding:4px 12px;font-size:14px}
-.coach .cfoot{margin-top:10px;font-size:14px;color:var(--mute)}
-.coach .cempty{font-size:14px;color:var(--mute);padding:6px 0}
-.coach .cbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
-.coach .cbar .t{font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.coach .cbar .t b{font-weight:600}
-.coach .cbar .t span{color:var(--mute)}
-.coach .cdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pink);margin-right:8px}
-.coach .cdot.off{background:var(--line)}
 </style>
 <script src="/assets/js/video.js"></script>
 </head>
@@ -217,49 +62,12 @@ details.stuck p{margin:8px 0 0;font-size:15px}
 <main class="wrap" id="app"></main>
 <!-- chrome:footer --><footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/research/">Research</a></div></div></footer><!-- /chrome:footer -->
 
-<div class="sheet prof" id="fanSheet" hidden><div class="in" role="dialog" aria-modal="true" aria-label="Fan profile" id="fanSheetIn"></div></div>
-
-<div class="sheet" id="sheet" hidden><div class="in" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
-  <h2 id="sheetTitle">Settings</h2>
-  <p class="note" id="sheetInfo"></p>
-  <div class="btns">
-    <button class="btn ghost" type="button" id="discBtn">Disconnect Chaturbate</button>
-    <button class="btn danger" type="button" id="wipeBtn">Disconnect and delete everything StreamWing knows</button>
-    <button class="btn ghost" type="button" id="closeSheet">Close</button>
-  </div>
-  <p class="msg" id="sheetMsg"></p>
-</div></div>
-
 <script>
 {
 const API = (location.hostname === 'localhost' && localStorage.getItem('sw_api')) || 'https://streamwing-production.up.railway.app';
-const $ = id => document.getElementById(id);
-const app = $('app');
+const app = document.getElementById('app');
 
-// /connect-to-chaturbate/#demo plays a sample stream with made-up fans. Nothing is sent anywhere.
-const DEMO = location.hash === '#demo';
-
-// App header parts (status light and Settings). The common header is in the page markup.
-const headerBrand = document.querySelector('header .brand');
-headerBrand.after(h('span', { class: 'status' }, h('span', { class: 'dot', id: 'dot' }), h('span', { id: 'statusText' }, 'Not connected')));
-document.querySelector('header .wrap').append(h('button', { class: 'menu', id: 'menuBtn', type: 'button' }, 'Settings'));
-
-// The access key arrives in the link's #k=... and is kept on this device only.
-let key = '';
-if (DEMO) key = 'demo';
-else try {
-  const m = location.hash.match(/k=([\w-]{20,})/);
-  // The key stays in the address so "Open in Safari" and a home-screen icon keep working.
-  // It's after the #, so it's never sent to any server.
-  if (m) localStorage.setItem('sw_k', m[1]);
-  key = (m && m[1]) || localStorage.getItem('sw_k') || '';
-  if (key && !m) history.replaceState(null, '', location.pathname + '#k=' + key);
-} catch (e) {}
-
-// Fill an element, skipping pieces that are switched off (false, null).
-const put = (el, ...kids) => el.replaceChildren(...kids.flat().filter(k => k != null && k !== false));
-
-// Safe DOM building. Usernames and chat come from strangers, so nothing is ever set as HTML.
+// Safe DOM building. Nothing is ever set as HTML.
 function h(tag, attrs, ...kids) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -270,177 +78,15 @@ function h(tag, attrs, ...kids) {
   return el;
 }
 
-// ---------- demo mode: a scripted sample stream ----------
-const demo = {
-  connected: false, live: false, items: [], room: [], script: null,
-  session: { id: 'demo-s', started_at: new Date().toISOString(), ended_at: null, tokens: 0, tippers: 0, unique_visitors: 0, light_blues_seen: 0, light_blues_converted: 0 },
-};
-const daysAgo = d => new Date(Date.now() - d * 86400000).toISOString();
-const DEMO_FANS = {
-  velvet_rob: { username: 'velvet_rob', note: 'Your biggest fan. Mentioned his daughter starts college this week.', total_tips: 1240, tip_count: 22, biggest_tip: 200, visit_days: 14, last_tip_at: daysAgo(3), last_seen: new Date().toISOString(), in_fanclub: true, is_follower: true, has_tokens: true, last_message: 'made it just in time' },
-  curious_k:  { username: 'curious_k', total_tips: 0, visit_days: 1, has_tokens: false },
-  mike_t:     { username: 'mike_t', note: 'Loves your laugh. Has tokens but always holds back; a hello by name helps.', total_tips: 0, visit_days: 3, is_follower: true, has_tokens: true, last_message: 'your laugh is the best part of my night' },
-  sam_vee:    { username: 'sam_vee', total_tips: 0, visit_days: 6, is_follower: true, has_tokens: false, last_message: 'hi again' },
-  kat_x:      { username: 'kat_x', total_tips: 0, visit_days: 1, has_tokens: true },
-  dave_r:     { username: 'dave_r', note: 'Follows your music. Ask how the new song is coming along.', total_tips: 85, tip_count: 3, biggest_tip: 50, visit_days: 4, last_tip_at: daysAgo(1), is_follower: true, has_tokens: true, last_message: 'how did the new song go?' },
-};
-// Fans from earlier streams, for the Fans tab and the slipping-away list.
-const DEMO_PAST = {
-  old_rick: { username: 'old_rick', note: 'Tipped 200 on your anniversary stream. Hasn\u2019t been back in 9 days.', total_tips: 860, tip_count: 14, biggest_tip: 200, visit_days: 19, missed_streams: 5, last_seen: daysAgo(9), is_follower: true, has_tokens: true, last_message: 'see you friday!', tipsList: [{ at: daysAgo(9), tokens: 100, message: '' }, { at: daysAgo(12), tokens: 200, message: 'happy anniversary stream' }] },
-  nora_b:   { username: 'nora_b', total_tips: 0, visit_days: 8, missed_streams: 3, last_seen: daysAgo(5), is_follower: true, has_tokens: false, last_message: 'night all' },
-};
-const DEMO_ALL = () => ({ ...DEMO_PAST, ...DEMO_FANS });
-const DEMO_SESSIONS = [
-  { id: 'd1', started_at: daysAgo(1), ended_at: new Date(Date.now() - 86400000 + 3 * 3600000).toISOString(), tokens: 120, tippers: 2, unique_visitors: 5, returning_visitors: 3, light_blues_converted: 0, new_followers: 0 },
-  { id: 'd2', started_at: daysAgo(2), ended_at: new Date(Date.now() - 2 * 86400000 + 2.5 * 3600000).toISOString(), tokens: 95, tippers: 2, unique_visitors: 4, returning_visitors: 2, light_blues_converted: 1, new_followers: 1 },
-  { id: 'd3', started_at: daysAgo(3), ended_at: new Date(Date.now() - 3 * 86400000 + 3.2 * 3600000).toISOString(), tokens: 60, tippers: 1, unique_visitors: 4, returning_visitors: 1, light_blues_converted: 0, new_followers: 0 },
-];
-const DEMO_SCRIPT = [
-  ['live', null],
-  ['big_tipper_back', 'velvet_rob'],
-  ['new_viewer', 'curious_k'],
-  ['light_blue_back', 'mike_t'],
-  ['regular_back', 'sam_vee'],
-  ['new_with_tokens', 'kat_x'],
-  ['chat', 'mike_t', { message: "what's the goal tonight?" }],
-  ['tip', 'velvet_rob', { tokens: 100 }],
-  ['first_tip', 'mike_t', { tokens: 25, converted: true }],
-  ['follow', 'kat_x'],
-  ['tipper_back', 'dave_r'],
-  ['tip', 'dave_r', { tokens: 50 }],
-  ['pause'], ['pause'],
-  ['recap'],
-];
-function demoStep([kind, username, extra = {}]) {
-  const s = demo.session, fan = username ? DEMO_FANS[username] : null;
-  if (kind === 'pause') return null;
-  if (kind === 'recap') {
-    demo.live = false; s.ended_at = new Date().toISOString(); demo.room = [];
-    const item = { id: Date.now(), session_id: 'demo-s', kind: 'recap', username: null, created_at: s.ended_at, data: {
-      minutes: 187, tokens: s.tokens, tippers: s.tippers, uniqueVisitors: s.unique_visitors, newVisitors: 2, returningVisitors: s.unique_visitors - 2,
-      lightBluesSeen: s.light_blues_seen, lightBluesConverted: s.light_blues_converted, newFollowers: 1, fanclubJoins: 0,
-      topTippers: [{ username: 'velvet_rob', tipped: 100 }, { username: 'dave_r', tipped: 50 }, { username: 'mike_t', tipped: 25 }],
-      convertedFans: ['mike_t'], lightBluesNotYet: ['kat_x'],
-      previous: { tokens: 120, tippers: 2, uniqueVisitors: 5, returningVisitors: 3, lightBluesConverted: 0, newFollowers: 0 } } };
-    demo.items.unshift(item); return item;
-  }
-  if (kind === 'live') demo.live = true;
-  if (kind === 'chat') { fan.last_message = extra.message; return { kind, username, data: { fan, message: extra.message } }; }
-  if (/_back$|^new_/.test(kind)) {
-    s.unique_visitors++;
-    if (fan.has_tokens && !fan.total_tips) s.light_blues_seen++;
-    demo.room.push(fan);
-  }
-  if (kind === 'tip' || kind === 'first_tip') {
-    if (!fan._tipped) { fan._tipped = true; s.tippers++; }
-    fan.total_tips += extra.tokens; fan.last_tip_at = new Date().toISOString(); s.tokens += extra.tokens;
-    if (extra.converted) s.light_blues_converted++;
-  }
-  const item = { id: Date.now() + Math.random(), session_id: 'demo-s', kind, username, created_at: new Date().toISOString(),
-    data: { fan: fan ? { ...fan } : undefined, lightBlue: fan && fan.has_tokens && !fan.total_tips, ...extra } };
-  demo.items.unshift(item);
-  return item;
-}
-function demoMe() {
-  return { username: 'yourname', displayName: 'there', connected: demo.connected, polling: true, lastError: null,
-    live: demo.live, session: demo.live ? demo.session : null, totals: { fans: 214, tippers: 37, light_blues: 58 } };
-}
-async function demoApi(path, opts) {
-  await new Promise(r => setTimeout(r, path === '/api/connect' ? 900 : 60));
-  if (path === '/api/me') return demoMe();
-  if (path === '/api/connect') {
-    const v = JSON.parse(opts.body || '{}').eventsUrl || '';
-    if (!v.trim()) throw new Error('Paste the link from Chaturbate here.');
-    demo.connected = true; return { ok: true };
-  }
-  if (path === '/api/disconnect') { demo.connected = false; demo.live = false; clearInterval(demo.script); return { ok: true }; }
-  if (path.startsWith('/api/feed')) return { items: demo.items.slice() };
-  const noteM = path.match(/^\/api\/fans\/([^/]+)\/note$/);
-  if (noteM) { const u = decodeURIComponent(noteM[1]); const f = DEMO_ALL()[u]; if (!f) throw Object.assign(new Error('not found'), { status: 404 }); f.owner_note = JSON.parse(opts.body).note.trim() || null; f.owner_note_at = new Date().toISOString(); return { owner_note: f.owner_note }; }
-  if (path.startsWith('/api/fans/')) {
-    const f = DEMO_ALL()[decodeURIComponent(path.slice(10))];
-    if (!f) throw Object.assign(new Error('not found'), { status: 404 });
-    return { biggest_tip: 0, tip_count: 0, visits: f.visit_days, first_seen: daysAgo(f.visit_days * 3 + 2), last_seen: f.last_seen || new Date().toISOString(),
-      streams_attended: f.visit_days, recent_messages: f.last_message ? [{ t: f.last_seen || new Date().toISOString(), m: f.last_message }] : [],
-      tips: f.tipsList || [], ...f };
-  }
-  if (path.startsWith('/api/fans')) {
-    const q = decodeURIComponent((path.split('q=')[1] || '')).toLowerCase();
-    return { fans: Object.values(DEMO_ALL()).filter(f => !q || f.username.toLowerCase().startsWith(q)).sort((a, b) => b.total_tips - a.total_tips || b.visit_days - a.visit_days) };
-  }
-  if (path === '/api/slipping') return { fans: [DEMO_PAST.old_rick, DEMO_PAST.nora_b] };
-  if (path === '/api/sessions') {
-    const s = demo.session;
-    const cur = demo.live || s.ended_at ? [{ ...s }] : [];
-    return { sessions: [...cur, ...DEMO_SESSIONS] };
-  }
-  if (path === '/api/growth') {
-    // Sample numbers only, oldest first. Real numbers come from finished streams.
-    const rows = [...DEMO_SESSIONS].reverse().map(x => ({ at: x.started_at, minutes: 120, tokens: x.tokens, tippers: x.tippers,
-      visitors: x.unique_visitors, returning: x.returning_visitors, blues_converted: x.light_blues_converted, messages: 180 + (x.tokens % 90), peak: x.peak_in_room }));
-    const avg = a => a.length ? Math.round(a.reduce((t, v) => t + v, 0) / a.length) : null;
-    const share = a => { const v = a.reduce((t, x) => t + x.visitors, 0); return v ? Math.round(100 * a.reduce((t, x) => t + x.returning, 0) / v) : null; };
-    const sum = a => ({ n: a.length, tokens: avg(a.map(x => x.tokens)), visitors: avg(a.map(x => x.visitors)), messages: avg(a.map(x => x.messages)), returning_share: share(a) });
-    return { streams: rows, recent: sum(rows.slice(-5)), previous: sum(rows.slice(-10, -5)) };
-  }
-  if (path === '/api/settings') return { timezone: null };
-  if (path === '/api/room') return { fans: [...demo.room].sort((a, b) => b.total_tips - a.total_tips || b.visit_days - a.visit_days) };
-  return {};
-}
-function demoStream() {
-  clearInterval(demo.script);
-  let i = 0;
-  setStatus('Connected', 'ok');
-  demo.script = setInterval(() => {
-    if (i >= DEMO_SCRIPT.length) return clearInterval(demo.script);
-    const item = demoStep(DEMO_SCRIPT[i++]);
-    if (item) onItem(item);
-  }, 2600);
-}
-
-async function api(path, opts = {}) {
-  if (DEMO) return demoApi(path, opts);
-  const r = await fetch(API + path, { ...opts, headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' } });
-  let body = {}; try { body = await r.json(); } catch (e) {}
-  if (!r.ok) throw Object.assign(new Error(body.error || 'Something went wrong.'), { status: r.status });
-  return body;
-}
-
-const ago = t => {
-  const ms = new Date(t).getTime();
-  if (!t || !Number.isFinite(ms)) return '';   // no date on record: show nothing rather than "NaNd"
-  const s = Math.max(0, (Date.now() - ms) / 1000);
-  if (s < 60) return 'now';
-  if (s < 3600) return Math.floor(s / 60) + 'm';
-  if (s < 86400) return Math.floor(s / 3600) + 'h';
-  return Math.floor(s / 86400) + 'd';
-};
-const n = x => Number(x || 0).toLocaleString();
-const nth = d => d + (['th','st','nd','rd'][(d % 100 - 20) % 10] || ['th','st','nd','rd'][d % 100] || 'th');
-const sinceDay = t => { const d = Math.round((Date.now() - new Date(t)) / 86400000); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; };
-
-function setStatus(text, cls) { $('statusText').textContent = text; $('dot').className = 'dot ' + (cls || ''); }
-
-// ---------- signed-out and setup screens ----------
-function noKey(msg) {
-  setStatus('Not signed in');
-  app.replaceChildren(h('div', { class: 'box' },
-    h('h1', {}, 'The StreamWing bot opens here.'),
-    h('p', {}, msg || "Paste your Chaturbate link to connect your room. No invite, no account, no email."),
-    h('a', { class: 'btn', href: '/connect-to-chaturbate/' }, 'Connect your room')));
-}
-
-function connectScreen(me, pub) {
-  document.body.classList.remove('app-mode');
-  document.querySelectorAll('header .wrap, main.wrap').forEach(el => el.classList.add('connect-page'));
-  setStatus('Not connected');
+function setup() {
   const ta = h('textarea', { id: 'eventsUrl', placeholder: 'Paste the link from Chaturbate here', 'aria-label': 'The link from Chaturbate', autocomplete: 'off', spellcheck: 'false' });
   const msg = h('p', { class: 'msg', 'aria-live': 'polite' });
   let busy = false;
-  const LINK_OK = /^https:\/\/eventsapi\.chaturbate\.com\/events\//;
+  // Chaturbate's live site, and its testbed so changes can be checked before a streamer sees them.
+  const LINK_OK = /^https:\/\/(eventsapi\.chaturbate\.com|events\.testbed\.cb\.dev)\/events\//;
   const go = async () => {
     if (busy || !ta.value.trim()) return;
-    if (!DEMO && !LINK_OK.test(ta.value.trim())) {
+    if (!LINK_OK.test(ta.value.trim())) {
       ta.value = '';
       msg.className = 'msg err';
       msg.textContent = 'That is not the StreamWing link. Right-click the long link on the StreamWing row and paste it here. It starts with https://eventsapi.chaturbate.com/events/';
@@ -448,29 +94,14 @@ function connectScreen(me, pub) {
     }
     busy = true; msg.className = 'msg'; msg.textContent = 'Checking with Chaturbate…'; btn.disabled = true;
     try {
-      let needAccount = !key;
-      if (key) {
-        try {
-          await api('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: ta.value }) });
-          justConnected = true; okStart(); window.scrollTo(0, 0); load();
-        } catch (e) {
-          // The key saved in this browser belongs to a different room. Forget it and use this link's room.
-          if (e.status !== 400 || !/^That link is for /.test(e.message)) throw e;
-          try { localStorage.removeItem('sw_k'); } catch (x) {}
-          key = '';
-          needAccount = true;
-        }
-      }
-      if (needAccount) {
-        // No private link yet: the Chaturbate link creates the account and gives us our key.
-        const r = await fetch(API + '/api/open-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventsUrl: ta.value.trim() }) });
-        let body = {}; try { body = await r.json(); } catch (e) {}
-        if (!r.ok) throw new Error(body.error || 'Something went wrong.');
-        key = body.link.split('#k=')[1];
-        try { localStorage.setItem('sw_k', key); } catch (e) {}
-        history.replaceState(null, '', '/connect-to-chaturbate/#k=' + key);
-        location.reload();
-      }
+      // The Chaturbate link creates the account (or finds it) and gives us her StreamWing key.
+      const r = await fetch(API + '/api/open-account', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventsUrl: ta.value.trim() }) });
+      let body = {}; try { body = await r.json(); } catch (e) {}
+      if (!r.ok) throw new Error(body.error || 'Something went wrong.');
+      const key = body.link.split('#k=')[1];
+      try { localStorage.setItem('sw_k', key); } catch (e) {}
+      msg.textContent = 'Connected. Opening StreamWing…';
+      location.assign('/owl/#k=' + key);
     }
     catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
     finally { busy = false; btn.disabled = false; }
@@ -479,7 +110,6 @@ function connectScreen(me, pub) {
   // Pasting the link is the last step, so connect as soon as it lands.
   ta.addEventListener('paste', () => setTimeout(go, 80));
   const step = (num, title, ...kids) => h('div', { class: 'step' }, h('div', { class: 'n' }, num), h('div', { class: 'body' }, h('h2', {}, title), ...kids));
-  const cb = (on, label, cls) => h('div', { class: 'cbrow' }, h('span', { class: 'cbbox' + (on ? ' on' : '') }, on ? '✓' : ''), h('span', { class: cls || '' }, label));
   const shot = 'display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line)';
   const formPic = h('div', {},
     h('img', { src: '/connect-to-chaturbate/connect-step-2-token-form.jpg', alt: 'The Chaturbate token page with Token Name set to StreamWing, Stats API unticked, and Events API (public) ticked', style: shot }),
@@ -488,11 +118,11 @@ function connectScreen(me, pub) {
     h('img', { src: '/connect-to-chaturbate/connect-step-3-token-row.jpg', alt: 'The Chaturbate token table with the StreamWing row and a right-click menu open on its link', style: shot }),
     h('p', { class: 'cbcap' }, 'Find the row named StreamWing. Under Scope it should say Events API (public). Right-click the long link. You do not need to highlight it. Older rows above it are from tokens you made before.'));
   const pasteKids = [
-    ...(pub ? [h('p', { style: 'margin-top:12px' }, 'Paste the long link from Chaturbate to connect your room. If you already have a StreamWing link, open that instead.')] : []),
+    h('p', { style: 'margin-top:12px' }, 'Paste the long link from Chaturbate to connect your room. If you already have a StreamWing link, open that instead.'),
     h('div', { style: 'margin-top:12px' }, ta), h('div', { style: 'margin-top:12px' }, btn), msg];
-  put(app, DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo. Paste anything to see what happens next.'), h('div', {},
+  app.replaceChildren(h('div', {},
     h('p', { class: 'kicker' }, 'Setup'),
-    h('h1', {}, pub ? 'Connect your Chaturbate room.' : 'Hi ' + me.displayName + '. One setup step.'),
+    h('h1', {}, 'Connect your Chaturbate room.'),
     h('p', {}, 'StreamWing reads your Chaturbate room and tells you who is in it: regulars who came back, big tippers, and people with tokens who haven’t tipped you yet. It only reads. It never posts in your room, messages or tips for you, and it never touches your account.'),
     h('div', { style: 'margin:18px 0' },
       h('h2', { style: 'font-size:22px;margin:0 0 10px' }, 'Connect once. StreamWing remembers the rest.'),
@@ -501,7 +131,7 @@ function connectScreen(me, pub) {
         h('source', { src: '/connect-to-chaturbate/StreamWing_connect_demo.mp4', type: 'video/mp4' }), 'Your browser cannot play this video.')),
     h('div', { class: 'steps' },
       step('1', 'Open your Chaturbate token page',
-        pub ? h('p', {}, 'Log in to the Chaturbate account you stream from.') : h('p', {}, 'Log in to the Chaturbate account you stream from.'),
+        h('p', {}, 'Log in to the Chaturbate account you stream from.'),
         h('a', { class: 'btn', href: 'https://chaturbate.com/statsapi/authtoken/', target: '_blank', rel: 'noopener' }, 'Open Chaturbate token page')),
       step('2', 'Make a token',
         h('p', {}, 'Type ', h('b', {}, 'StreamWing'), ' as the name. Chaturbate ticks Stats API for you, so untick it. Tick ', h('b', {}, 'only Events API (public)'), '. Leave Events API empty. Then click ', h('b', {}, 'Generate Auth Token'), '.'),
@@ -511,7 +141,7 @@ function connectScreen(me, pub) {
         linkPic, ...pasteKids)),
     h('details', { class: 'stuck' }, h('summary', {}, 'Stuck? Common problems'),
       h('p', {}, h('b', {}, 'I see a login page, or the page won’t open. '), 'Log in to Chaturbate with the account you stream from, then open the token page again.'),
-      h('p', {}, h('b', {}, 'StreamWing says the link is for someone else. '), 'You’re logged in to a different Chaturbate account than ' + me.username + '.'),
+      h('p', {}, h('b', {}, 'StreamWing says this room already has an account. '), 'Open your StreamWing link. If you lost it, ', h('a', { href: '/connect/lost/' }, 'get it again'), '.'),
       h('p', {}, h('b', {}, 'StreamWing says Chaturbate didn’t accept it. '), 'The usual cause is a wrong box ticked. Make a new token with only Events API (public) ticked. You can delete old tokens on that same page.'),
       h('p', {}, h('b', {}, 'I made a token with Stats API ticked. '), 'Delete that token on the Chaturbate page, then make a new one with only Events API (public) ticked.'),
       h('p', {}, h('b', {}, 'Still stuck? '), 'Email ', h('a', { href: 'mailto:quietquotient79@gmail.com' }, 'quietquotient79@gmail.com'), ' or message us on Telegram at @couplefunchi.')),
@@ -546,585 +176,7 @@ function connectScreen(me, pub) {
     h('p', { class: 'note' }, 'That link is the key to your room’s events. Paste it only here. You can disconnect any time, and deleting the token on Chaturbate cuts StreamWing off straight away.')));
 }
 
-// ---------- the live panel ----------
-let me = null, feedItems = [], tab = 'callouts', es = null, meTimer = null;
-const KIND = {
-  big_tipper_back: ['k-big', 'Big tipper is back'],
-  tipper_back:     ['k-tipper', 'Tipper is back'],
-  regular_back:    ['k-regular', 'Regular is here'],
-  light_blue_back: ['k-lb', "Back, has tokens, hasn't tipped you yet"],
-  new_with_tokens: ['k-lb', 'New, has tokens'],
-  first_tip:       ['k-win', 'First tip ever'],
-};
-const ROW = {
-  new_viewer: f => ['New viewer ', h('b', {}, f.username)],
-  returning:  f => ['Back again ', h('b', {}, f.username), ` · ${nth(f.data.fan?.visit_days || 2)} day`],
-  tip:        f => [h('b', {}, f.username), ` tipped ${n(f.data.tokens)}`, f.data.isAnon ? ' anonymously' : '', f.data.fan ? ` · ${n(f.data.fan.total_tips)} total` : ''],
-  follow:     f => [h('b', {}, f.username), ' followed you'],
-  fanclub:    f => [h('b', {}, f.username), ' joined your fan club'],
-  media:      f => [h('b', {}, f.username), ` bought ${f.data.name || 'media'} for ${n(f.data.tokens)}`],
-  live:       f => [f.data.joinedMidStream ? 'Connected while you were live' : 'You went live'],
-};
-
-function facts(fan) {
-  if (!fan) return '';
-  const bits = [];
-  if (Number(fan.total_tips) > 0) bits.push(`tipped you ${n(fan.total_tips)}`); else bits.push('never tipped you');
-  bits.push(fan.visit_days > 1 ? `${nth(fan.visit_days)} day here` : 'first day here');
-  if (fan.visit_days > 1 && fan.last_tip_at) bits.push(`last tip ${sinceDay(fan.last_tip_at)}`);
-  if (fan.in_fanclub) bits.push('fan club');
-  else if (fan.is_follower) bits.push('follows you');
-  return bits.join(' · ');
-}
-
-function card(f) {
-  const [cls, label] = KIND[f.kind];
-  const fan = f.data.fan || {};
-  let headline = label, extra = '';
-  if (f.kind === 'first_tip') { extra = `${n(f.data.tokens)} tokens` + (f.data.converted ? ' · light blue converted' : '') + (f.data.isAnon ? ' · tipped anonymously' : ''); }
-  return h('div', { class: 'card ' + cls, 'data-user': f.username, 'data-session': f.session_id || '' },
-    h('div', { class: 'top' }, h('span', { class: 'label' }, headline), h('span', { class: 'when' }, ago(f.created_at))),
-    h('div', { class: 'name' }, f.username),
-    h('div', { class: 'facts' }, extra || facts(fan)),
-    fan.note ? h('div', { class: 'ainote' }, h('b', {}, 'Remember'), fan.note) : null,
-    h('div', { class: 'said' }, fan.last_message ? `“${fan.last_message}”` : ''));
-}
-
-function recapCard(r) {
-  const parts = [];
-  if (r.convertedFans?.length) parts.push(`Light blues who tipped: ${r.convertedFans.join(', ')}.`);
-  if (r.lightBluesNotYet?.length) parts.push(`Had tokens, didn't tip yet: ${r.lightBluesNotYet.join(', ')}.`);
-  if (r.topTippers?.length) parts.push(`Top tippers: ${r.topTippers.map(t => `${t.username} (${n(t.tipped)})`).join(', ')}.`);
-  return h('div', { class: 'recap' },
-    h('h3', {}, `Stream recap · ${Math.floor(r.minutes / 60)}h ${r.minutes % 60}m`),
-    h('div', { class: 'grid' },
-      [[n(r.tokens), 'tokens'], [n(r.tippers), 'tippers'], [n(r.uniqueVisitors), 'visitors'],
-       [n(r.returningVisitors), 'came back'], [`${n(r.lightBluesConverted)} of ${n(r.lightBluesSeen)}`, 'light blues tipped'], [n(r.newFollowers), 'new followers']]
-        .map(([b, s]) => h('div', {}, h('b', {}, b), h('span', {}, s)))),
-    parts.map(p => h('p', {}, p)),
-    r.previous && h('p', { class: 'vs' }, 'Compared with your last stream: ' + [
-      ['tokens', r.tokens, r.previous.tokens], ['came back', r.returningVisitors, r.previous.returningVisitors],
-      ['visitors', r.uniqueVisitors, r.previous.uniqueVisitors], ['light blues tipped', r.lightBluesConverted, r.previous.lightBluesConverted],
-    ].map(([label, a, b]) => `${label} ${deltaText(a, b)}`).join(' · ') + '.'));
-}
-
-// "+3", "−2" or "same", for comparing a stream with the one before.
-function deltaText(a, b) { const d = Number(a || 0) - Number(b || 0); return d > 0 ? `+${n(d)}` : d < 0 ? `\u2212${n(-d)}` : 'same'; }
-function deltaEl(a, b) {
-  if (b == null) return null;
-  const d = Number(a || 0) - Number(b || 0);
-  return h('span', { class: 'd ' + (d > 0 ? 'up' : d < 0 ? 'down' : 'same') }, deltaText(a, b));
-}
-const when = t => new Date(t).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-const dur = (a, b) => { const m = Math.round((new Date(b || Date.now()) - new Date(a)) / 60000); return `${Math.floor(m / 60)}h ${m % 60}m`; };
-
-// ---------- Streams tab ----------
-// ---------- growth: how each finished stream compares, from the sessions StreamWing already keeps ----------
-const growthDelta = (now, before) => {
-  if (now == null || before == null) return null;
-  const d = Math.round(now - before);
-  return d === 0 ? 'same as before' : (d > 0 ? '▲ ' : '▼ ') + n(Math.abs(d)) + ' from before';
-};
-const rawHtml = html => { const d = document.createElement('div'); d.innerHTML = html; return d; };
-async function renderGrowth() {
-  const list = $('list');
-  try {
-    const [g, s] = await Promise.all([api('/api/growth'), api('/api/sessions')]);
-    if (tab !== 'growth') return;
-    if (!g.streams.length) return list.replaceChildren(h('p', { class: 'empty' }, 'Your growth shows up here once you finish your first stream. Each stream adds a point to the chart.'));
-    const all = g.streams;                       // oldest first
-    const recent = all.slice(-5), before = all.slice(-10, -5);
-    const avgOf = (a, f) => { const v = a.map(f).filter(x => x != null); return v.length ? v.reduce((t, x) => t + x, 0) / v.length : null; };
-    const backOf = x => x.visitors ? Math.round(100 * x.returning / x.visitors) : null;
-    const METRICS = {
-      tokens: { label: 'Tokens', fn: x => x.tokens },
-      visitors: { label: 'Visitors', fn: x => x.visitors },
-      tippers: { label: 'Tippers', fn: x => x.tippers },
-      back: { label: 'Came back', fn: backOf, suffix: '%' },
-    };
-    const trendText = (now, prev, suffix = '') => {
-      if (now == null || prev == null || !prev) return null;
-      const up = now >= prev;
-      const change = suffix ? `${Math.round(Math.abs(now - prev))} pts` : `${Math.round(Math.abs((now - prev) / prev) * 100)}%`;
-      return { up, text: `${up ? '▲' : '▼'} ${change}`, from: `from ${n(Math.round(prev))}${suffix}` };
-    };
-    const spark = (vals) => {
-      const v = vals.filter(x => x != null);
-      if (v.length < 2) return '';
-      const W = 120, H = 28, max = Math.max(...v), min = Math.min(...v), span = max - min || 1;
-      const pts = vals.map((x, i) => `${(i / (vals.length - 1)) * W},${H - 2 - (((x ?? min) - min) / span) * (H - 4)}`);
-      return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" aria-hidden="true"><polyline points="${pts.join(' ')}" fill="none" stroke="#e879f9" stroke-width="2"/></svg>`;
-    };
-    const cards = [
-      { label: 'Tokens per stream', fn: METRICS.tokens.fn },
-      { label: 'Visitors per stream', fn: METRICS.visitors.fn },
-      { label: 'Tippers per stream', fn: METRICS.tippers.fn },
-      { label: 'Came back', fn: backOf, suffix: '%' },
-      { label: 'Light blues who tipped', fn: x => x.blues_converted },
-    ].map(c => {
-      const now = avgOf(recent, c.fn), prev = avgOf(before, c.fn);
-      const t = trendText(now, prev, c.suffix || '');
-      const big = now == null ? '–' : Math.round(now) + (c.suffix || '');
-      return h('div', { class: 'gcard' },
-        h('span', {}, c.label),
-        h('b', {}, big),
-        t ? h('small', { class: t.up ? 'gup' : 'gdown' }, `${t.text} ${t.from}`) : null,
-        h('div', { class: 'spark' }, rawHtml(spark(all.map(c.fn)))));
-    });
-    const tokNow = avgOf(recent, METRICS.tokens.fn), tokPrev = avgOf(before, METRICS.tokens.fn);
-    const backNow = avgOf(recent, backOf), backPrev = avgOf(before, backOf);
-    const headline = tokNow == null ? null : h('div', { class: 'ghead' },
-      h('h2', {}, `You earned ${n(Math.round(tokNow))} tokens per stream${tokPrev ? `, ${tokNow >= tokPrev ? 'up' : 'down'} from ${n(Math.round(tokPrev))}` : ''}.`),
-      backNow != null && backPrev != null ? h('p', {}, `The biggest change: ${Math.round(backNow)}% of your visitors had been in your room before, ${backNow >= backPrev ? 'up' : 'down'} from ${Math.round(backPrev)}%.`) : null);
-
-    // chart: last 14 streams, one metric at a time
-    let metric = 'tokens';
-    const chartBox = h('div', { class: 'streamcard' });
-    const drawChart = () => {
-      const pts = all.slice(-14);
-      const m = METRICS[metric];
-      const vals = pts.map(m.fn).map(x => x ?? 0);
-      const W = 600, H = 180, pad = 26, max = Math.max(1, ...vals);
-      const xs = i => pad + (vals.length === 1 ? (W - pad * 2) / 2 : (i / (vals.length - 1)) * (W - pad * 2));
-      const ys = v => H - 22 - (v / max) * (H - 40);
-      const line = vals.map((v, i) => `${i ? 'L' : 'M'}${xs(i).toFixed(1)} ${ys(v).toFixed(1)}`).join(' ');
-      const area = `${line} L${xs(vals.length - 1).toFixed(1)} ${H - 22} L${xs(0).toFixed(1)} ${H - 22} Z`;
-      const dots = vals.map((v, i) => `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="4" fill="#e879f9"><title>${n(v)}${m.suffix || ''}</title></circle>`).join('');
-      const d0 = new Date(pts[0].at).toLocaleDateString([], { month: 'short', day: 'numeric' });
-      const d1 = new Date(pts[pts.length - 1].at).toLocaleDateString([], { month: 'short', day: 'numeric' });
-      const svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${m.label} per stream, oldest on the left">
-        <path d="${area}" fill="rgba(232,121,249,.14)"/><path d="${line}" fill="none" stroke="#e879f9" stroke-width="2.5"/>${dots}
-        <text x="${pad}" y="${H - 4}" fill="#b9a9d9" font-size="12">${d0}</text>
-        <text x="${W - pad}" y="${H - 4}" fill="#b9a9d9" font-size="12" text-anchor="end">${d1}</text>
-        <text x="${pad}" y="12" fill="#b9a9d9" font-size="12">${n(max)}${m.suffix || ''}</text></svg>`;
-      const chips = h('div', { class: 'tabs', role: 'tablist' }, ...Object.keys(METRICS).map(k => h('button', { type: 'button', role: 'tab', 'aria-selected': String(k === metric), onclick: () => { metric = k; drawChart(); } }, METRICS[k].label)));
-      chartBox.replaceChildren(h('h3', {}, `${m.label}, last ${pts.length} ${pts.length === 1 ? 'stream' : 'streams'}`), chips, rawHtml(svg), h('p', { class: 'note' }, 'One point per stream, oldest on the left.'));
-    };
-    drawChart();
-
-    // streams table: finished streams, newest first
-    const done = s.sessions.filter(x => x.ended_at);
-    const rows = done.slice(0, 6).map(x => h('tr', {},
-      h('td', {}, new Date(x.started_at).toLocaleDateString([], { month: 'short', day: 'numeric' })),
-      h('td', {}, dur(x.started_at, x.ended_at)),
-      h('td', {}, n(x.tokens)), h('td', {}, n(x.unique_visitors)), h('td', {}, n(x.tippers)),
-      h('td', {}, n(x.returning_visitors)), h('td', {}, n(x.light_blues_converted)), h('td', {}, n(x.new_followers))));
-    const table = h('div', { class: 'streamcard' },
-      h('div', { class: 'gthead' }, h('h3', {}, 'Your streams'), h('span', {}, done.length ? `Showing ${Math.min(6, done.length)} of ${done.length}` : '')),
-      h('table', { class: 'gtable' },
-        h('thead', {}, h('tr', {}, ...['Stream', 'Length', 'Tokens', 'Visitors', 'Tippers', 'Came back', 'Blues tipped', 'New followers'].map(t => h('th', {}, t)))),
-        h('tbody', {}, ...rows)));
-
-    list.replaceChildren(...[headline, h('div', { class: 'gcards' }, ...cards), chartBox, table,
-      h('p', { class: 'note', style: 'text-align:center' }, 'Each stream is counted from the moment StreamWing connected. Earlier streams are not in this chart.')].filter(Boolean));
-  } catch (e) { list.replaceChildren(h('p', { class: 'empty' }, e.message)); }
-}
-
-async function renderStreams() {
-  const list = $('list');
-  try {
-    const { sessions } = await api('/api/sessions');
-    if (tab !== 'streams') return;
-    if (!sessions.length) return list.replaceChildren(h('p', { class: 'empty' }, 'Your streams show up here, each compared with the one before it.'));
-    list.replaceChildren(...sessions.map((s, i) => {
-      const p = sessions[i + 1] || null;
-      const cell = (val, prevVal, label) => h('div', {}, h('b', {}, n(val)), h('span', {}, label), p && deltaEl(val, prevVal));
-      return h('div', { class: 'streamcard' },
-        h('h3', {}, s.ended_at ? `${when(s.started_at)} · ${dur(s.started_at, s.ended_at)}` : `Live now · ${dur(s.started_at)}`),
-        h('div', { class: 'grid' },
-          cell(s.tokens, p?.tokens, 'tokens'), cell(s.tippers, p?.tippers, 'tippers'), cell(s.unique_visitors, p?.unique_visitors, 'visitors'),
-          cell(s.returning_visitors, p?.returning_visitors, 'came back'), cell(s.light_blues_converted, p?.light_blues_converted, 'blues tipped'), cell(s.new_followers, p?.new_followers, 'new followers')));
-    }), h('p', { class: 'note', style: 'text-align:center' }, 'Green and red show the change from the stream before.'));
-  } catch (e) { list.replaceChildren(h('p', { class: 'empty' }, e.message)); }
-}
-
-// ---------- Fans tab: slipping away, then everyone ----------
-let fanQuery = '', fanTimer = null;
-function fanRow(f, slip) {
-  const sub = slip
-    ? `missed your last ${f.missed_streams} streams · ${f.visit_days} ${f.visit_days === 1 ? 'day' : 'days'} here`
-    : `${f.visit_days > 1 ? nth(f.visit_days) + ' day' : 'first day'} · ${ago(f.last_seen) ? 'last here ' + ago(f.last_seen) : 'seen recently'}${f.owner_note ? ' · has a note' : ''}`;
-  return h('div', { class: 'fanrow' + (slip ? ' slip' : ''), 'data-user': f.username },
-    h('div', { class: 'who' }, h('b', {}, f.username), h('span', {}, sub)),
-    h('div', { class: 'amt' }, Number(f.total_tips) ? n(f.total_tips) : '\u2013', h('span', {}, 'tipped')));
-}
-async function renderFans() {
-  const list = $('list');
-  const input = h('input', { class: 'search', type: 'search', placeholder: 'Find a fan by name', value: fanQuery, 'aria-label': 'Find a fan by name', autocomplete: 'off', spellcheck: 'false' });
-  input.addEventListener('input', () => { fanQuery = input.value; clearTimeout(fanTimer); fanTimer = setTimeout(() => fillFans(body), 250); });
-  const body = h('div', { class: 'list' });
-  list.replaceChildren(input, body);
-  fillFans(body);
-}
-async function fillFans(body) {
-  try {
-    const [{ fans }, slip] = await Promise.all([
-      api('/api/fans' + (fanQuery ? '?q=' + encodeURIComponent(fanQuery) : '')),
-      fanQuery ? Promise.resolve({ fans: [] }) : api('/api/slipping'),
-    ]);
-    if (tab !== 'fans') return;
-    const els = [];
-    if (slip.fans.length) {
-      els.push(h('p', { class: 'sec' }, 'Slipping away'), h('p', { class: 'note', style: 'margin:-4px 0 4px' }, 'They used to come or tip, and missed your last 3 streams or more. Worth a hello on your socials.'));
-      els.push(...slip.fans.map(f => fanRow(f, true)));
-    }
-    els.push(h('p', { class: 'sec' }, fanQuery ? 'Matches' : 'Everyone, top tippers first'));
-    els.push(...(fans.length ? fans.map(f => fanRow(f, false)) : [h('p', { class: 'empty' }, fanQuery ? 'Nobody by that name yet.' : 'Fans show up here after your first stream with StreamWing.')]));
-    body.replaceChildren(...els);
-  } catch (e) { body.replaceChildren(h('p', { class: 'empty' }, e.message)); }
-}
-
-// ---------- Fan profile ----------
-async function openProfile(username) {
-  const box = $('fanSheetIn');
-  box.replaceChildren(h('p', { class: 'note' }, 'Loading ' + username + '\u2026'));
-  $('fanSheet').hidden = false;
-  let f;
-  try { f = await api('/api/fans/' + encodeURIComponent(username)); }
-  catch (e) { box.replaceChildren(h('p', { class: 'msg err' }, e.status === 404 ? 'StreamWing hasn\u2019t seen ' + username + ' in your room yet.' : e.message), closeBtn()); return; }
-  const badges = [];
-  if (f.in_fanclub) badges.push(h('span', { class: 'badge gold' }, 'Fan club'));
-  if (f.is_follower) badges.push(h('span', { class: 'badge' }, 'Follows you'));
-  if (f.has_tokens && !Number(f.total_tips)) badges.push(h('span', { class: 'badge lb' }, 'Has tokens, never tipped you'));
-  if (f.is_mod) badges.push(h('span', { class: 'badge' }, 'Moderator'));
-  const ta = h('textarea', { 'aria-label': 'Your note about ' + f.username, maxlength: '500', placeholder: 'Only you see this. Their birthday, what they like, what you talked about.' });
-  ta.value = f.owner_note || '';
-  const saved = h('span', { class: 'note', 'aria-live': 'polite' }, f.owner_note_at ? 'Saved ' + ago(f.owner_note_at) + ' ago' : '');
-  const save = h('button', { class: 'btn', type: 'button', onclick: async () => {
-    save.disabled = true; saved.textContent = 'Saving\u2026';
-    try { await api('/api/fans/' + encodeURIComponent(f.username) + '/note', { method: 'POST', body: JSON.stringify({ note: ta.value }) }); saved.textContent = 'Saved'; }
-    catch (e) { saved.textContent = e.message; }
-    finally { save.disabled = false; }
-  } }, 'Save note');
-  const bdIn = h('input', { type: 'date', 'aria-label': 'Birthday for ' + f.username, value: f.birthday ? String(f.birthday).slice(0, 10) : '' });
-  const bdSaved = h('span', { class: 'note', 'aria-live': 'polite' }, '');
-  const bdSave = h('button', { class: 'btn', type: 'button', onclick: async () => {
-    bdSave.disabled = true; bdSaved.textContent = 'Saving\u2026';
-    try { await api('/api/fans/' + encodeURIComponent(f.username) + '/birthday', { method: 'POST', body: JSON.stringify({ birthday: bdIn.value }) }); bdSaved.textContent = bdIn.value ? 'Saved. We\u2019ll remind you on the day.' : 'Removed'; }
-    catch (e) { bdSaved.textContent = e.message; }
-    finally { bdSave.disabled = false; }
-  } }, 'Save birthday');
-  const msgs = (f.recent_messages || []);
-  const tips = (f.tips || []);
-  put(box,
-    h('p', { class: 'pname' }, f.username),
-    badges.length ? h('div', { class: 'badges' }, badges) : null,
-    f.note ? h('p', { class: 'ainote', style: 'margin:0 0 14px' }, h('b', {}, 'Remember'), f.note) : null,
-    h('div', { class: 'pgrid' },
-      [[n(f.total_tips), 'tipped you'], [n(f.biggest_tip), 'biggest tip'], [n(f.tip_count), 'tips'],
-       [n(f.visit_days), 'days here'], [n(f.visits), 'visits'], [n(f.streams_attended), 'streams']]
-        .map(([b, l]) => h('div', {}, h('b', {}, b), h('span', {}, l)))),
-    h('p', { class: 'seen' }, `First seen ${when(f.first_seen)} · last here ${ago(f.last_seen)} ago`),
-    h('p', { class: 'sec' }, 'Your note'),
-    h('div', { class: 'notebox' }, ta, h('div', { class: 'btnrow' }, save, saved)),
-    h('p', { class: 'sec' }, 'Birthday'),
-    h('div', { class: 'notebox' }, bdIn, h('div', { class: 'btnrow' }, bdSave, bdSaved)),
-    h('p', { class: 'sec' }, 'What they said lately'),
-    msgs.length ? h('div', { class: 'plist' }, msgs.map(m => h('div', {}, `\u201C${m.m}\u201D`, h('span', { class: 't' }, ago(m.t))))) : h('p', { class: 'note' }, 'Nothing in chat yet.'),
-    h('p', { class: 'sec' }, 'Tips'),
-    tips.length ? h('div', { class: 'plist' }, tips.map(t => h('div', {}, h('b', {}, n(t.tokens)), t.message ? ` \u201C${t.message}\u201D` : '', h('span', { class: 't' }, ago(t.at))))) : h('p', { class: 'note' }, 'No tips to you yet.'),
-    closeBtn());
-}
-function closeBtn() { return h('div', { style: 'margin-top:18px' }, h('button', { class: 'btn ghost', type: 'button', onclick: () => { $('fanSheet').hidden = true; } }, 'Close')); }
-$('fanSheet').addEventListener('click', e => { if (e.target.id === 'fanSheet') $('fanSheet').hidden = true; });
-app.addEventListener('click', e => {
-  const el = e.target.closest('[data-user]');
-  if (!el || !el.dataset.user || e.target.closest('button, a, input, textarea')) return;
-  openProfile(el.dataset.user);
-});
-
-function renderItem(f) {
-  if (KIND[f.kind]) return card(f);
-  if (f.kind === 'recap') return recapCard(f.data);
-  if (ROW[f.kind]) return h('div', { class: 'row', 'data-user': f.username || '' }, ...ROW[f.kind](f), h('span', { class: 'when' }, ago(f.created_at)));
-  return null;
-}
-
-function renderStats() {
-  const s = me.session && !me.session.ended_at ? me.session : null;
-  const box = $('stats'); if (!box) return;
-  const items = s
-    ? [[n(s.tokens), 'tokens'], [n(s.tippers), 'tippers'], [n(s.unique_visitors), 'visitors'], [`${n(s.light_blues_converted)}/${n(s.light_blues_seen)}`, 'blues tipped']]
-    : [[n(me.totals.fans), 'fans known'], [n(me.totals.tippers), 'tippers'], [n(me.totals.light_blues), 'light blues'], ['', 'offline']];
-  box.replaceChildren(...items.map(([b, l]) => h('div', { class: 'stat' }, h('b', {}, b), h('span', {}, l))));
-}
-
-async function renderRoom() {
-  const list = $('list');
-  try {
-    const { fans } = await api('/api/room');
-    if (tab !== 'room') return;
-    if (!fans.length) return list.replaceChildren(h('p', { class: 'empty' }, me.live ? "Nobody's in the room right now." : "You're offline. When you go live, the people in your room show up here."));
-    list.replaceChildren(...fans.map(fan => {
-      const kind = Number(fan.total_tips) >= 100 ? 'big_tipper_back' : Number(fan.total_tips) > 0 ? 'tipper_back' : fan.visit_days >= 3 ? 'regular_back' : fan.has_tokens ? 'light_blue_back' : null;
-      if (!kind) return h('div', { class: 'row', 'data-user': fan.username }, h('b', {}, fan.username), fan.visit_days > 1 ? ` · ${nth(fan.visit_days)} day` : ' · new');
-      return card({ kind, username: fan.username, created_at: fan.last_seen, data: { fan } });
-    }));
-  } catch (e) { list.replaceChildren(h('p', { class: 'empty' }, e.message)); }
-}
-
-function renderList() {
-  const list = $('list'); if (!list) return;
-  if (tab === 'room') return renderRoom();
-  if (tab === 'fans') return renderFans();
-  if (tab === 'streams') return renderStreams();
-  if (tab === 'growth') return renderGrowth();
-  const els = feedItems.map(renderItem).filter(Boolean);
-  if (!DEMO && tab === 'callouts') briefCard().then(c => { if (c && tab === 'callouts' && !document.getElementById('brief')) list.prepend(c); }).catch(() => {});
-  list.replaceChildren(...(els.length ? els : [h('p', { class: 'empty' }, "You're connected. When you go live, your callouts land here: regulars arriving, big tippers coming back, and viewers who have tokens but haven't tipped you yet.")]));
-}
-
-// ---------- daily brief: once a day, when she opens her panel ----------
-async function briefCard() {
-  const key = 'sw_brief_' + key_hash();
-  const today = new Date().toLocaleDateString('en-CA');
-  let seen = null; try { seen = localStorage.getItem(key); } catch (e) {}
-  if (seen === today) return null;
-  const b = await api('/api/brief');
-  const lines = [];
-  if (b.streak >= 2) lines.push(h('p', {}, h('b', {}, `Happy ${b.streak} day streak${me && me.displayName && me.displayName !== 'there' ? ', ' + me.displayName : ''}!`)));
-  for (const it of b.items) if (it.kind !== 'streak') lines.push(h('p', {}, it.text));
-  if (!lines.length) return null;
-  return h('div', { class: 'okcard brief', id: 'brief' }, h('b', {}, 'Today'), ...lines,
-    h('button', { class: 'btn', type: 'button', onclick: () => { try { localStorage.setItem(key, today); } catch (e) {} document.getElementById('brief')?.remove(); } }, 'Got it'));
-}
-function key_hash() { return (me && me.username || 'me').toLowerCase(); }
-
-let justConnected = false, okT = null;
-function okDraw() {
-  const el = $('okcard'); if (!el) return;
-  if (!justConnected || !me) { el.hidden = true; return; }
-  el.hidden = false;
-  const fans = me.totals && me.totals.fans || 0;
-  const line = me.live
-    ? (fans ? 'You\u2019re live. StreamWing has seen ' + fans + (fans === 1 ? ' person' : ' people') + ' in your room so far.' : 'You\u2019re live. Waiting for the first person to come through\u2026')
-    : 'You\u2019re offline right now. Go live and this fills in on its own.';
-  const checked = me.lastPollAt ? (ago(me.lastPollAt) === 'now' ? 'Checked with Chaturbate just now.' : 'Last checked with Chaturbate ' + ago(me.lastPollAt) + ' ago.') : 'Checking with Chaturbate\u2026';
-  put(el, h('b', {}, 'Connected. StreamWing can see your room.'), h('p', {}, line), h('p', {}, checked),
-    h('button', { class: 'btn', type: 'button', onclick: () => { justConnected = false; clearInterval(okT); okDraw(); } }, 'Got it'));
-}
-function okStart() {
-  clearInterval(okT);
-  okT = setInterval(async () => { if (!justConnected) return clearInterval(okT); try { me = await api('/api/me'); okDraw(); } catch (e) {} }, 5000);
-}
-
-function panel() {
-  $('menuBtn').hidden = false;
-  const tabBtn = (id, label) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(tab === id), onclick: () => { tab = id; panel(); } }, label);
-  put(app,
-    DEMO && h('p', { class: 'note', style: 'text-align:center;margin:12px 0 0' }, 'Demo with sample fans. Not a real room.'),
-    h('div', { class: 'banner', id: 'banner', hidden: !me.lastError }, h('span', { id: 'bannerText' }, me.lastError || ''), ' ', h('button', { class: 'linkbtn', type: 'button', onclick: () => connectScreen(me) }, 'Reconnect Chaturbate')),
-    h('div', { class: 'okcard', id: 'okcard', hidden: true, 'aria-live': 'polite' }),
-    h('div', { class: 'stats', id: 'stats' }),
-    h('div', { id: 'coachInline' }),
-    h('div', { class: 'tabs', role: 'tablist' }, tabBtn('callouts', 'Callouts'), tabBtn('growth', 'Growth'), tabBtn('room', 'Room'), tabBtn('fans', 'Fans'), tabBtn('streams', 'Streams')),
-    h('div', { class: 'list', id: 'list', 'aria-live': 'polite' }),
-    !(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) &&
-      h('p', { class: 'tip' }, 'Tip: add this page to your home screen so StreamWing is one tap away when you go live.'));
-  renderStats(); renderList(); updateStatus(); coachDraw(); okDraw();
-}
-
-function updateStatus() {
-  keepAwake();
-  if (!me) return;
-  if (me.lastError) return setStatus('Needs attention');
-  if (me.live) return setStatus('Live', 'live');
-  setStatus('Connected', 'ok');
-}
-
-let refreshT = null;
-const refreshMe = () => { clearTimeout(refreshT); refreshT = setTimeout(async () => { try { me = await api('/api/me'); renderStats(); updateStatus(); const b = $('banner'); if (b) { b.hidden = !me.lastError; $('bannerText').textContent = me.lastError || ''; } keepAwake(); } catch (e) {} }, 1200); };
-
-// ---------- the coach strip: nudges on her own screen. She copies and sends everything herself. ----------
-const COACH_KINDS = { big_tipper_back: 0, first_tip: 1, tipper_back: 2, light_blue_back: 3, new_with_tokens: 4, regular_back: 5 };
-const COACH_SHORT = { big_tipper_back: 'is back, a big tipper', first_tip: 'tipped for the first time', tipper_back: 'is back', light_blue_back: 'is back with tokens', new_with_tokens: 'is new, has tokens', regular_back: 'is here' };
-const coach = { queue: [], handled: new Set(), pip: null, collapsed: false, note: '', noteT: null };
-const COACH_W = 360, COACH_H_OPEN = 420, COACH_H_BAR = 96;
-function coachMessage(q) {
-  const u = q.username;
-  return ({
-    big_tipper_back: `Hey ${u}! So good to see you back. Thank you for everything you do for this room. How's your week going?`,
-    first_tip: `${u}, thank you so much for the tip! It really made my night.`,
-    tipper_back: `Hi ${u}, thanks for coming back. I like having you in the room. How was your day?`,
-    light_blue_back: `Hi ${u}, I'm happy you came back. Is there anything you'd like to see tonight?`,
-    new_with_tokens: `Hi ${u}, welcome! Glad you stopped by. What brought you to my room tonight?`,
-    regular_back: `Hi ${u}, glad you're here again. How was your day?`,
-  })[q.kind];
-}
-function coachAdd(item) {
-  if (!(item.kind in COACH_KINDS) || !item.username) return;
-  if (coach.handled.has(item.username) || coach.queue.some(q => q.username === item.username)) return;
-  coach.queue.push({ username: item.username, kind: item.kind, fan: item.data.fan || {}, tokens: item.data.tokens });
-  coach.queue.sort((a, b) => COACH_KINDS[a.kind] - COACH_KINDS[b.kind]);
-  coachDraw();
-}
-function coachFlash(text) {
-  coach.note = text; clearTimeout(coach.noteT);
-  coach.noteT = setTimeout(() => { coach.note = ''; coachDraw(); }, 6000);
-}
-async function coachCopy(text, win) {
-  try { await (win || window).navigator.clipboard.writeText(text); return true; } catch (e) {}
-  try {
-    const d = (win || window).document, t = d.createElement('textarea'); t.value = text; d.body.append(t); t.select();
-    const ok = d.execCommand('copy'); t.remove(); return ok;
-  } catch (e) { return false; }
-}
-// After any tap inside the pop-out, shrink it back to the thin bar.
-function coachAfterTap(win) {
-  if (!coach.pip) return;
-  coach.collapsed = true; coachResize(win); coachDraw();
-}
-function coachResize(win) {
-  const p = coach.pip; if (!p) return;
-  try { p.resizeTo(COACH_W, coach.collapsed ? COACH_H_BAR : COACH_H_OPEN); } catch (e) { /* needs a tap; arriving nudges never resize */ }
-}
-function coachRemove(u, handled) {
-  coach.queue = coach.queue.filter(q => q.username !== u); if (handled) coach.handled.add(u);
-}
-function coachView(win) {
-  const q = coach.queue[0];
-  if (coach.pip && coach.collapsed) {
-    return h('div', { class: 'cbar' },
-      h('div', { class: 't' }, coach.note ? coach.note
-        : q ? [h('span', { class: 'cdot' }), h('b', {}, q.username), ' ' + COACH_SHORT[q.kind], coach.queue.length > 1 ? h('span', {}, ` · ${coach.queue.length - 1} more`) : null]
-        : [h('span', { class: 'cdot off' }), h('span', {}, 'Nothing to nudge')]),
-      h('button', { type: 'button', class: 'main small', onclick: () => { coach.collapsed = false; coachResize(win); coachDraw(); } }, 'Open'));
-  }
-  const head = h('div', { class: 'chead' }, h('b', {}, 'Nudges'), h('span', {}, coach.queue.length ? `${coach.queue.length} waiting` : 'none waiting'),
-    coach.pip ? null : (window.documentPictureInPicture
-      ? h('button', { type: 'button', class: 'small', onclick: coachPop }, 'Pop out')
-      : h('span', {}, 'Pop-out needs Chrome or Edge on a computer')));
-  if (!q) return h('div', {}, head, h('p', { class: 'cempty' }, coach.note || 'Nothing to nudge right now. When a regular or a big tipper arrives, a suggested message shows up here.'));
-  const msg = coachMessage(q);
-  return h('div', {}, head,
-    h('div', { class: 'cname' }, q.username),
-    h('div', { class: 'cwhy' }, KIND[q.kind][1]),
-    h('div', { class: 'cfacts' }, facts(q.fan)),
-    h('div', { class: 'cmsg' }, msg),
-    h('div', { class: 'crow' },
-      h('button', { type: 'button', class: 'main', onclick: async () => { const ok = await coachCopy(msg, win); coachFlash(ok ? `Copied for ${q.username}. Paste it into their DM on Chaturbate yourself.` : 'Could not copy. Select the message and copy it by hand.'); coachAfterTap(win); coachDraw(); } }, 'Copy message'),
-      h('button', { type: 'button', onclick: () => { coachRemove(q.username, true); coachAfterTap(win); coachDraw(); } }, 'Done'),
-      h('button', { type: 'button', onclick: () => { coachRemove(q.username, true); coachAfterTap(win); coachDraw(); } }, 'Skip'),
-      h('button', { type: 'button', onclick: () => { coach.queue.push(coach.queue.shift()); coachAfterTap(win); coachDraw(); } }, 'Later')),
-    coach.note ? h('div', { class: 'cfoot' }, coach.note) : null,
-    h('div', { class: 'cfoot' }, 'Only you see this. StreamWing never sends anything to Chaturbate for you.'));
-}
-function coachDraw() {
-  const inline = $('coachInline');
-  if (inline) {
-    inline.className = 'coach inline';
-    if (coach.pip) put(inline, h('div', { class: 'chead' }, h('span', {}, 'Nudges are in the pop-out window.'), h('button', { type: 'button', class: 'small', onclick: () => coach.pip && coach.pip.close() }, 'Bring back')));
-    else put(inline, coachView(window));
-  }
-  if (coach.pip) { const root = coach.pip.document.getElementById('coachRoot'); if (root) put(root, coachView(coach.pip)); }
-}
-async function coachPop() {
-  if (!window.documentPictureInPicture || coach.pip) return;
-  try {
-    const p = await documentPictureInPicture.requestWindow({ width: COACH_W, height: COACH_H_OPEN });
-    p.document.head.append(p.document.importNode($('coachCss'), true));
-    const f = p.document.createElement('link'); f.rel = 'stylesheet'; f.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap'; p.document.head.append(f);
-    p.document.body.style.margin = '0';
-    const root = p.document.createElement('div'); root.id = 'coachRoot'; root.className = 'coach pipbody'; p.document.body.append(root);
-    coach.pip = p; coach.collapsed = false;
-    p.addEventListener('pagehide', () => { coach.pip = null; coach.collapsed = false; coachDraw(); });
-    coachDraw();
-  } catch (e) { coachFlash('Could not open the pop-out here. You can keep using the strip on this page.'); coachDraw(); }
-}
-
-function onItem(item) {
-  if (item.kind === 'heartbeat') return;
-  if (item.kind === 'status') { refreshMe(); return; }
-  if (item.kind === 'chat') {
-    // Update what they just said, but only on this stream's cards. Older cards keep what they said back then.
-    const latest = feedItems.find(f => f.session_id);
-    const sid = latest && latest.kind !== 'recap' ? latest.session_id : null;
-    if (!sid) return;
-    document.querySelectorAll('.card').forEach(c => { if (c.dataset.user === item.username && c.dataset.session === sid) c.querySelector('.said').textContent = `“${item.data.message}”`; });
-    for (const f of feedItems) if (f.username === item.username && f.session_id === sid && f.data.fan) f.data.fan.last_message = item.data.message;
-    return;
-  }
-  if (item.kind === 'leave') {
-    document.querySelectorAll('.card').forEach(c => { if (c.dataset.user === item.username) c.classList.add('gone'); });
-    return;
-  }
-  feedItems.unshift(item);
-  feedItems = feedItems.slice(0, 150);
-  try { coachAdd(item); } catch (e) { /* the strip must never stop the feed */ }
-  if (tab === 'callouts') {
-    const el = renderItem(item);
-    const list = $('list');
-    if (el && list) { if (list.querySelector('.empty')) list.replaceChildren(); list.prepend(el); }
-  } else if (tab === 'room') renderRoom();
-  refreshMe();
-}
-
-let dropped = false, wake = null;
-// Anything that happened while the phone slept or the connection was down: fetch it and redraw.
-async function catchUp() {
-  if (DEMO || !me) return;
-  try {
-    const { items } = await api('/api/feed?limit=80');
-    feedItems = items;
-    me = await api('/api/me');
-    renderStats(); updateStatus(); renderList();
-  } catch (e) {}
-}
-// While she's live and the panel is on screen, ask the phone not to dim and lock.
-async function keepAwake() {
-  try {
-    const want = me && me.live && document.visibilityState === 'visible';
-    if (want && !wake && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); }
-    if (!want && wake) { await wake.release(); wake = null; }
-  } catch (e) { wake = null; }
-}
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') { catchUp(); keepAwake(); }
-});
-
-function stream() {
-  if (DEMO) return demoStream();
-  if (es) es.close();
-  es = new EventSource(API + '/api/stream?k=' + encodeURIComponent(key));
-  es.onmessage = ev => { try { onItem(JSON.parse(ev.data)); } catch (e) {} };
-  es.onerror = () => { dropped = true; setStatus('Reconnecting…'); };
-  es.onopen = () => { updateStatus(); if (dropped) { dropped = false; catchUp(); } };
-}
-
-async function load() {
-  document.body.classList.toggle('keyed', !!key);
-  if (!key) return connectScreen({ displayName: 'there', username: 'your_username' }, true);
-  try { me = await api('/api/me'); }
-  catch (e) {
-    if (e.status === 401) { try { localStorage.removeItem('sw_k'); } catch (x) {} return noKey("This link isn't working anymore. Paste your Chaturbate link to get a new one."); }
-    setStatus('Offline'); app.replaceChildren(h('p', { class: 'empty' }, "Can't reach StreamWing right now. It will keep trying."));
-    return setTimeout(load, 5000);
-  }
-  if (!me.connected) return connectScreen(me);
-  document.querySelectorAll('.connect-page').forEach(el => el.classList.remove('connect-page'));
-  document.body.classList.add('app-mode');
-  const { items } = await api('/api/feed?limit=80');
-  feedItems = items;
-  panel(); stream();
-  try { await api('/api/settings', { method: 'POST', body: JSON.stringify({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }) }); } catch (e) {}
-  clearInterval(meTimer); meTimer = setInterval(refreshMe, 30000);
-}
-
-// Settings sheet
-$('menuBtn').addEventListener('click', () => { $('sheetInfo').textContent = me ? `Connected as ${me.username}. StreamWing remembers ${n(me.totals.fans)} people from your room.` : ''; $('sheetMsg').textContent = ''; $('sheet').hidden = false; });
-$('closeSheet').addEventListener('click', () => { $('sheet').hidden = true; });
-async function disconnect(deleteData) {
-  if (deleteData && !confirm('Delete everything StreamWing knows about your room? This can’t be undone.')) return;
-  try { await api('/api/disconnect', { method: 'POST', body: JSON.stringify({ deleteData }) }); $('sheet').hidden = true; if (es) es.close(); load(); }
-  catch (e) { $('sheetMsg').className = 'msg err'; $('sheetMsg').textContent = e.message; }
-}
-$('discBtn').addEventListener('click', () => disconnect(false));
-$('wipeBtn').addEventListener('click', () => disconnect(true));
-
-// Keep the "2m ago" labels fresh without re-rendering.
-setInterval(() => { if (tab === 'callouts') renderList(); }, 60000);
-
-load();
+setup();
 }
 </script>
 </body>

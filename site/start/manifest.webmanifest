@@ -1,7 +1,7 @@
 {
   "name": "StreamWing",
   "short_name": "StreamWing",
-  "start_url": "/connect-to-chaturbate/",
+  "start_url": "/owl/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#160c26",

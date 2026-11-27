@@ -48,7 +48,7 @@ async function runLoop(performerId, state) {
     } catch (err) {
       if (err.auth) {
         // Token deleted or wrong. Stop until she reconnects; don't hammer Chaturbate.
-        await q(`update performers set last_error=$2, next_url_enc=null where id=$1`,
+        await q(`update performers set last_error=$2, next_url_enc=null, feed_started_at=now() where id=$1`,
           [performerId, 'Chaturbate rejected the saved link. It may have been deleted. Reconnect Chaturbate.']);
         publish(performerId, { kind: 'status', transient: true, data: { error: 'token_rejected' } });
         break;

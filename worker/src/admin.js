@@ -1,4 +1,4 @@
-// Adds a performer and prints her private /start link.
+// Adds a performer and prints her private StreamWing link (/owl/#k=...).
 // Usage: npm run add-performer -- <chaturbate_username> [display name]
 import { q, pool } from './db.js';
 import { newAccessKey, hashKey } from './crypto.js';
@@ -16,5 +16,5 @@ await q(
    on conflict (cb_username) do update set access_key_hash = excluded.access_key_hash, display_name = coalesce(excluded.display_name, performers.display_name)`,
   [username, rest.join(' ') || null, hashKey(key)]);
 console.log(`${username}'s private link (anyone with it can open her panel):`);
-console.log(`https://streamwing.studio/connect/#k=${key}`);
+console.log(`https://streamwing.studio/owl/#k=${key}`);
 await pool.end();

@@ -39,7 +39,7 @@ export async function recoverLink(input, ip) {
   }
   const key = newAccessKey();
   await q(`update performers set access_key_hash=$2 where id=$1`, [p.id, hashKey(key)]);
-  return { link: `https://streamwing.studio/connect/#k=${key}` };
+  return { link: `https://streamwing.studio/owl/#k=${key}` };
 }
 
 // No account yet? The Events API link proves she owns the room, so the first paste creates
@@ -74,5 +74,5 @@ export async function openAccount(input, ip) {
     id = ins.rows[0].id;
   }
   startLoop(id);
-  return { link: `https://streamwing.studio/connect/#k=${key}` };
+  return { link: `https://streamwing.studio/owl/#k=${key}` };
 }

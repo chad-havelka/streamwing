@@ -1,5 +1,5 @@
 // The panel's API. Every request is authenticated with the performer's access key
-// (the secret part of her /start link). The database is never exposed directly.
+// (the secret part of her StreamWing link, /owl/#k=...). The database is never exposed directly.
 import http from 'node:http';
 import { config } from './config.js';
 import { q, tx } from './db.js';

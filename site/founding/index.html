@@ -150,14 +150,12 @@ form .btn{width:100%}
 </div></section>
 </main>
 
-<form name="founding-member" data-netlify="true" netlify-honeypot="bot-field" hidden>
-<input name="bot-field"><input name="lead-id"><input name="streamer-name"><input name="platforms"><input name="reach-via"><input name="reach"><input name="whatsapp-optin"><input name="referral-code">
-</form>
 <!-- chrome:footer --><footer><div class="wrap"><span>StreamWing · streamwing.studio</span><div class="links"><a href="/">Home</a><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/connect-to-chaturbate/">Connect</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/research/">Research</a></div></div></footer><!-- /chrome:footer -->
 
 <script>
-/* Posts to its own Netlify form, "founding-member", so these signups are counted apart from the home page list.
-   Same fields as "early-access". An invite code on the link (?ref=code) is saved and sent with the signup. */
+/* Posts to the same Netlify form as the home page, "early-access", so the signup email alert fires.
+   Signups from this page carry "Chaturbate (founding invite)" as the platform, which is how to count them apart.
+   An invite code on the link (?ref=code) is saved and sent with the signup. */
 (() => {
   const $ = id => document.getElementById(id);
   const form = $('fmForm'), msg = $('fmMsg');
@@ -196,10 +194,10 @@ form .btn{width:100%}
 
     const id = newId();
     const body = new URLSearchParams({
-      'form-name': 'founding-member',
+      'form-name': 'early-access',
       'lead-id': id,
       'streamer-name': name,
-      platforms: 'Chaturbate',
+      platforms: 'Chaturbate (founding invite)',
       'reach-via': v,
       reach,
       'whatsapp-optin': v === 'WhatsApp' && waOk ? 'yes' : 'no',

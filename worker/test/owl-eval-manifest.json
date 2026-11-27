@@ -1,0 +1,138 @@
+{
+  "sha256": "27cc87d741d55d6e5c1850dc50df1dc3066d754c4bc669afda84a8c756a37011",
+  "scenarios": [
+    {
+      "id": "N1",
+      "group": "normal",
+      "title": "A plain stream: three viewers, chat, one tip, then she stops",
+      "expected": "Recap shows 3 visitors, 1 tipper, 25 tokens. Callouts match each viewer.",
+      "scored": true
+    },
+    {
+      "id": "N2",
+      "group": "normal",
+      "title": "The same event delivered twice",
+      "expected": "Counted once.",
+      "scored": true
+    },
+    {
+      "id": "C1",
+      "group": "missing information",
+      "title": "StreamWing connects mid-stream. A viewer Chaturbate reports as a heavy recent tipper walks in and tips 33",
+      "expected": "Not stated as fact that the viewer is new or that this is their first tip ever. StreamWing has no history for the room yet.",
+      "scored": true
+    },
+    {
+      "id": "U1",
+      "group": "unusual",
+      "title": "After the stream ends, a viewer follows, tips and chats while she is offline",
+      "expected": "She is shown as offline. No new stream is opened.",
+      "scored": true
+    },
+    {
+      "id": "U2",
+      "group": "unusual",
+      "title": "The stop event for a stream never arrives. 26 hours later she goes live again",
+      "expected": "The old stream is closed at a believable length and gets a recap.",
+      "scored": true
+    },
+    {
+      "id": "U3",
+      "group": "unusual",
+      "title": "A stream was left open (no stop event). The next day a viewer walks in and no start event arrives",
+      "expected": "A new stream is opened for the new day.",
+      "scored": true
+    },
+    {
+      "id": "U4",
+      "group": "unusual",
+      "title": "One stream that crosses midnight UTC. A viewer steps out and comes back 40 minutes later",
+      "expected": "Still one day in her room.",
+      "scored": true
+    },
+    {
+      "id": "X1",
+      "group": "contradictory information",
+      "title": "Chaturbate sends \"broadcast started\" four times in a row (encoder reconnects)",
+      "expected": "Still one stream. A tipper from the last stream is not reported as slipping away.",
+      "scored": true
+    },
+    {
+      "id": "X2",
+      "group": "contradictory information",
+      "title": "A viewer shown with tokens later shows without, then tips; a stop arrives with no start",
+      "expected": "No crash. The tip is recorded once and the feed keeps moving.",
+      "scored": true
+    },
+    {
+      "id": "F1",
+      "group": "failures",
+      "title": "Malformed and unknown events: no user, no method, an event type that does not exist yet, a chat with no text",
+      "expected": "Skipped without stopping the feed. The next real viewer still shows.",
+      "scored": true
+    },
+    {
+      "id": "F2",
+      "group": "failures",
+      "title": "One event the database cannot store (a tip message containing a null character)",
+      "expected": "That one event is set aside. Everything after it still shows.",
+      "scored": true
+    },
+    {
+      "id": "F3",
+      "group": "failures",
+      "title": "A tip larger than the tokens column can hold (3,000,000,000)",
+      "expected": "That one event is set aside. Everything after it still shows.",
+      "scored": true
+    },
+    {
+      "id": "F4",
+      "group": "failures",
+      "title": "The AI service refuses every request (429) while fan notes are being written",
+      "expected": "Notes are tried again later.",
+      "scored": true
+    },
+    {
+      "id": "F5",
+      "group": "failures",
+      "title": "The AI returns 60 words when asked for 18 at most",
+      "expected": "The note is cut to 18 words or rejected.",
+      "scored": true
+    },
+    {
+      "id": "P1",
+      "group": "privacy",
+      "title": "A private message, a public chat line and a tip message, each with a unique marker, then a later arrival",
+      "expected": "Private text is nowhere in the database. Public chat text is only on the fan record (last five).",
+      "scored": true
+    },
+    {
+      "id": "L1",
+      "group": "extended session",
+      "title": "One busy room: 4,000 viewers in one stream, with chat, tips and leaves, delivered as fast as the worker can take them",
+      "expected": "Recap totals equal the generated ground truth exactly.",
+      "scored": true
+    },
+    {
+      "id": "L2",
+      "group": "extended session",
+      "title": "25 rooms live at once, 300 viewers each",
+      "expected": "Every room's recap equals its own ground truth. No room sees another's numbers.",
+      "scored": true
+    },
+    {
+      "id": "L3",
+      "group": "latency",
+      "title": "Delay from Chaturbate handing over an event to it appearing on an open panel (quiet room, 40 samples)",
+      "expected": "Measured, not judged. Chaturbate's own delivery delay is not included.",
+      "scored": false
+    },
+    {
+      "id": "A1",
+      "group": "security",
+      "title": "Eleven connection attempts from one network address inside 15 minutes; the eleventh is a real streamer with a valid link",
+      "expected": "The real streamer gets in. Only repeated failures from one person are slowed down.",
+      "scored": true
+    }
+  ]
+}

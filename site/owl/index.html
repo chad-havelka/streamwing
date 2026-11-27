@@ -228,7 +228,7 @@ details.stuck p{margin:8px 0 0;font-size:15px}
   <p class="note" id="sheetInfo"></p>
   <div class="aibox">
     <h3>AI fan notes</h3>
-    <p class="note">Off until you turn them on. When on, Claude writes one short line about each fan after a stream. Claude gets only: the fan's username, days in your room, tokens tipped, biggest tip, fan club status, follow status, whether they have tokens, their last five public chat messages, and your own note. Private messages are never sent.</p>
+    <p class="note">Off until you turn them on. When on, Claude writes one short line about each fan after a stream, and keeps a short memory of what each fan has told you about themselves. Claude gets only: the fan's username, days in your room, tokens tipped, biggest tip, fan club status, follow status, whether they have tokens, their last five public chat messages, what they said in public chat during that stream, the memory so far, and your own note. Private messages are never sent.</p>
     <div class="btns"><button class="btn ghost" type="button" id="aiBtn">Turn AI fan notes on</button></div>
     <p class="note" id="aiState"></p>
   </div>
@@ -605,7 +605,7 @@ function card(f) {
     h('div', { class: 'top' }, h('span', { class: 'label' }, headline), h('span', { class: 'when' }, ago(f.created_at))),
     h('div', { class: 'name' }, f.username),
     h('div', { class: 'facts' }, extra || facts(fan)),
-    fan.note ? h('div', { class: 'ainote' }, h('b', {}, 'Remember'), fan.note) : null,
+    (fan.memory || fan.note) ? h('div', { class: 'ainote' }, h('b', {}, 'Remember'), fan.memory || fan.note) : null,
     h('div', { class: 'said' }, fan.last_message ? `“${fan.last_message}”` : ''));
 }
 
@@ -828,7 +828,7 @@ async function openProfile(username) {
   put(box,
     h('p', { class: 'pname' }, f.username),
     badges.length ? h('div', { class: 'badges' }, badges) : null,
-    f.note ? h('p', { class: 'ainote', style: 'margin:0 0 14px' }, h('b', {}, 'Remember'), f.note) : null,
+    (f.memory || f.note) ? h('p', { class: 'ainote', style: 'margin:0 0 14px' }, h('b', {}, 'Remember'), f.memory || f.note) : null,
     h('div', { class: 'pgrid' },
       [[n(f.total_tips), 'tipped you'], [n(f.biggest_tip), 'biggest tip'], [n(f.tip_count), 'tips'],
        [n(f.visit_days), 'days here'], [n(f.visits), 'visits'], [n(f.streams_attended), 'streams']]

@@ -4,7 +4,7 @@ import { config } from './config.js';
 
 const FAN_COLS = `username, first_seen, last_seen, visits, visit_days, total_tips, tip_count, biggest_tip,
   first_tip_at, last_tip_at, color_group, recent_tips, has_tokens, is_follower, in_fanclub, is_mod,
-  language, last_message, last_message_at, messages_count, note, note_at`;
+  language, last_message, last_message_at, messages_count, note, note_at, memory, memory_at`;
 
 export const isLightBlue = fan => !!fan && fan.has_tokens === true && Number(fan.total_tips) === 0;
 
@@ -230,6 +230,12 @@ export async function processEvent(c, performer, ev) {
          where performer_id=$1 and username=$2 returning ${FAN_COLS}`, [pid, uname, text]);
       fan = r.rows[0];
       await seen(isLightBlue(fan));
+      // Fan memory: hold this stream's lines until the stream ends, only if she has AI switched on. Capped at 40 lines.
+      if (performer.ai_notes === true && text.trim()) {
+        await c.query(
+          `update session_fans set chat_lines = chat_lines || to_jsonb($3::text)
+           where session_id=$1 and username=$2 and jsonb_array_length(chat_lines) < 40`, [sid, uname, text.slice(0, 300)]);
+      }
       items.push({ kind: 'chat', username: uname, data: { fan, message: text }, transient: true });
       break;
     }

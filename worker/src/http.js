@@ -45,7 +45,7 @@ async function auth(req, url) {
 
 const FAN_FIELDS = `username, first_seen, last_seen, visits, visit_days, total_tips, tip_count, biggest_tip,
   first_tip_at, last_tip_at, color_group, recent_tips, has_tokens, is_follower, in_fanclub, is_mod,
-  language, last_message, last_message_at, messages_count, note, note_at, recent_messages, owner_note, owner_note_at, birthday`;
+  language, last_message, last_message_at, messages_count, note, note_at, memory, memory_at, recent_messages, owner_note, owner_note_at, birthday`;
 
 async function status(p) {
   const s = await q(`select * from sessions where performer_id=$1 order by started_at desc limit 1`, [p.id]);
@@ -115,7 +115,7 @@ export function startHttp() {
         stopLoop(p.id);
         if (deleteData) {
           await tx(async c => {
-            for (const t of ['feed', 'events', 'fans']) await c.query(`delete from ${t} where performer_id=$1`, [p.id]);
+            for (const t of ['feed', 'events', 'fans', 'ai_calls']) await c.query(`delete from ${t} where performer_id=$1`, [p.id]);
             await c.query(`delete from sessions where performer_id=$1`, [p.id]);
           });
         }

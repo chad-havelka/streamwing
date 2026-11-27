@@ -18,11 +18,21 @@ process.env.ANTHROPIC_BASE_URL = 'http://127.0.0.1:8797';
 // A stand-in for Claude's Messages API that records what StreamWing sends.
 import http from 'node:http';
 const aiCalls = [];
+const memoryCalls = [];
+let memoryReply = () => ({ text: 'NONE' });
 const aiServer = http.createServer(async (req, res) => {
   let b = ''; for await (const c of req) b += c;
   const body = JSON.parse(b);
-  aiCalls.push({ path: req.url, headers: req.headers, body });
   const facts = JSON.parse(body.messages[0].content);
+  // Fan memory requests are answered by whatever the memory tests set, and counted apart from the note requests.
+  if ('chat_lines_this_stream' in facts) {
+    memoryCalls.push({ body, facts });
+    const m = memoryReply(facts);
+    if (m.status) { res.writeHead(m.status, { 'content-type': 'application/json' }); return res.end('{"type":"error"}'); }
+    res.writeHead(200, { 'content-type': 'application/json' });
+    return res.end(JSON.stringify({ type: 'message', model: 'stand-in', stop_reason: m.stop || 'end_turn', content: [{ type: 'text', text: m.text }], usage: { input_tokens: 10, output_tokens: 5 } }));
+  }
+  aiCalls.push({ path: req.url, headers: req.headers, body });
   const text = facts.fan === 'luna_92' ? '"Asked how your trip was; tipped 25 on her first visit."' : 'SKIP';
   res.writeHead(200, { 'content-type': 'application/json' });
   res.end(JSON.stringify({ type: 'message', content: [{ type: 'text', text }] }));
@@ -671,4 +681,115 @@ test('old raw events expire after the retention period, but tips stay', async ()
   await purgeOldEvents(30);
   const left = (await q(`select cb_event_id from events where cb_event_id in ('old-follow','old-tip','new-follow') order by 1`)).rows.map(r => r.cb_event_id);
   assert.deepEqual(left, ['new-follow', 'old-tip']);
+});
+
+// ---------------------------------------------------------------------------------------------
+// Fan memory. Its own room, so nothing above affects it. The stand-in for Claude answers what each
+// test tells it to; what these tests prove is the worker's handling, not the model's judgment.
+// ---------------------------------------------------------------------------------------------
+let mem;   // { sim, pid, call, stream }
+async function memoryRoom() {
+  if (mem) return mem;
+  const { newAccessKey, hashKey } = await import('../src/crypto.js');
+  const k = newAccessKey();
+  const msim = await createSim({ username: 'mem_room', token: 'memtoken456' });
+  const pid = (await q(`insert into performers (cb_username, access_key_hash, ai_notes) values ('mem_room',$1,true) returning id`, [hashKey(k)])).rows[0].id;
+  const mcall = (path, opts = {}) => fetch(API + path, { ...opts, headers: { authorization: `Bearer ${k}`, 'content-type': 'application/json' } }).then(async r => ({ status: r.status, body: await r.json() }));
+  assert.equal((await mcall('/api/connect', { method: 'POST', body: JSON.stringify({ eventsUrl: msim.eventsUrl }) })).status, 200);
+  // Plays one whole stream and waits until the memory step for it has finished.
+  const stream = async (events) => {
+    const { ev } = msim;
+    const before = (await q(`select count(*)::int n from feed where performer_id=$1 and kind='recap'`, [pid])).rows[0].n;
+    msim.push([ev('broadcastStart', {}), ...events, ev('broadcastStop', {})]);
+    for (let i = 0; i < 100; i++) { if ((await q(`select count(*)::int n from feed where performer_id=$1 and kind='recap'`, [pid])).rows[0].n > before) break; await wait(100); }
+    await wait(700);
+  };
+  mem = { sim: msim, pid, call: mcall, stream };
+  return mem;
+}
+const memoryOf = async (pid, u) => (await q(`select memory from fans where performer_id=$1 and username=$2`, [pid, u])).rows[0]?.memory ?? null;
+const heldLines = async (pid) => (await q(`select count(*)::int n from session_fans sf join sessions s on s.id = sf.session_id where s.performer_id=$1 and sf.chat_lines <> '[]'::jsonb`, [pid])).rows[0].n;
+const chat = (m, u, text) => m.sim.ev('chatMessage', { user: m.sim.user(u), message: { message: text } });
+
+test('fan memory: after a stream, Claude gets only the fan, the memory so far and that stream\'s lines, and the answer is stored', async () => {
+  const m = await memoryRoom(); const { ev, user } = m.sim;
+  memoryReply = f => ({ text: f.fan === 'mem_dave' ? 'Drives trucks. Has a dog named Biscuit.' : 'NONE' });
+  const base = memoryCalls.length;
+  await m.stream([ev('userEnter', { user: user('mem_dave') }), chat(m, 'mem_dave', 'i drive trucks'), chat(m, 'mem_dave', 'my dog Biscuit says hi'),
+    ev('privateMessage', { user: user('mem_dave'), message: { message: 'PRIVATE_MARK_9', fromUser: 'mem_dave', toUser: 'mem_room' } }),
+    ev('userEnter', { user: user('mem_quiet') })]);
+  const sent = memoryCalls.slice(base);
+  assert.equal(sent.length, 1, 'one request: only the fan who chatted');
+  assert.deepEqual(Object.keys(sent[0].facts).sort(), ['chat_lines_this_stream', 'fan', 'memory_so_far']);
+  assert.deepEqual(sent[0].facts, { fan: 'mem_dave', memory_so_far: 'NONE', chat_lines_this_stream: ['i drive trucks', 'my dog Biscuit says hi'] });
+  assert.ok(!JSON.stringify(sent[0].body).includes('PRIVATE_MARK_9'), 'private messages never reach Claude');
+  assert.equal(await memoryOf(m.pid, 'mem_dave'), 'Drives trucks. Has a dog named Biscuit.');
+  assert.equal(await heldLines(m.pid), 0, 'the held chat lines are cleared once memory is written');
+  const rec = (await q(`select skill, used, reason, stop_reason from ai_calls where performer_id=$1 order by id desc limit 1`, [m.pid])).rows[0];
+  assert.deepEqual(rec, { skill: 'fan_memory', used: true, reason: null, stop_reason: 'end_turn' });
+});
+
+test('fan memory: it is on his card the next time he walks in, and the next stream builds on it', async () => {
+  const m = await memoryRoom(); const { ev, user } = m.sim;
+  memoryReply = () => ({ text: 'Drives trucks. Has a dog named Biscuit. Got a dispatcher job.' });
+  const base = memoryCalls.length;
+  await q(`update fans set last_seen = now() - interval '2 days', last_visit_day = current_date - 2 where performer_id=$1 and username='mem_dave'`, [m.pid]); // he comes back two days later
+  await m.stream([ev('userEnter', { user: user('mem_dave') }), chat(m, 'mem_dave', 'i got the dispatcher job')]);
+  const arrival = (await m.call('/api/feed?limit=50')).body.items.find(i => i.username === 'mem_dave' && i.data?.fan?.memory);
+  assert.equal(arrival.data.fan.memory, 'Drives trucks. Has a dog named Biscuit.', 'the arrival card carries what was remembered before this stream');
+  assert.equal(memoryCalls[base].facts.memory_so_far, 'Drives trucks. Has a dog named Biscuit.', 'the memory so far is handed back to Claude');
+  assert.equal((await m.call('/api/fans/mem_dave')).body.memory, 'Drives trucks. Has a dog named Biscuit. Got a dispatcher job.');
+});
+
+test('fan memory: a cut-off, empty, over-long, invented or "nothing" answer never replaces what is remembered', async () => {
+  const m = await memoryRoom(); const { ev, user } = m.sim;
+  const good = 'Drives trucks. Has a dog named Biscuit. Got a dispatcher job.';
+  const cases = [
+    [{ text: 'Drives trucks. Has a dog na', stop: 'max_tokens' }, /cut off/],
+    [{ text: '' }, /empty/],
+    [{ text: Array.from({ length: 61 }, () => 'word').join(' ') }, /word limit/],
+    [{ text: 'Drives trucks. Lives in Paris with 3 cats.' }, /not in what the fan said/],
+    [{ text: 'NONE' }, /nothing new/],
+  ];
+  for (const [reply, why] of cases) {
+    memoryReply = () => reply;
+    await m.stream([ev('userEnter', { user: user('mem_dave') }), chat(m, 'mem_dave', 'hey')]);
+    assert.equal(await memoryOf(m.pid, 'mem_dave'), good, `memory survived: ${why}`);
+    const rec = (await q(`select used, reason from ai_calls where performer_id=$1 order by id desc limit 1`, [m.pid])).rows[0];
+    assert.equal(rec.used, false);
+    assert.match(rec.reason, why);
+  }
+});
+
+test('fan memory: a refused request is tried once more, then the old memory is kept', async () => {
+  const m = await memoryRoom(); const { ev, user } = m.sim;
+  memoryReply = () => ({ status: 529 });
+  const base = memoryCalls.length;
+  await m.stream([ev('userEnter', { user: user('mem_dave') }), chat(m, 'mem_dave', 'hello again')]);
+  assert.equal(memoryCalls.length - base, 2, 'two attempts');
+  assert.equal(await memoryOf(m.pid, 'mem_dave'), 'Drives trucks. Has a dog named Biscuit. Got a dispatcher job.');
+  assert.match((await q(`select reason from ai_calls where performer_id=$1 order by id desc limit 1`, [m.pid])).rows[0].reason, /request failed/);
+  assert.equal(await heldLines(m.pid), 0, 'lines are cleared even when the request fails');
+});
+
+test('fan memory: with her switch off, no chat lines are held and nothing is sent', async () => {
+  const m = await memoryRoom(); const { ev, user } = m.sim;
+  await q(`update performers set ai_notes=false where id=$1`, [m.pid]);
+  await wait(1200); // the worker re-reads her settings on its next poll
+  memoryReply = () => ({ text: 'Should never be asked.' });
+  const base = memoryCalls.length;
+  await m.stream([ev('userEnter', { user: user('mem_dave') }), chat(m, 'mem_dave', 'my cat is named Olive')]);
+  assert.equal(memoryCalls.length, base, 'no request');
+  assert.equal(await heldLines(m.pid), 0, 'nothing held');
+  assert.equal(await memoryOf(m.pid, 'mem_dave'), 'Drives trucks. Has a dog named Biscuit. Got a dispatcher job.');
+  await q(`update performers set ai_notes=true where id=$1`, [m.pid]);
+});
+
+test('fan memory: delete everything removes the memory and the record of AI requests', async () => {
+  const m = await memoryRoom();
+  assert.ok((await q(`select count(*)::int n from ai_calls where performer_id=$1`, [m.pid])).rows[0].n > 0);
+  assert.equal((await m.call('/api/disconnect', { method: 'POST', body: JSON.stringify({ deleteData: true }) })).status, 200);
+  assert.equal((await q(`select count(*)::int n from ai_calls where performer_id=$1`, [m.pid])).rows[0].n, 0);
+  assert.equal((await q(`select count(*)::int n from fans where performer_id=$1`, [m.pid])).rows[0].n, 0);
+  m.sim.close();
 });

@@ -751,7 +751,7 @@ async function renderStreams() {
       const cell = (val, prevVal, label) => h('div', {}, h('b', {}, n(val)), h('span', {}, label), p && deltaEl(val, prevVal));
       return h('div', { class: 'streamcard' },
         h('h3', {}, (s.ended_at ? `${when(s.started_at)} · ${dur(s.started_at, s.ended_at)}` : `${s.confirmed === false ? 'Activity now' : 'Live now'} · ${dur(s.started_at)}`)
-          + (s.confirmed === false ? ' · not confirmed live, left out of comparisons' : '')),
+          + (s.confirmed === false ? ' · not confirmed live, so other streams aren\u2019t compared with it' : '')),
         h('div', { class: 'grid' },
           cell(s.tokens, p?.tokens, 'tokens'), cell(s.tippers, p?.tippers, 'tippers'), cell(s.unique_visitors, p?.unique_visitors, 'visitors'),
           cell(s.returning_visitors, p?.returning_visitors, 'came back'), cell(s.light_blues_converted, p?.light_blues_converted, 'blues tipped'), cell(s.new_followers, p?.new_followers, 'new followers')));
